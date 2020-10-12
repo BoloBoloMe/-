@@ -1,3 +1,5 @@
 .idea
 VideoDownloader.iml
 target
+*.log
+*.class

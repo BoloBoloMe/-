@@ -66,7 +66,7 @@ public class Downloader {
                     log.info("已获得任务处理权限！");
                     while (taskList.hasNextPending()) {
                         String url = taskList.lockNextPending();
-                        taskList.closure(url, callYoutubeDL(url));
+                        taskList.closure(url, Terminal.execYoutubeDL(url, videoPath));
                     }
                     log.info("本次待处理的任务已处理完毕，结束线程");
                 } catch (Exception e) {
@@ -83,9 +83,4 @@ public class Downloader {
         }
         return 1;
     }
-
-    private boolean callYoutubeDL(String url) {
-        return Terminal.execYoutubeDL(url, videoPath);
-    }
-
 }
