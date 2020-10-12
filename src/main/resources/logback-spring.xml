@@ -2,8 +2,7 @@
 <configuration>
 
     <!--<property resource="application.yml"/>-->
-    <springProperty scope="context" name="logroot" source="logroot" defaultValue=""/>
-    <springProperty scope="context" name="logenv" source="logenv" defaultValue=""/>
+    <springProperty scope="context" name="logPath" source="logPath" defaultValue="./log/"/>
     <!-- 引入springboot缺省日志 -->
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
     <!-- 默认控制台内容 -->
