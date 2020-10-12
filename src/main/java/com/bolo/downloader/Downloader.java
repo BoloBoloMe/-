@@ -12,7 +12,6 @@ import java.util.concurrent.locks.ReentrantLock;
 @Service
 @Slf4j
 public class Downloader {
-
     final private TaskList taskList = new TaskList();
     final private ReentrantLock lock = new ReentrantLock();
 
@@ -31,6 +30,9 @@ public class Downloader {
         return result;
     }
 
+    /**
+     * 清空任务列表
+     */
     public void clearTasks() {
         taskList.clear();
     }
