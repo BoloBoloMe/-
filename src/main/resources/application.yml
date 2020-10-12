@@ -1,2 +1,6 @@
 server:
   port: 9000
+
+logPath: ./VideoDownloaderLog/
+
+videoPath: /root/vedio/

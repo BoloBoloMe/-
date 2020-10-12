@@ -40,6 +40,4 @@ public class WebLaunchpad {
     public ResponseEntity<Map<String, String>> listTask() {
         return ResponseEntity.status(HttpStatus.OK).body(downloader.list());
     }
-
-
 }

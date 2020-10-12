@@ -1,6 +1,7 @@
 package com.bolo.downloader;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -9,11 +10,14 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * 下载器实现
  */
-@Service
 @Slf4j
+@Service
 public class Downloader {
     final private TaskList taskList = new TaskList();
     final private ReentrantLock lock = new ReentrantLock();
+
+    @Value("videoPath")
+    private String videoPath;
 
     /**
      * 新增任务
@@ -81,7 +85,7 @@ public class Downloader {
     }
 
     private boolean callYoutubeDL(String url) {
-        return true;
+        return Terminal.execYoutubeDL(url, videoPath);
     }
 
 }
