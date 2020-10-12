@@ -18,7 +18,9 @@ public class Terminal {
         Process process = null;
         BufferedReader commandLineReader = null;
         try {
-            process = Runtime.getRuntime().exec(String.format("youtube-dl --exec \"mv {} %s{}\"  %s", filePath, url));
+            String command = String.format("youtube-dl --exec \"mv {} %s{}\"  %s", filePath, url);
+            log.info(IDIOMATIC, command);
+            process = Runtime.getRuntime().exec(command);
             commandLineReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             if (commandLineReader.ready()) {
                 String export;
@@ -51,9 +53,5 @@ public class Terminal {
             }
         }
         return false;
-    }
-
-    public static void main(String[] args) {
-        execYoutubeDL("https://vod.300hu.com/4c1f7a6atransbjngwcloud1oss/29d26437280639959563001857/v.f30.mp4?dockingId=1f8abff1-05d7-4f60-809b-e4523795eb341", "D:\\MyResource\\Desktop");
     }
 }
