@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 public class WebLaunchpad {
     @Autowired
@@ -32,6 +34,11 @@ public class WebLaunchpad {
     public ResponseEntity<String> clearTasks() {
         downloader.clearTasks();
         return ResponseEntity.status(HttpStatus.OK).body("列表已清空");
+    }
+
+    @RequestMapping("task/list")
+    public ResponseEntity<Map<String, String>> listTask() {
+        return ResponseEntity.status(HttpStatus.OK).body(downloader.list());
     }
 
 

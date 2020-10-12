@@ -4,6 +4,7 @@ import com.bolo.downloader.bean.TaskList;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -28,6 +29,10 @@ public class Downloader {
             startTask();
         }
         return result;
+    }
+
+    public Map<String, String> list() {
+        return taskList.list();
     }
 
     /**

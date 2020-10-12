@@ -3,6 +3,7 @@ package com.bolo.downloader.bean;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -16,8 +17,9 @@ public class TaskList {
     private ConcurrentLinkedQueue<String> pending = new ConcurrentLinkedQueue<>();
     private Map<String, Integer> history = new ConcurrentHashMap<>();
     public static final Integer PENDING = 0;
-    public static final Integer SUCCEED = 1;
-    public static final Integer FAIL = 2;
+    public static final Integer DOWNLOADING = 1;
+    public static final Integer SUCCEED = 2;
+    public static final Integer FAIL = 3;
 
 
     /**
@@ -53,8 +55,22 @@ public class TaskList {
     /**
      * 列表查询
      */
-    public Map<String, Integer> list() {
-        return new HashMap<>(history);
+    public Map<String, String> list() {
+        TreeMap<String, String> list = new TreeMap<>();
+        history.forEach((k, v) -> {
+            if (PENDING.equals(v)) {
+                list.put(k, "待处理");
+            } else if (DOWNLOADING.equals(v)) {
+                list.put(k, "下载中");
+            } else if (SUCCEED.equals(v)) {
+                list.put(k, "下载成功");
+            } else if (FAIL.equals(v)) {
+                list.put(k, "下载失败");
+            } else {
+                list.put(k, "未知的状态");
+            }
+        });
+        return list;
     }
 
     /**
@@ -70,6 +86,8 @@ public class TaskList {
      * @return url, 当没有待处理的任务时返回空字符串
      */
     public String lockNextPending() {
-        return pending.poll();
+        String url = pending.poll();
+        history.replace(url, DOWNLOADING);
+        return url;
     }
 }
