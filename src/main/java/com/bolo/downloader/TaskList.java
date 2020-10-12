@@ -1,4 +1,4 @@
-package com.bolo.downloader.bean;
+package com.bolo.downloader;
 
 
 import java.util.HashMap;

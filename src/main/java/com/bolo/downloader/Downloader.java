@@ -1,6 +1,5 @@
 package com.bolo.downloader;
 
-import com.bolo.downloader.bean.TaskList;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
