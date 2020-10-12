@@ -1,5 +1,6 @@
 package com.bolo.downloader;
 
+import com.bolo.downloader.bean.TaskList;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -12,8 +13,8 @@ import java.util.concurrent.locks.ReentrantLock;
 @Slf4j
 public class Downloader {
 
-    private TaskList taskList = new TaskList();
-    private ReentrantLock lock = new ReentrantLock();
+    final private TaskList taskList = new TaskList();
+    final private ReentrantLock lock = new ReentrantLock();
 
     /**
      * 新增任务
@@ -21,7 +22,17 @@ public class Downloader {
      * @return 0:已在列表中，1:添加成功
      */
     public int addTask(String url) {
-        return taskList.add(url) ? 1 : 0;
+        boolean forecast = taskList.hasNextPending();
+        int result = taskList.add(url) ? 1 : 0;
+        // 如果是列表第一个待处理任务，将自动触发任务处理线程
+        if (!forecast && result == 1) {
+            startTask();
+        }
+        return result;
+    }
+
+    public void clearTasks() {
+        taskList.clear();
     }
 
 
@@ -36,27 +47,20 @@ public class Downloader {
         }
         try {
             new Thread(() -> {
+                log.info("开启新线程处理任务列表:{}", Thread.currentThread().getName());
                 try {
                     if (!lock.tryLock()) {
+                        log.info("未能获得任务的处理权限,可能是其他线程正在处理任务，结束线程");
                         return;
                     }
-                    while (true) {
-                        TaskList.Task startPoint = null;
-                        TaskList.Task task = taskList.next();
-                        if (task.getStatus() == 0) {
-                            if (startPoint == null) {
-                                startPoint = task;
-                            }
-                            task.setStatus(1);
-                            task.setStatus(callYoutubeDL(task.getUrl()) ? 2 : 3);
-                        } else {
-                            if (task == startPoint) {
-                                break;
-                            }
-                        }
+                    log.info("已获得任务处理权限！");
+                    while (taskList.hasNextPending()) {
+                        String url = taskList.lockNextPending();
+                        taskList.closure(url, callYoutubeDL(url));
                     }
+                    log.info("本次待处理的任务已处理完毕，结束线程");
                 } catch (Exception e) {
-                    log.error("任务处理异常：" + e.getMessage(), e);
+                    log.error("任务处理异常，线程中断！异常信息：" + e.getMessage(), e);
                 } finally {
                     if (lock.isHeldByCurrentThread()) {
                         lock.unlock();

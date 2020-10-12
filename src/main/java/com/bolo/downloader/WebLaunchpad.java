@@ -23,5 +23,16 @@ public class WebLaunchpad {
         return ResponseEntity.status(HttpStatus.OK).body(downloader.addTask(url) == 1 ? "添加成功" : "任务已在列表中！");
     }
 
+    @RequestMapping("task/start")
+    public ResponseEntity<String> startTask() {
+        return ResponseEntity.status(HttpStatus.OK).body(downloader.startTask() == 2 ? "任务启动失败！" : "任务已开始处理...");
+    }
+
+    @RequestMapping("task/clear")
+    public ResponseEntity<String> clearTasks() {
+        downloader.clearTasks();
+        return ResponseEntity.status(HttpStatus.OK).body("列表已清空");
+    }
+
 
 }

@@ -1,10 +1,10 @@
-package com.bolo.downloader;
+package com.bolo;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
-@ComponentScan("com.bolo.downloader")
+@ComponentScan("com.bolo")
 @SpringBootApplication
 public class Bootstrap {
     public static void main(String[] args) {
