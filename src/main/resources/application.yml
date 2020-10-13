@@ -1,6 +1,12 @@
 server:
   port: 9000
 
-logPath: ./VideoDownloaderLog/
+spring:
+  mvc:
+    view:
+      prefix: /
+      suffix: .html
 
+
+logPath: ./VideoDownloaderLog/
 videoPath: /root/vedio/

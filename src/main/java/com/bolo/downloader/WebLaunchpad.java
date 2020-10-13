@@ -15,11 +15,6 @@ public class WebLaunchpad {
     @Autowired
     private Downloader downloader;
 
-    @RequestMapping("echo")
-    public ResponseEntity echo() {
-        return ResponseEntity.status(HttpStatus.OK).body(null);
-    }
-
     @PostMapping("task/add")
     public ResponseEntity<String> addTask(@RequestParam("url") String url) {
         return ResponseEntity.status(HttpStatus.OK).body(downloader.addTask(url) == 1 ? "添加成功" : "任务已在列表中！");
