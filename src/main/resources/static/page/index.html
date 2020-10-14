@@ -7,26 +7,160 @@
     <link rel="stylesheet" href="../layui/css/layui.css">
 </head>
 <body>
+<br/>
 <div class="layui-row layui-col-space10">
-    <div class="layui-col-md1"  align="right">
-        <i class="layui-icon layui-icon-link" style="font-size: 30px;"></i>
+    <div class="layui-col-md1" align="right">
+        <i class="layui-icon layui-icon-face-surprised layui-anim layui-anim-rotate layui-anim-loop"
+           style="font-size: 30px;"></i>
+        <i class="layui-icon layui-icon-face-cry layui-anim layui-anim-rotate layui-anim-loop"
+           style="font-size: 30px;"></i>
+        <i class="layui-icon layui-icon-face-smile layui-anim layui-anim-rotate layui-anim-loop"
+           style="font-size: 30px;"></i>
+        <i class="layui-icon layui-icon-at layui-anim layui-anim-rotate" style="font-size: 30px;"></i>
     </div>
-    <div class="layui-col-md5">
-        <input type="text" name="title" required lay-verify="required" placeholder="请输入视频链接" autocomplete="off"
-               class="layui-input">
-    </div>
-    <div class="layui-col-md2">
-        <button type="button" class="layui-btn">添加</button>
+    <form class="layui-form  layui-col-space10" action="">
+        <div class="layui-col-md5">
+            <input type="text" name="url" required lay-verify="required" placeholder="请输入视频链接" autocomplete="off"
+                   class="layui-input">
+        </div>
+        <div class="layui-col-md2">
+            <button type="button" class="layui-btn" title="添加下载任务" lay-submit lay-filter="btnAdd">
+                <i class="layui-icon layui-icon-add-1" style="font-size: 30px;"></i>
+            </button>
+        </div>
+    </form>
+</div>
+<br/>
+<div class="layui-tab layui-tab-brief" lay-filter="tabBrief">
+    <ul class="layui-tab-title">
+        <li class="layui-this" lay-id="taskList">任务列表</li>
+        <li lay-id="fileList">文件列表</li>
+    </ul>
+    <div class="layui-tab-content">
+        <div class="layui-tab-item layui-show">
+            <table id="taskList" lay-filter="test"></table>
+        </div>
+        <div class="layui-tab-item">
+            <table id="fileList" lay-filter="test"></table>
+        </div>
     </div>
 </div>
 <script src="../layui/layui.js"></script>
+<javascript src="/base64.js"></javascript>
 <script>
-    //一般直接写在一个js文件中
-    layui.use(['layer', 'form'], function () {
-        var layer = layui.layer
-            , form = layui.form;
+    layui.use(['layer', 'form', 'element', 'table'], function () {
+        var $ = layui.$,
+            layer = layui.layer,
+            form = layui.form,
+            element = layui.element,
+            table = layui.table;
 
+        // 渲染任务列表
+        var taskList = table.render({
+            elem: '#taskList'
+            , height: 312
+            // , width: 600
+            , url: '/task/list' //数据接口
+            , page: false //关闭分页
+            , loading: true
+            , toolbar: true
+            , defaultToolbar: [{
+                title: '刷新' //标题
+                , layEvent: 'RELOAD' //事件名，用于 toolbar 事件中使用
+                , icon: 'layui-icon-refresh' //图标类名
+            }, {
+                title: '清空' //标题
+                , layEvent: 'CLEAR' //事件名，用于 toolbar 事件中使用
+                , icon: 'layui-icon-delete' //图标类名
+            }, {
+                title: '启动任务' //标题
+                , layEvent: 'START' //事件名，用于 toolbar 事件中使用
+                , icon: 'layui-icon-play' //图标类名
+            }]
+            , cols: [[ //表头
+                {field: 'url', title: '视频地址', width: 400}
+                , {field: 'status', title: '状态', width: 100, sort: true}
+            ]]
+        });
+
+        // 监听数据表格的刷新事件
+        table.on('toolbar(test)', function (obj) {
+            switch (obj.event) {
+                case 'RELOAD':
+                    taskList.reload();
+                    break;
+                case 'CLEAR':
+                    $.ajax({
+                        type: "POST",
+                        url: "/task/clear",
+                        success: function (res) {
+                            layer.open({
+                                title: '清空列表', content: res
+                            });
+                            taskList.reload();
+                        }
+                    });
+                    break;
+                case 'START':
+                    $.ajax({
+                        type: "POST",
+                        url: "/task/start",
+                        success: function (res) {
+                            layer.open({
+                                title: '启动任务', content: res
+                            });
+                            taskList.reload();
+                        }
+                    });
+                    break;
+            }
+        });
+
+        // 渲染文件列表
+        var fileList = table.render({
+            elem: '#fileList'
+            , height: 312
+            , url: '/file/list' //数据接口
+            , page: false //关闭分页
+            , cols: [[ //表头
+                {field: 'sign', title: '文件名', width: 200}
+                , {field: 'experience', title: '操作', width: 100, sort: true}
+            ]]
+        });
+
+
+        //监听表单提交-添加下载任务
+        form.on('submit(btnAdd)', function (data) {
+            var url = window.btoa(data.field.url);
+            console.log("编码后的url:" + url);
+            $.ajax({
+                type: "POST",
+                url: "/task/add",
+                data: {'url': url},
+                success: function (res) {
+                    layer.open({
+                        title: '添加下载任务', content: res
+                    });
+                    taskList.reload();
+                }
+            });
+            return false;
+        });
+
+
+        //监听Tab切换
+        element.on('tab(tabBrief)', function () {
+            console.log(this.getAttribute('lay-id') + " tab was chosen.");
+        });
     });
+
+
+    /**
+     * 加载任务列表
+     */
+    function loadTaskList() {
+        console.log("加载任务列表")
+    }
 </script>
 </body>
 </html>
