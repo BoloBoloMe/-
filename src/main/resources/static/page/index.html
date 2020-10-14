@@ -38,10 +38,10 @@
     </ul>
     <div class="layui-tab-content">
         <div class="layui-tab-item layui-show">
-            <table id="taskList" lay-filter="test"></table>
+            <table id="taskList" lay-filter="taskTable"></table>
         </div>
         <div class="layui-tab-item">
-            <table id="fileList" lay-filter="test"></table>
+            <table id="fileList" lay-filter="fileTable"></table>
         </div>
     </div>
 </div>
@@ -101,8 +101,25 @@
             ]]
         });
 
-        // 监听数据表格的刷新事件
-        table.on('toolbar(test)', function (obj) {
+        // 渲染文件列表
+        var fileList = table.render({
+            elem: '#fileList'
+            , height: 312
+            , url: '/video/list' //数据接口
+            , page: false //关闭分页
+            , toolbar: true
+            , defaultToolbar: [{
+                title: '刷新' //标题
+                , layEvent: 'RELOAD' //事件名，用于 toolbar 事件中使用
+                , icon: 'layui-icon-refresh' //图标类名
+            }]
+            , cols: [[ //表头
+                {field: 'fileName', title: '文件名', width: 200}
+            ]]
+        });
+
+        // 监听任务列表的事件
+        table.on('toolbar(taskTable)', function (obj) {
             switch (obj.event) {
                 case 'RELOAD':
                     taskList.reload();
@@ -134,16 +151,13 @@
             }
         });
 
-        // 渲染文件列表
-        var fileList = table.render({
-            elem: '#fileList'
-            , height: 312
-            , url: '/file/list' //数据接口
-            , page: false //关闭分页
-            , cols: [[ //表头
-                {field: 'sign', title: '文件名', width: 200}
-                , {field: 'experience', title: '操作', width: 100, sort: true}
-            ]]
+        //  监听文件列表的事件
+        table.on('toolbar(fileTable)', function (obj) {
+            switch (obj.event) {
+                case 'RELOAD':
+                    fileList.reload();
+                    break;
+            }
         });
 
 
@@ -165,20 +179,11 @@
             return false;
         });
 
-
         //监听Tab切换
         element.on('tab(tabBrief)', function () {
             console.log(this.getAttribute('lay-id') + " tab was chosen.");
         });
     });
-
-
-    /**
-     * 加载任务列表
-     */
-    function loadTaskList() {
-        console.log("加载任务列表")
-    }
 </script>
 </body>
 </html>

@@ -33,7 +33,7 @@ public class WebLaunchpad {
 
     @RequestMapping("task/list")
     public ResponseEntity<Map<String, Object>> listTask() {
-        Map<String, String> list = downloader.list();
+        Map<String, String> list = downloader.listTasks();
         // {"code":0,"msg":"",data:[{}]}
         Map<String, Object> result = new HashMap<>();
         result.put("code", "0");
@@ -46,6 +46,20 @@ public class WebLaunchpad {
             data.add(item);
         }
         result.put("data", data);
+        return ResponseEntity.status(HttpStatus.OK).body(result);
+    }
+
+    @RequestMapping("video/list")
+    public ResponseEntity<Map<String, Object>> listVideo() {
+        // {"code":0,"msg":"",data:[{}]}
+        Map<String, Object> result = new HashMap<>();
+        result.put("code", "0");
+        result.put("msg", "成功");
+        result.put("data", downloader.listVideo().stream().map(file -> {
+            HashMap<String, String> item = new HashMap<>();
+            item.put("fileName", file);
+            return item;
+        }));
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }
 }

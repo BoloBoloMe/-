@@ -4,8 +4,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 下载器实现
@@ -34,7 +40,7 @@ public class Downloader {
         return result;
     }
 
-    public Map<String, String> list() {
+    public Map<String, String> listTasks() {
         return taskList.list();
     }
 
@@ -52,6 +58,9 @@ public class Downloader {
      * @return 0:其他线程正在处理任务,1:启动成功,2:启动异常
      */
     public int startTask() {
+        if (!taskList.hasNextPending()) {
+            return 1;
+        }
         if (lock.isLocked()) {
             return 0;
         }
@@ -82,5 +91,13 @@ public class Downloader {
             return 2;
         }
         return 1;
+    }
+
+    /**
+     * 返回视频存放路径下的文件列表
+     */
+    List<String> listVideo() {
+        String[] vidoList = new File(new File("").getAbsolutePath()).list((dir, name) -> Pattern.matches(".+(\\.mp4|\\.avi){1}", name));
+        return vidoList == null ? new ArrayList<>() : Stream.of(vidoList).collect(Collectors.toCollection(ArrayList::new));
     }
 }
