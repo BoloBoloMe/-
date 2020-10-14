@@ -21,13 +21,6 @@ public class TaskList {
     public static final Integer SUCCEED = 2;
     public static final Integer FAIL = 3;
 
-    {
-        history.put("https://www.layui.com/doc/element/1.html", PENDING);
-        history.put("https://www.layui.com/doc/element/2.html", DOWNLOADING);
-        history.put("https://www.layui.com/doc/element/3.html", SUCCEED);
-        history.put("https://www.layui.com/doc/element/4.html", FAIL);
-    }
-
     /**
      * 添加任务
      *
