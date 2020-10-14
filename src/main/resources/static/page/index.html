@@ -10,13 +10,13 @@
 <br/>
 <div class="layui-row layui-col-space10">
     <div class="layui-col-md1" align="right">
-        <i class="layui-icon layui-icon-face-surprised layui-anim layui-anim-rotate layui-anim-loop"
+        <i class="layui-icon layui-icon-light layui-anim layui-anim-rotate layui-anim-loop"
            style="font-size: 30px;"></i>
-        <i class="layui-icon layui-icon-face-cry layui-anim layui-anim-rotate layui-anim-loop"
+        <i class="layui-icon layui-icon-rate-half layui-anim layui-anim-rotate layui-anim-loop"
            style="font-size: 30px;"></i>
-        <i class="layui-icon layui-icon-face-smile layui-anim layui-anim-rotate layui-anim-loop"
+        <i class="layui-icon layui-icon-snowflake layui-anim layui-anim-rotate layui-anim-loop"
            style="font-size: 30px;"></i>
-        <i class="layui-icon layui-icon-at layui-anim layui-anim-rotate" style="font-size: 30px;"></i>
+        <i class="layui-icon layui-icon-time layui-anim layui-anim-rotate layui-anim-loop" style="font-size: 30px;"></i>
     </div>
     <form class="layui-form  layui-col-space10" action="">
         <div class="layui-col-md5">
@@ -25,7 +25,7 @@
         </div>
         <div class="layui-col-md2">
             <button type="button" class="layui-btn" title="添加下载任务" lay-submit lay-filter="btnAdd">
-                <i class="layui-icon layui-icon-add-1" style="font-size: 30px;"></i>
+                <i class="layui-icon layui-icon-addition" style="font-size: 30px;"></i>
             </button>
         </div>
     </form>
@@ -45,6 +45,24 @@
         </div>
     </div>
 </div>
+<script type="text/html" id="emojiCol">
+    {{#  if(d.status == '待处理'){ }}
+    <i class="layui-icon layui-icon-face-surprised" style="font-size: 25px;" title="待处理"></i>
+    {{#  } }}
+
+    {{#  if(d.status == '下载中'){ }}
+    <i class="layui-icon layui-icon-face-surprised layui-anim layui-anim-rotate layui-anim-loop"
+       style="font-size: 25px;" title="下载中"></i>
+    {{#  } }}
+
+    {{#  if(d.status == '下载成功'){ }}
+    <i class="layui-icon layui-icon-face-smile" style="font-size: 25px; color: #5FB878" title="下载成功"></i>
+    {{#  } }}
+
+    {{#  if(d.status == '下载失败'){ }}
+    <i class="layui-icon layui-icon-face-cry" style="font-size: 25px; color: #FF6486;" title="下载失败"></i>
+    {{#  } }}
+</script>
 <script src="../layui/layui.js"></script>
 <javascript src="/base64.js"></javascript>
 <script>
@@ -79,7 +97,7 @@
             }]
             , cols: [[ //表头
                 {field: 'url', title: '视频地址', width: 400}
-                , {field: 'status', title: '状态', width: 100, sort: true}
+                , {field: 'status', title: '状态', width: 100, align: 'center', toolbar: '#emojiCol'}
             ]]
         });
 
