@@ -22,10 +22,10 @@ public class Downloader {
     final private TaskList taskList = new TaskList();
     final private ReentrantLock lock = new ReentrantLock();
 
-    @Value("video-path")
+    @Value("${video-path}")
     private String videoPath;
 
-    @Value("youtube-dl-path")
+    @Value("${youtube-dl-path}")
     private String youtubeDLPath;
 
     /**
