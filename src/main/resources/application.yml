@@ -9,4 +9,5 @@ spring:
 
 
 logPath: ./VideoDownloaderLog/
-videoPath: /root/vedio/
+video-path: /root/vedio/
+youtube-dl-path: /root/youtube-dl/

@@ -13,8 +13,8 @@ public class Terminal {
 
     private static final String flag = "[download] 100% ";
 
-    public static boolean execYoutubeDL(String url, String filePath) {
-        return exec("youtube-dl " + url, flag);
+    public static boolean execYoutubeDL(String url, String youtubeDLPath) {
+        return exec(youtubeDLPath + "youtube-dl " + url, flag);
     }
 
     private static boolean exec(String command, String flag) {
