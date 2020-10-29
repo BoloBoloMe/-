@@ -35,9 +35,7 @@ public class Downloader {
      * @return 0:已在列表中，1:添加成功
      */
     public int addTask(String url) {
-        int result = taskList.add(url) ? 1 : 0;
-        submitTask();
-        return result;
+        return taskList.add(url) && submitTask(url) ? 1 : 0;
     }
 
     public Map<String, String> listTasks() {
@@ -53,24 +51,22 @@ public class Downloader {
 
 
     /**
-     * 启动任务处理
-     *
-     * @return 0:其他线程正在处理任务,1:启动成功,2:启动异常
+     * 提交任务
      */
-    private int submitTask() {
+    private boolean submitTask(String url) {
         try {
             threadPool.submit(() -> {
-                log.info("任务处理线程：{}", Thread.currentThread().getName());
-                String url = taskList.lockNextPending();
+                taskList.lockNextPending(url);
                 if (!"".equals(url)) {
                     taskList.closure(url, Terminal.execYoutubeDL(url, youtubeDLPath));
                 }
             });
+            return true;
         } catch (Exception e) {
-            log.error("任务启动异常：" + e.getMessage(), e);
-            return 2;
+            log.error("任务提交失败：" + e.getMessage(), e);
+            taskList.closure(url, false);
         }
-        return 1;
+        return false;
     }
 
     /**
