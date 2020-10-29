@@ -21,7 +21,7 @@ import java.util.stream.Stream;
 @Service
 public class Downloader {
     final private TaskList taskList = new TaskList();
-    private ExecutorService threadPool = Executors.newFixedThreadPool(1);
+    final static private ExecutorService taskRunner = Executors.newFixedThreadPool(1);
 
     @Value("${video-path}")
     private String videoPath;
@@ -54,19 +54,11 @@ public class Downloader {
      * 提交任务
      */
     private boolean submitTask(String url) {
-        try {
-            threadPool.submit(() -> {
-                taskList.lockNextPending(url);
-                if (!"".equals(url)) {
-                    taskList.closure(url, Terminal.execYoutubeDL(url, youtubeDLPath));
-                }
-            });
-            return true;
-        } catch (Exception e) {
-            log.error("任务提交失败：" + e.getMessage(), e);
-            taskList.closure(url, false);
-        }
-        return false;
+        taskRunner.submit(() -> {
+            taskList.lockNextPending(url);
+            taskList.closure(url, Terminal.execYoutubeDL(url, youtubeDLPath));
+        });
+        return true;
     }
 
     /**

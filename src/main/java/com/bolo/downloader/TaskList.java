@@ -70,11 +70,8 @@ public class TaskList {
 
     /**
      * 锁定待处理的任务
-     *
-     * @return url, 当没有待处理的任务时返回空字符串
      */
-    public String lockNextPending(String url) {
+    public void lockNextPending(String url) {
         history.replace(url, DOWNLOADING);
-        return url;
     }
 }
