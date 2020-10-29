@@ -27,6 +27,9 @@
             <button type="button" class="layui-btn" title="添加下载任务" lay-submit lay-filter="btnAdd">
                 <i class="layui-icon layui-icon-addition" style="font-size: 30px;"></i>
             </button>
+            <button type="reset" class="layui-btn layui-btn-primary" title="重置">
+                <i class="layui-icon layui-icon-close" style="font-size: 30px;"></i>
+            </button>
         </div>
     </form>
 </div>
@@ -90,11 +93,11 @@
                 title: '清空' //标题
                 , layEvent: 'CLEAR' //事件名，用于 toolbar 事件中使用
                 , icon: 'layui-icon-delete' //图标类名
-            }, {
+            }/*, {
                 title: '启动任务' //标题
                 , layEvent: 'START' //事件名，用于 toolbar 事件中使用
                 , icon: 'layui-icon-play' //图标类名
-            }]
+            }*/]
             , cols: [[ //表头
                 {field: 'url', title: '视频地址', width: 400}
                 , {field: 'status', title: '状态', width: 100, align: 'center', toolbar: '#emojiCol'}
@@ -173,6 +176,7 @@
                     layer.open({
                         title: '添加下载任务', content: res
                     });
+                    fileList.reload();
                     taskList.reload();
                 }
             });
