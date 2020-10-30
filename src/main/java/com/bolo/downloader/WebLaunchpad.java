@@ -27,34 +27,12 @@ public class WebLaunchpad {
     }
 
     @RequestMapping("task/list")
-    public ResponseEntity<Map<String, Object>> listTask() {
-        Map<String, String> list = downloader.listTasks();
-        // {"code":0,"msg":"",data:[{}]}
-        Map<String, Object> result = new HashMap<>();
-        result.put("code", "0");
-        result.put("msg", "成功");
-        List<Map<String, String>> data = new ArrayList<>();
-        for (String url : list.keySet()) {
-            Map<String, String> item = new HashMap<>();
-            item.put("url", url);
-            item.put("status", list.get(url));
-            data.add(item);
-        }
-        result.put("data", data);
-        return ResponseEntity.status(HttpStatus.OK).body(result);
+    public ResponseEntity<Map<String, String>> listTask() {
+        return ResponseEntity.status(HttpStatus.OK).body(downloader.listTasks());
     }
 
     @RequestMapping("video/list")
-    public ResponseEntity<Map<String, Object>> listVideo() {
-        // {"code":0,"msg":"",data:[{}]}
-        Map<String, Object> result = new HashMap<>();
-        result.put("code", "0");
-        result.put("msg", "成功");
-        result.put("data", downloader.listVideo().stream().map(file -> {
-            HashMap<String, String> item = new HashMap<>();
-            item.put("fileName", file);
-            return item;
-        }));
-        return ResponseEntity.status(HttpStatus.OK).body(result);
+    public ResponseEntity<List<String>> listVideo() {
+        return ResponseEntity.status(HttpStatus.OK).body(downloader.listVideo());
     }
 }
