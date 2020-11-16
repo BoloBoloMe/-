@@ -1,4 +1,4 @@
-package com.bolo.downloader;
+package com.bolo.downloader.station;
 
 
 import java.util.Map;

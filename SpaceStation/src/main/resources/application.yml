@@ -1,0 +1,13 @@
+server:
+  port: 9000
+
+spring:
+  mvc:
+    view:
+      prefix: /
+      suffix: .html
+
+
+logPath: ./VideoDownloaderLog/
+video-path: /root/vedio/
+youtube-dl-path: /root/youtube-dl/

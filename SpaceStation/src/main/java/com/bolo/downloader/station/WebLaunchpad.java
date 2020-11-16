@@ -1,4 +1,4 @@
-package com.bolo.downloader;
+package com.bolo.downloader.station;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

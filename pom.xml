@@ -11,6 +11,7 @@
     <description>视频下载器</description>
     <modules>
         <module>SpaceStation</module>
+        <module>GroundControlCenter</module>
     </modules>
 
     <!-- 配置版本参数 -->
