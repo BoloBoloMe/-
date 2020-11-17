@@ -37,13 +37,13 @@ public class ThreadPoolTest {
             System.out.println("第三次调用线程池-线程id:" + Thread.currentThread().getId());
         });
         System.out.println("主线程结束");
-        while (true) ;
+//        while (true) ;
     }
 
     @Test
     public void testScheduledThreadPool() {
         ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(1);
         threadPool.scheduleAtFixedRate(() -> System.out.println("执行ScheduledThreadTask"), 5,10, SECONDS);
-        while (true) ;
+//        while (true) ;
     }
 }
