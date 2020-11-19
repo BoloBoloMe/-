@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 @Service
 public class Downloader {
     final private TaskList taskList = new TaskList();
-    final static private ExecutorService taskRunner = Executors.newFixedThreadPool(1);
+    final static private ExecutorService taskRunner = Executors.newFixedThreadPool(5);
 
     @Value("${video-path}")
     private String videoPath;
