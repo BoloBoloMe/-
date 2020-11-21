@@ -8,18 +8,10 @@
         <version>0.4.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
+    <description>资源池-提供公共资源</description>
 
-    <artifactId>GroundControlCenter</artifactId>
+    <artifactId>ResourcePool</artifactId>
     <packaging>jar</packaging>
-    <description>地面控制中心</description>
-
-    <dependencies>
-        <dependency>
-            <groupId>com.bolo.downloader</groupId>
-            <artifactId>ResourcePool</artifactId>
-            <version>0.4.0-SNAPSHOT</version>
-        </dependency>
-    </dependencies>
 
     <build>
         <plugins>
