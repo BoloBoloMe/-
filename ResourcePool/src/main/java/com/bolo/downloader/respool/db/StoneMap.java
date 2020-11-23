@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 可持久化的Map
@@ -22,11 +21,7 @@ public class StoneMap implements Map<String, String> {
     /**
      * 数据文件写缓冲
      */
-    private LogBuff logBuff;
-    /**
-     * 最近一次写缓冲刷新时间
-     */
-    private final AtomicLong logFlushTime = new AtomicLong();
+    private LogWriteBuff logWriteBuff;
     /**
      * 删除标识
      */
@@ -49,9 +44,13 @@ public class StoneMap implements Map<String, String> {
         for (Entry<? extends String, ? extends String> entry : m.entrySet()) put(entry.getKey(), entry.getValue());
     }
 
+    /**
+     * 清空缓冲池，强制触发数据文件重写 非常不建议使用
+     */
     @Override
     public void clear() {
-        throw new UnsupportedOperationException("StoneMap unsupported the clear operation");
+        bufferPool.clear();
+        rewriteDbFile();
     }
 
 
@@ -100,21 +99,21 @@ public class StoneMap implements Map<String, String> {
         this.dbFileName = String.format("stonemap.%d.db", dbFileId);
         this.dbFilePath = dbFilePath;
         this.dbFile = new File(dbFilePath, dbFileName);
-        this.logBuff = new LogBuff(16);
+        this.logWriteBuff = new LogWriteBuff(16);
     }
 
     public StoneMap(String dbFilePath, int dbFileId, int logBuffSize) {
         this.dbFileName = String.format("stonemap.%d.db", dbFileId);
         this.dbFilePath = dbFilePath;
         this.dbFile = new File(dbFilePath, dbFileName);
-        this.logBuff = new LogBuff(logBuffSize);
+        this.logWriteBuff = new LogWriteBuff(logBuffSize);
     }
 
     /**
      * 获取距上次checkpoint之后，修改的key的数量
      */
     public int getModifCount() {
-        return logBuff.getCount();
+        return logWriteBuff.getCount();
     }
 
 
@@ -125,7 +124,6 @@ public class StoneMap implements Map<String, String> {
         if (!dbFile.exists()) {
             try {
                 dbFile.createNewFile();
-                logFlushTime.set(System.currentTimeMillis());
             } catch (IOException e) {
                 throw new LogWriteException(e);
             }
@@ -138,7 +136,7 @@ public class StoneMap implements Map<String, String> {
                     Integer keyLen = Integer.valueOf(line.substring(0, 10));
                     String key = line.substring(10, 10 + keyLen);
                     String value = line.substring(keyLen + 10, line.length());
-                    logBuff.increaseCount();
+                    logWriteBuff.increaseCount();
                     if (KEY_DEL.equals(value)) {
                         bufferPool.remove(key);
                     } else {
@@ -146,22 +144,46 @@ public class StoneMap implements Map<String, String> {
                     }
                 }
             }
-            logFlushTime.set(System.currentTimeMillis());
         } catch (IOException e) {
             throw new LogWriteException(e);
         }
     }
 
     /**
-     * 数据文件重写
+     * 刷新日志缓冲
      */
-    public void dbFileRewrite() {
-        logBuff.checkpoint();
+    synchronized public void flushBuff() {
+        if (logWriteBuff.length() <= 0) return;
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(dbFile, true))) {
+            String line;
+            while (null != (line = logWriteBuff.pop())) {
+                writer.write(line);
+                writer.newLine();
+                writer.flush();
+            }
+        } catch (IOException e) {
+            throw new LogWriteException(e);
+        }
+    }
+
+    /**
+     * 新增日志
+     */
+    private void log(String key, String value) {
+        logWriteBuff.push(key, value);
+        if (logWriteBuff.isFulfil()) flushBuff();
+    }
+
+    /**
+     * 数据文件重写：扫描当前缓冲池，写入数据文件，缩减占用空间
+     */
+    public void rewriteDbFile() {
+        logWriteBuff.checkpoint();
         Map<String, String> bufferPoolSnap = new HashMap<>(bufferPool);
         File newDbFile = new File(dbFilePath, dbFileName + ".tem." + Thread.currentThread().getId());
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(newDbFile))) {
             for (Map.Entry<String, String> entry : bufferPoolSnap.entrySet()) {
-                writer.write(LogBuff.getLine(entry.getKey(), entry.getValue()));
+                writer.write(LogWriteBuff.getLine(entry.getKey(), entry.getValue()));
                 writer.newLine();
                 writer.flush();
             }
@@ -172,32 +194,16 @@ public class StoneMap implements Map<String, String> {
     }
 
 
-    private void log(String key, String value) {
-        logBuff.push(key, value);
-        if (logBuff.writeFulfil()) flushLogBuff();
-    }
-
-    synchronized public void flushLogBuff() {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(dbFile, true))) {
-            String line;
-            while (null != (line = logBuff.pop())) {
-                writer.write(line);
-                writer.newLine();
-                writer.flush();
-            }
-        } catch (IOException e) {
-            throw new LogWriteException(e);
-        }
-    }
-
-
+    /**
+     * 合并数据文件：新的日志文件替代旧的日志文件
+     */
     synchronized private void mergeDbFile(File newDbFile) {
-        flushLogBuff();
+        flushBuff();
         try (LineNumberReader reader = new LineNumberReader(new FileReader(dbFile));
              BufferedWriter writer = new BufferedWriter(new FileWriter(newDbFile, true))) {
             String line;
             while (null != (line = reader.readLine())) {
-                if (reader.getLineNumber() <= logBuff.getCheckpoint() || "".equals(line)) continue;
+                if (reader.getLineNumber() <= logWriteBuff.getCheckpoint() || "".equals(line)) continue;
                 writer.write(line);
                 writer.newLine();
                 writer.flush();
@@ -206,8 +212,7 @@ public class StoneMap implements Map<String, String> {
             throw new LogWriteException(e);
         }
         // change dbFile
-        dbFile.delete();
-        newDbFile.renameTo(dbFile);
+        if (dbFile.delete()) newDbFile.renameTo(dbFile);
     }
 
     @Override
@@ -217,8 +222,7 @@ public class StoneMap implements Map<String, String> {
                 ", dbFilePath='" + dbFilePath + '\'' +
                 ", dbFile=" + dbFile +
                 ", bufferPool=" + bufferPool +
-                ", logBuff=" + logBuff +
-                ", logFlushTime=" + logFlushTime +
+                ", logWriteBuff=" + logWriteBuff +
                 '}';
     }
 }

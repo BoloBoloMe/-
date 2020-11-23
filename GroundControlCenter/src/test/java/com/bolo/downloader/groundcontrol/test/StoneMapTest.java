@@ -12,11 +12,11 @@ public class StoneMapTest {
         map.load();
         for (int i = 0; i < 100; i++) map.put("key_" + i, "v_" + i);
         for (int i = 0; i < 100; i++) if (i % 2 == 0) map.remove("key_" + i);
-        map.flushLogBuff();
+        map.flushBuff();
 
-        map.dbFileRewrite();
+        map.rewriteDbFile();
         map.put("needle_1", "探测探测1");
         map.put("needle_2", "探测探测2");
-        map.flushLogBuff();
+        map.flushBuff();
     }
 }

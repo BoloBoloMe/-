@@ -2,7 +2,11 @@ package com.bolo.downloader.respool.db;
 
 import java.util.Arrays;
 
-public class LogBuff {
+/**
+ * 日志写缓冲
+ * 缓冲区遵循FIFO,当缓冲区写满，继续写入数据将会丢弃当前缓冲的所有数据
+ */
+public class LogWriteBuff {
     private int count = 0;
     private String[] buff;
     private int wIndex = 0;
@@ -10,7 +14,10 @@ public class LogBuff {
     private int INDEX_MAX;
     private int CHECKPOINT = 0;
 
-    LogBuff(int size) {
+    /**
+     * @param size 缓冲区大小
+     */
+    LogWriteBuff(int size) {
         if (size == 0) {
             this.buff = new String[2];
             return;
@@ -19,7 +26,10 @@ public class LogBuff {
         INDEX_MAX = buff.length - 1;
     }
 
-    boolean writeFulfil() {
+    /**
+     * 缓冲区已写满时返回true
+     */
+    boolean isFulfil() {
         return wIndex > INDEX_MAX;
     }
 
@@ -43,6 +53,15 @@ public class LogBuff {
         }
         buff[wIndex++] = ele;
         count++;
+    }
+
+    /**
+     * 返回缓冲区中还未读取的元素个数
+     *
+     * @return
+     */
+    int length() {
+        return wIndex - rindex;
     }
 
     synchronized String pop() {
@@ -73,7 +92,7 @@ public class LogBuff {
 
     @Override
     public String toString() {
-        return "LogBuff{" +
+        return "LogWriteBuff{" +
                 "buff=" + Arrays.toString(buff) +
                 '}';
     }
