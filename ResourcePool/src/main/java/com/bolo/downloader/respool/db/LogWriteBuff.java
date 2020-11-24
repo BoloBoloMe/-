@@ -1,99 +1,84 @@
 package com.bolo.downloader.respool.db;
 
-import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
  * 日志写缓冲
- * 缓冲区遵循FIFO,当缓冲区写满，继续写入数据将会丢弃当前缓冲的所有数据
+ * 缓冲区遵循FIFO,当缓冲区写满，继续写入数据将会阻塞
  */
 public class LogWriteBuff {
-    private int count = 0;
-    private String[] buff;
-    private int wIndex = 0;
-    private int rindex = 0;
+    private AtomicReferenceArray<String> buff;
+    private AtomicInteger wIndex = new AtomicInteger(-1);
+    private AtomicInteger rIndex = new AtomicInteger(-1);
     private int INDEX_MAX;
-    private int CHECKPOINT = 0;
 
     /**
      * @param size 缓冲区大小
      */
-    LogWriteBuff(int size) {
+    public LogWriteBuff(int size) {
         if (size == 0) {
-            this.buff = new String[2];
+            this.buff = new AtomicReferenceArray<>(2);
             return;
         }
-        this.buff = new String[size % 2 == 0 ? size : size + 1];
-        INDEX_MAX = buff.length - 1;
+        this.buff = new AtomicReferenceArray<>(size % 2 == 0 ? size : size + 1);
+        INDEX_MAX = buff.length() - 1;
     }
 
-    /**
-     * 缓冲区已写满时返回true
-     */
-    boolean isFulfil() {
-        return wIndex > INDEX_MAX;
-    }
-
-    void push(String key, String value) {
-        setValue(getLine(key, value));
-    }
-
-    static String getLine(String key, String value) {
-        StringBuilder ele = new StringBuilder(10 + key.length() + (null == value ? 0 : value.length()));
-        // length
-        ele.append(key.length());
-        while (ele.length() < 10) ele.insert(0, "0");
-        ele.append(key).append(value);
-        return ele.toString();
-    }
-
-    synchronized private void setValue(String ele) {
-        if (wIndex > INDEX_MAX) {
-            wIndex = 0;
-            rindex = 0;
-        }
-        buff[wIndex++] = ele;
-        count++;
-    }
-
-    /**
-     * 返回缓冲区中还未读取的元素个数
-     *
-     * @return
-     */
-    int length() {
-        return wIndex - rindex;
-    }
-
-    synchronized String pop() {
-        if (rindex < wIndex) {
-            return buff[rindex++];
+    public String pop() {
+        String line = null;
+        int rInd = rIndex.incrementAndGet();
+        if (rInd <= INDEX_MAX) {
+            while (null == (line = buff.getAndSet(rInd, null))) ;
         } else {
-            return null;
+            // try reset read index
+            if (rInd - INDEX_MAX > 1) respite();
+            rIndex.compareAndSet(rInd, -1);
+        }
+        return line;
+    }
+
+    public void push(String ele) {
+        if (null == ele) return;
+        while (true) {
+            int wInd = wIndex.incrementAndGet();
+            if (wInd <= INDEX_MAX) {
+                while (!buff.compareAndSet(wInd, null, ele)) ;
+                break;
+            } else {
+                // try reset write index
+                if (wInd - INDEX_MAX > 1) respite();
+                wIndex.compareAndSet(wInd, -1);
+            }
         }
     }
 
 
-    synchronized void checkpoint() {
-        CHECKPOINT = count;
-        count = 0;
+    private static final Long[] sleeps = new Long[127];
+
+    static {
+        Set<Long> sleepSet = new HashSet<>();
+        int max = 300;
+        int min = 100;
+        Random random = new Random();
+        while (sleepSet.size() < 127) {
+            long s = random.nextInt(max) % (max - min + 1) + min;
+            sleepSet.add(s);
+        }
+        sleepSet.toArray(sleeps);
     }
 
-    int getCheckpoint() {
-        return CHECKPOINT;
-    }
-
-    synchronized void increaseCount() {
-        ++count;
-    }
-
-    int getCount() {
-        return count;
-    }
-
-    @Override
-    public String toString() {
-        return "LogWriteBuff{" +
-                "buff=" + Arrays.toString(buff) +
-                '}';
+    /**
+     * 随机休眠一小会儿
+     */
+    private void respite() {
+        try {
+            Thread.sleep(sleeps[(int) (Thread.currentThread().getId() % 127)]);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }
