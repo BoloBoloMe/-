@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -22,9 +23,17 @@ public class StoneMap implements Map<String, String> {
      */
     private final ConcurrentHashMap<String, String> bufferPool = new ConcurrentHashMap<>();
     /**
-     * 数据文件写缓冲
+     * 写缓冲大小
      */
-    private final ArrayBlockingQueue<String> sequence;
+    private final int wrireBuffSize;
+    /**
+     * 当前线程的写缓冲索引
+     */
+    private final ThreadLocal<Integer> sequenceIndex = new ThreadLocal<>();
+    /**
+     * 写缓冲
+     */
+    private final ArrayBlockingQueue<String>[] sequences;
     /**
      * DELETE FLAG
      */
@@ -127,8 +136,10 @@ public class StoneMap implements Map<String, String> {
     public StoneMap(String dbFilePath, int dbFileId, int wrireBuffSize) {
         this.dbFileName = String.format("stonemap.%d.db", dbFileId);
         this.dbFilePath = dbFilePath;
+        this.wrireBuffSize = wrireBuffSize;
         this.dbFile = new File(dbFilePath, dbFileName);
-        this.sequence = new ArrayBlockingQueue<>(wrireBuffSize);
+        this.sequences = new ArrayBlockingQueue[3];
+        for (int i = 0; i < 3; i++) sequences[i] = new ArrayBlockingQueue<>(wrireBuffSize);
     }
 
 
@@ -168,19 +179,19 @@ public class StoneMap implements Map<String, String> {
      * 同步日志写缓冲到数据文件，并清空日志写缓冲
      */
     synchronized public void flushWriteBuff() {
-        if (sequence.isEmpty()) return;
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(dbFile, true))) {
-            String line;
-            while (null != (line = sequence.poll(1, TimeUnit.SECONDS))) {
-                writer.append(line);
-                writer.newLine();
-            }
-            writer.flush();
-        } catch (IOException e) {
-            throw new LogWriteException(e);
-        } catch (InterruptedException e) {
-            // 队列在1s中内没有值，中止方法
-        }
+//        if (sequence.isEmpty()) return;
+//        try (BufferedWriter writer = new BufferedWriter(new FileWriter(dbFile, true))) {
+//            String line;
+//            while (null != (line = sequence.poll(1, TimeUnit.SECONDS))) {
+//                writer.append(line);
+//                writer.newLine();
+//            }
+//            writer.flush();
+//        } catch (IOException e) {
+//            throw new LogWriteException(e);
+//        } catch (InterruptedException e) {
+//            // 队列在1s中内没有值，中止方法
+//        }
     }
 
 
@@ -190,7 +201,11 @@ public class StoneMap implements Map<String, String> {
     synchronized public void rewriteDbFile() {
         // create new db file
         modifCounter.lazySet(0);
-        sequence.add(KEY_CHECKPOINT);
+        try {
+            sequences[sequenceIndex()].put(KEY_CHECKPOINT);
+        } catch (InterruptedException e) {
+            throw new LogWriteException(e);
+        }
         Map<String, String> bufferPoolSnap = new HashMap<>(bufferPool);
         File newDbFile = new File(dbFilePath, dbFileName + ".tem." + Thread.currentThread().getId());
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(newDbFile))) {
@@ -229,9 +244,9 @@ public class StoneMap implements Map<String, String> {
      */
     private void log(String key, String value) {
         try {
-            sequence.put(getLine(key, value));
+            sequences[sequenceIndex()].put(getLine(key, value));
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            throw new LogWriteException(e);
         }
     }
 
@@ -243,6 +258,13 @@ public class StoneMap implements Map<String, String> {
         while (ele.length() < 10) ele.insert(0, "0");
         ele.append(key).append(value);
         return ele.toString();
+    }
+
+    private int sequenceIndex() {
+        Integer index;
+        if (null != (index = sequenceIndex.get())) return index;
+        sequenceIndex.set((index = (int) (Thread.currentThread().getId() % sequences.length)));
+        return index;
     }
 
     @Override

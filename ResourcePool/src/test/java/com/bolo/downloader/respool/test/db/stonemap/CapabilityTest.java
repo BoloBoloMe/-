@@ -11,14 +11,14 @@ import java.util.concurrent.*;
  * 测试持久化字典API
  */
 public class CapabilityTest {
-    private static int workThreadNum = 3;
+    private static int workThreadNum = 300;
     private static int dataCount = 10000;
     private static CyclicBarrier cyclicBarrier = new CyclicBarrier(workThreadNum + 1);
     private static ExecutorService workers = Executors.newCachedThreadPool();
     private static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     public static void main(String[] args) {
-        Map<String, String> map = new StoneMap("D:\\MyResource\\Desktop\\data\\", 2,1000);
+        Map<String, String> map = new StoneMap("D:\\MyResource\\Desktop\\data\\", 3,1000);
         ((StoneMap) map).loadDbFile();
         // 工作线程:使用 map
         for (int i = 0; i < workThreadNum; i++) {

@@ -10,7 +10,7 @@ public class BlockingQueueUser {
     private static int dataCountSum = workThreadNum * dataCount;
     private static CyclicBarrier cyclicBarrier = new CyclicBarrier(workThreadNum + 1);
     private static ExecutorService workers = Executors.newCachedThreadPool();
-    private static ArrayBlockingQueue<String> writeBuff = new ArrayBlockingQueue<>(dataCount / 10);
+    private static ArrayBlockingQueue<String> writeBuff = new ArrayBlockingQueue<>(400);
 
     public static void main(String[] args) throws BrokenBarrierException, InterruptedException {
         final AtomicInteger threadNum = new AtomicInteger(0);
@@ -37,20 +37,15 @@ public class BlockingQueueUser {
         long startTime = System.currentTimeMillis();
         cyclicBarrier.await();
         System.out.println("开始操作缓存");
-        ArrayList<String> result = new ArrayList<>(dataCountSum);
-        while (result.size() < dataCountSum) {
+        AtomicInteger count = new AtomicInteger(0);
+        while (count.get() < dataCountSum) {
             String line = writeBuff.poll();
-            if (null != line) result.add(line);
+            if (null != line) count.incrementAndGet();
         }
         cyclicBarrier.await();
         long endTime = System.currentTimeMillis();
         System.out.println("工作线程运行完毕，运行时间:" + (endTime - startTime) / 1000 + "秒，开始检查操作结果");
-        System.out.println(String.format("预计获取数据量：%d 个，实际获取数据量：%d 个，丢失数据：%d 个", dataCountSum, result.size(), dataCountSum - result.size()));
-        for (int i = 0; i < result.size(); i++) {
-            for (int j = i + 1; j < result.size(); j++) {
-                if (result.get(i).equals(result.get(j))) System.out.println("重复数据：" + result.get(j));
-            }
-        }
+        System.out.println(String.format("预计获取数据量：%d 个，实际获取数据量：%d 个，丢失数据：%d 个", dataCountSum, count.get(), dataCountSum - count.get()));
         System.out.println("结果检查完毕");
     }
 }
