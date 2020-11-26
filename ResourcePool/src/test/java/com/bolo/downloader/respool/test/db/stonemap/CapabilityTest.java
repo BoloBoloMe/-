@@ -6,6 +6,7 @@ import com.bolo.downloader.respool.db.StoneMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 测试持久化字典API
@@ -16,9 +17,12 @@ public class CapabilityTest {
     private static CyclicBarrier cyclicBarrier = new CyclicBarrier(workThreadNum + 1);
     private static ExecutorService workers = Executors.newCachedThreadPool();
     private static ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private static AtomicInteger rewrite = new AtomicInteger(0);
+    private static AtomicInteger flush = new AtomicInteger(0);
+
 
     public static void main(String[] args) {
-        Map<String, String> map = new StoneMap("D:\\MyResource\\Desktop\\data\\", 3,1000);
+        Map<String, String> map = new StoneMap("D:\\MyResource\\Desktop\\data\\", 3, 1000);
         ((StoneMap) map).loadDbFile();
         // 工作线程:使用 map
         for (int i = 0; i < workThreadNum; i++) {
@@ -35,19 +39,17 @@ public class CapabilityTest {
         }
         // StoneMap 专用同步线程：异步刷新数据文件
         scheduler.scheduleWithFixedDelay(() -> {
-            System.out.println("执行文件同步线程");
-            int rewrite = 0;
-            int flush = 0;
             StoneMap stoneMap = (StoneMap) map;
-            if (stoneMap.modify() > 100) {
-                stoneMap.rewriteDbFile();
-                rewrite++;
-                System.out.println("已执行 " + rewrite + " 次重写数据文件");
-            } else {
-                stoneMap.flushWriteBuff();
-                flush++;
-                System.out.println("已执行 " + flush + " 次刷新日志文件缓冲");
-            }
+//            if (stoneMap.modify() > 100) {
+//                stoneMap.rewriteDbFile();
+//                rewrite.incrementAndGet();
+//                System.out.println("已执行 " + rewrite.get() + " 次重写数据文件");
+//            } else {
+            stoneMap.flushWriteBuff();
+            flush.incrementAndGet();
+            System.out.println("已执行 " + flush.get() + " 次刷新日志文件缓冲");
+//            }
+            System.out.println("map 状态：" + map.toString());
         }, 1, 1, TimeUnit.SECONDS);
 
         // 主线程:记录测试数据

@@ -1,14 +1,8 @@
 package com.bolo.downloader.respool.db;
 
 import java.io.*;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -23,35 +17,24 @@ public class StoneMap implements Map<String, String> {
      */
     private final ConcurrentHashMap<String, String> bufferPool = new ConcurrentHashMap<>();
     /**
-     * 写缓冲大小
-     */
-    private final int wrireBuffSize;
-    /**
-     * 当前线程的写缓冲索引
-     */
-    private final ThreadLocal<Integer> sequenceIndex = new ThreadLocal<>();
-    /**
      * 写缓冲
      */
-    private final ArrayBlockingQueue<String>[] sequences;
+    private final CycleWriteBuff<String, String> writeBuff;
+
     /**
      * DELETE FLAG
      */
     private final static String KEY_DEL = "@KEY_DEL";
     /**
-     * CHECKPOINT FLAG
-     */
-    private final static String KEY_CHECKPOINT = "@CHECKPOINT";
-    /**
      * 修改操作计数器,统计key的修改和删除操作，不包括新增
      */
-    private final AtomicLong modifCounter = new AtomicLong(0);
+    private final AtomicLong modCounter = new AtomicLong(0);
 
     @Override
     public String put(String key, String value) {
         String oldVal = bufferPool.put(key, value);
         if (null != oldVal) {
-            modifCounter.incrementAndGet();
+            modCounter.incrementAndGet();
             if (!value.equals(oldVal)) log(key, value);
         } else {
             log(key, value);
@@ -64,7 +47,7 @@ public class StoneMap implements Map<String, String> {
     public String remove(Object key) {
         if (null != bufferPool.remove(key)) {
             log((String) key, KEY_DEL);
-            modifCounter.incrementAndGet();
+            modCounter.incrementAndGet();
         }
         return null;
     }
@@ -81,7 +64,7 @@ public class StoneMap implements Map<String, String> {
     public void clear() {
         int keyCount = bufferPool.size();
         bufferPool.clear();
-        modifCounter.addAndGet(keyCount);
+        modCounter.addAndGet(keyCount);
     }
 
 
@@ -129,19 +112,16 @@ public class StoneMap implements Map<String, String> {
      * 自上次数据文件重写以来，发生修改、删除的key数量
      */
     public long modify() {
-        return modifCounter.get();
+        return modCounter.get();
     }
 
 
     public StoneMap(String dbFilePath, int dbFileId, int wrireBuffSize) {
         this.dbFileName = String.format("stonemap.%d.db", dbFileId);
         this.dbFilePath = dbFilePath;
-        this.wrireBuffSize = wrireBuffSize;
+        writeBuff = new CycleWriteBuff<>(wrireBuffSize, 500, 1000);
         this.dbFile = new File(dbFilePath, dbFileName);
-        this.sequences = new ArrayBlockingQueue[3];
-        for (int i = 0; i < 3; i++) sequences[i] = new ArrayBlockingQueue<>(wrireBuffSize);
     }
-
 
     /**
      * 加载数据文件
@@ -151,23 +131,36 @@ public class StoneMap implements Map<String, String> {
             try {
                 dbFile.createNewFile();
             } catch (IOException e) {
-                throw new LogWriteException(e);
+                throw new LogReadException(e);
             }
             return;
         }
         try (LineNumberReader reader = new LineNumberReader(new FileReader(dbFile))) {
+            TreeMap<Integer, Node> sort = new TreeMap<>();
             String line;
-            while (null != (line = reader.readLine())) {
+            char[] depictArea = new char[4];
+            while (true) {
+                int len = reader.read(depictArea);
+                if (len <= 0) break;
+                else if (len != 4) throw new LogReadException("数据文件已损坏！");
+                line = reader.readLine();
+                if (null == line) break;
                 if (!"".equals(line)) {
-                    Integer keyLen = Integer.valueOf(line.substring(0, 10));
-                    String key = line.substring(10, 10 + keyLen);
-                    String value = line.substring(keyLen + 10, line.length());
-                    modifCounter.incrementAndGet();
-                    if (KEY_DEL.equals(value)) {
-                        bufferPool.remove(key);
+                    Node node = resolve(line, depictArea);
+                    if (node.serial == 0) {
+                        bufferPool.put(node.key, node.value);
                     } else {
-                        bufferPool.put(key, value);
+                        sort.put(node.serial, node);
                     }
+                    modCounter.incrementAndGet();
+                }
+            }
+            for (Integer key : sort.keySet()) {
+                Node node = sort.get(key);
+                if (KEY_DEL.equals(node.value)) {
+                    bufferPool.remove(node.key);
+                } else {
+                    bufferPool.put(node.key, node.value);
                 }
             }
         } catch (IOException e) {
@@ -179,19 +172,11 @@ public class StoneMap implements Map<String, String> {
      * 同步日志写缓冲到数据文件，并清空日志写缓冲
      */
     synchronized public void flushWriteBuff() {
-//        if (sequence.isEmpty()) return;
-//        try (BufferedWriter writer = new BufferedWriter(new FileWriter(dbFile, true))) {
-//            String line;
-//            while (null != (line = sequence.poll(1, TimeUnit.SECONDS))) {
-//                writer.append(line);
-//                writer.newLine();
-//            }
-//            writer.flush();
-//        } catch (IOException e) {
-//            throw new LogWriteException(e);
-//        } catch (InterruptedException e) {
-//            // 队列在1s中内没有值，中止方法
-//        }
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(dbFile, true))) {
+            writeBuff.write(writer);
+        } catch (IOException e) {
+            throw new LogWriteException(e);
+        }
     }
 
 
@@ -200,20 +185,14 @@ public class StoneMap implements Map<String, String> {
      */
     synchronized public void rewriteDbFile() {
         // create new db file
-        modifCounter.lazySet(0);
-        try {
-            sequences[sequenceIndex()].put(KEY_CHECKPOINT);
-        } catch (InterruptedException e) {
-            throw new LogWriteException(e);
-        }
+        modCounter.set(0);
+        writeBuff.checkpoint();
         Map<String, String> bufferPoolSnap = new HashMap<>(bufferPool);
         File newDbFile = new File(dbFilePath, dbFileName + ".tem." + Thread.currentThread().getId());
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(newDbFile))) {
             for (Map.Entry<String, String> entry : bufferPoolSnap.entrySet()) {
-                writer.write(getLine(entry.getKey(), entry.getValue()));
-                writer.newLine();
+                writeBuff.recoverRow(entry.getKey(), entry.getValue(), writer);
             }
-            writer.flush();
         } catch (IOException e) {
             throw new LogWriteException(e);
         }
@@ -221,14 +200,23 @@ public class StoneMap implements Map<String, String> {
         flushWriteBuff();
         try (BufferedReader reader = new BufferedReader(new FileReader(dbFile));
              BufferedWriter writer = new BufferedWriter(new FileWriter(newDbFile, true))) {
+            boolean checkpointLater = false;
+            char[] depictArea = new char[4];
             String line;
-            boolean newCont = false;
-            while (null != (line = reader.readLine())) {
-                if (newCont) {
+            while (true) {
+                int len = reader.read(depictArea);
+                if (len <= 0) break;
+                else if (len != 4) throw new LogReadException("数据文件已损坏！");
+                line = reader.readLine();
+                if (null == line) break;
+                Node node = resolve(line, depictArea);
+                if (checkpointLater) {
                     writer.write(line);
                     writer.newLine();
-                } else {
-                    if (KEY_CHECKPOINT.equals(line)) newCont = true;
+                } else if (node.serial == 1) {
+                    writer.write(line);
+                    writer.newLine();
+                    checkpointLater = true;
                 }
             }
             writer.flush();
@@ -243,35 +231,31 @@ public class StoneMap implements Map<String, String> {
      * 新增日志
      */
     private void log(String key, String value) {
-        try {
-            sequences[sequenceIndex()].put(getLine(key, value));
-        } catch (InterruptedException e) {
-            throw new LogWriteException(e);
-        }
+        writeBuff.put(key, value);
     }
 
-
-    private String getLine(String key, String value) {
-        StringBuilder ele = new StringBuilder(10 + key.length() + (null == value ? 0 : value.length()));
-        // length
-        ele.append(key.length());
-        while (ele.length() < 10) ele.insert(0, "0");
-        ele.append(key).append(value);
-        return ele.toString();
+    private Node resolve(String row, char[] depictArea) {
+        int serial = depictArea[0] + depictArea[1] * 65535;
+        int keyLen = depictArea[2] + depictArea[3] * 65535;
+        Node node = new Node();
+        node.serial = serial;
+        node.key = row.substring(0, keyLen);
+        node.value = row.substring(keyLen, row.length());
+        return node;
     }
 
-    private int sequenceIndex() {
-        Integer index;
-        if (null != (index = sequenceIndex.get())) return index;
-        sequenceIndex.set((index = (int) (Thread.currentThread().getId() % sequences.length)));
-        return index;
+    private class Node {
+        private int serial;
+        private String key;
+        private String value;
     }
 
     @Override
     public String toString() {
         return "StoneMap{" +
-                "bufferPool=" + bufferPool +
+                "size=" + bufferPool.size() +
                 "dbFile=" + dbFile +
+                "writeBuffUsageReport=" + writeBuff.usageReport(true) +
                 '}';
     }
 }

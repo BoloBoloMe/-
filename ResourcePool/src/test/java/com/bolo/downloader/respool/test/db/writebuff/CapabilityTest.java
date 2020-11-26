@@ -12,7 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 测试持久化字典API
+ * 测试写缓冲
  */
 public class CapabilityTest {
     private static int workThreadNum = 300;
@@ -35,7 +35,7 @@ public class CapabilityTest {
                     // 等待系统就绪后写入缓冲
                     System.out.println("线程" + Thread.currentThread().getName() + "测试数据准备完毕");
                     cyclicBarrier.await();
-                    for (String data : datas) writeBuff.put(data, data, 0);
+                    for (String data : datas) writeBuff.put(data, data);
                     cyclicBarrier.await();
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -68,7 +68,7 @@ public class CapabilityTest {
         cyclicBarrier.await();
         long endTime = System.currentTimeMillis();
         System.out.println("工作线程运行完毕，运行时间:" + (endTime - startTime) / 1000 + "秒");
-        System.out.println("缓冲链表节点使用率：" + writeBuff.nodeHitRate());
+        System.out.println("缓冲链表节点使用率：" + writeBuff.usageReport(false));
         System.out.println("程序执行完毕");
     }
 }
