@@ -119,7 +119,7 @@ public class CycleWriteBuff<K, V> {
     /**
      * 写入恢复行
      */
-    public void recoverRow(String key, String value, Writer writer) throws IOException {
+    void recoverRow(String key, String value, Writer writer) throws IOException {
         newRow(key, value, 0, writer);
     }
 

@@ -123,6 +123,13 @@ public class StoneMap implements Map<String, String> {
         this.dbFile = new File(dbFilePath, dbFileName);
     }
 
+    public StoneMap(String dbFilePath, int dbFileId, int wrireBuffSize, int putSpedMax, int writeLoopMax) {
+        this.dbFileName = String.format("stonemap.%d.db", dbFileId);
+        this.dbFilePath = dbFilePath;
+        writeBuff = new CycleWriteBuff<>(wrireBuffSize, putSpedMax, writeLoopMax);
+        this.dbFile = new File(dbFilePath, dbFileName);
+    }
+
     /**
      * 加载数据文件
      */

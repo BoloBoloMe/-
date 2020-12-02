@@ -1,14 +1,15 @@
 package com.bolo.downloader.station;
 
 
-import lombok.extern.slf4j.Slf4j;
+
+import com.bolo.downloader.respool.log.Logger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-@Slf4j
 public class Terminal {
+    private static Logger log = new Logger();
     private static final String IDIOMATIC = "java@localhost:$  {}";
 
     private static final String flag = "[download] 100% ";

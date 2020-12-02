@@ -1,9 +1,5 @@
 package com.bolo.downloader.station;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -15,17 +11,18 @@ import java.util.stream.Stream;
 /**
  * 下载器实现
  */
-@Slf4j
-@Service
 public class Downloader {
     final private TaskList taskList = new TaskList();
     final static private ExecutorService taskRunner = Executors.newFixedThreadPool(5);
 
-    @Value("${video-path}")
     private String videoPath;
 
-    @Value("${youtube-dl-path}")
     private String youtubeDLPath;
+
+    public Downloader(String videoPath, String youtubeDLPath) {
+        this.videoPath = videoPath;
+        this.youtubeDLPath = youtubeDLPath;
+    }
 
     /**
      * 新增任务
