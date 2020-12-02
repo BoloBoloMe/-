@@ -15,12 +15,13 @@ public class ConfFactory {
     static {
         conf.put("port", "9000");
         conf.put("videoPath", "");
-        conf.put("dbFilePath","data/");
+        conf.put("dbFilePath", "data/");
         conf.put("wrireBuffSize", "16");
         conf.put("putSpedMax", "1");
         conf.put("writeLoopMax", "1");
-        conf.put("youtubeDLPath", NOTNULL);
-        conf.put("dbFileId", NOTNULL);
+        conf.put("staticFilePath", "static/");
+        conf.put("youtubeDLPath", "/");
+        conf.put("dbFileId", "0");
 
         final File confFile = new File("conf/SpaceStation.conf");
         if (confFile.exists()) {
