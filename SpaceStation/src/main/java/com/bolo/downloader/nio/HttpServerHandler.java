@@ -1,17 +1,17 @@
 package com.bolo.downloader.nio;
 
 import com.bolo.downloader.factory.ReqQueueFactory;
-import com.bolo.downloader.utils.FileDownloadHelper;
-import com.bolo.downloader.utils.PageHelper;
 import com.bolo.downloader.utils.ResponseHelper;
-import com.bolo.downloader.utils.RestHelper;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.multipart.DefaultHttpDataFactory;
+import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
+import io.netty.handler.codec.http.multipart.InterfaceHttpData;
+import io.netty.handler.codec.http.multipart.MemoryAttribute;
 
 import java.io.*;
 import java.net.URLDecoder;
 import java.util.*;
-import java.util.concurrent.BlockingDeque;
 import java.util.regex.Pattern;
 
 /**
@@ -33,12 +33,30 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
             ResponseHelper.sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
             return;
         }
-
-        // send OK and tell client must by keep alive
-        ResponseHelper.sendOK(ctx, request);
-        // add req to queue
-        Map<String, List<String>> params = new QueryStringDecoder(request.uri()).parameters();
-        ReqQueueFactory.get().add(new ReqRecord(request.method(), uri, params, ctx, request));
+        if (HttpMethod.GET.equals(request.method())) {
+            Map<String, List<String>> params = new QueryStringDecoder(request.uri()).parameters();
+            ReqQueueFactory.get().add(new ReqRecord(request.method(), uri, params, ctx, request));
+        } else if (HttpMethod.POST.equals(request.method())) {
+            Map<String, List<String>> params = new HashMap<>();
+            HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(new DefaultHttpDataFactory(false), request);
+            List<InterfaceHttpData> parmList = decoder.getBodyHttpDatas();
+            for (InterfaceHttpData parm : parmList) {
+                if (parm.getHttpDataType() == InterfaceHttpData.HttpDataType.Attribute) {
+                    MemoryAttribute data = (MemoryAttribute) parm;
+                    List<String> values;
+                    if (null == (values = params.get(data.getName()))) {
+                        values = new ArrayList<>();
+                        values.add(data.getValue());
+                        params.put(data.getName(), values);
+                    } else {
+                        values.add(data.getValue());
+                    }
+                }
+            }
+            ReqQueueFactory.get().add(new ReqRecord(request.method(), uri, params, ctx, request));
+        } else {
+            ResponseHelper.sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED, request);
+        }
     }
 
     @Override
@@ -65,6 +83,12 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 INSECURE_URI.matcher(uri).matches()) {
             return null;
         }
-        return uri;
+        // cut param
+        int endIndex;
+        if ((endIndex = uri.indexOf('?')) >= 0) {
+            uri = uri.substring(0, endIndex);
+        }
+
+        return uri.equals("/") ? "/page/index.html" : uri;
     }
 }

@@ -23,27 +23,17 @@ public class PageHelper {
     /**
      * 根据访问路径返回页面内容
      */
-    public static boolean toPage(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
-        // Decide whether to close the connection or not.
-        boolean keepAlive = HttpUtil.isKeepAlive(request);
+    public static void toPage(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
         // Build the response object.
-
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
                 request.decoderResult().isSuccess() ? HttpResponseStatus.OK : HttpResponseStatus.BAD_REQUEST,
                 findPage(uri, params));
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, getContentType(uri));
-
-        if (keepAlive) {
-            // Add 'Content-Length' header only for a keep-alive connection.
-            response.headers().setInt(HttpHeaderNames.CONTENT_LENGTH, response.content().readableBytes());
-            // Add keep alive header as per:
-            // - https://www.w3.org/Protocols/HTTP/1.1/draft-ietf-http-v11-spec-01.html#Connection
-            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
-        }
-
+        response.headers()
+                .set(HttpHeaderNames.CONTENT_TYPE, getContentType(uri));
         // Write the response and flush.
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
-        return keepAlive;
+        // 访问页面的请求，响应完之后立即关闭连接
+        ctx.close();
     }
 
     private static ByteBuf findPage(String uri, Map<String, List<String>> params) {
@@ -56,7 +46,7 @@ public class PageHelper {
             page = new File(basic == null ? (basic = ConfFactory.get("staticFilePath")) : basic, uri);
         }
         if (page.exists()) {
-            try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(uri))) {
+            try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(page))) {
                 int len = (int) page.length();
                 byteBuf = Unpooled.buffer((int) page.length());
                 byteBuf.writeBytes(in, len);
@@ -69,7 +59,14 @@ public class PageHelper {
     }
 
     private static String getContentType(String uri) {
-        String flag = uri.substring(uri.lastIndexOf('.'), uri.length());
+        String flag;
+        int flagIndex;
+        if ((flagIndex = uri.lastIndexOf('.')) > 0) {
+            flag = uri.substring(flagIndex, uri.length());
+        } else {
+            return "text/html";
+        }
+
         if (flag.equals(".html")) {
             return "text/html";
         }
@@ -85,7 +82,7 @@ public class PageHelper {
         if (flag.equals(".woff2")) {
             return "application/font-woff2";
         }
-        return "text/html";
+        return "text/plain";
     }
 
 }

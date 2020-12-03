@@ -40,5 +40,6 @@ public class HttpServer {
                 .channel(NioServerSocketChannel.class)
                 .childHandler(new HttpServerInitializer(sslCtx));
         Channel ch = bootstrap.bind(port).sync().channel();
+        System.out.println("服务启动成功,地址：" + (SSL ? "https://" : "http://") + "127.0.0.1:" + port);
     }
 }

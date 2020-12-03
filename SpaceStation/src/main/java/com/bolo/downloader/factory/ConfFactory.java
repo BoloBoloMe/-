@@ -25,19 +25,17 @@ public class ConfFactory {
         conf.put("youtubeDLPath", "/");
         conf.put("dbFileId", "0");
 
-        if (Bootstrap.debug) {
-            final File confFile = new File("conf/SpaceStation.conf");
-            if (confFile.exists()) {
-                final Properties properties;
-                try (BufferedReader reader = new BufferedReader(new FileReader(confFile))) {
-                    properties = new Properties();
-                    properties.load(reader);
-                } catch (IOException e) {
-                    throw new Error("配置文件加载失败！", e);
-                }
-                for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-                    conf.put(entry.getKey().toString(), entry.getValue().toString());
-                }
+        final File confFile = new File("".equals(Bootstrap.CONF_FILE_PATH) ? "conf/SpaceStation.conf" : Bootstrap.CONF_FILE_PATH);
+        if (confFile.exists()) {
+            final Properties properties;
+            try (BufferedReader reader = new BufferedReader(new FileReader(confFile))) {
+                properties = new Properties();
+                properties.load(reader);
+            } catch (IOException e) {
+                throw new Error("配置文件加载失败！", e);
+            }
+            for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+                conf.put(entry.getKey().toString(), entry.getValue().toString());
             }
         }
 

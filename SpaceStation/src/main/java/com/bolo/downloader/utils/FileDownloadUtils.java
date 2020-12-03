@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * 文件下载助手
  */
-public class FileDownloadHelper extends ResponseHelper {
+public class FileDownloadUtils extends ResponseHelper {
     public static boolean download(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
         final boolean keepAlive = HttpUtil.isKeepAlive(request);
         // Convert file separators.
@@ -180,7 +180,7 @@ public class FileDownloadHelper extends ResponseHelper {
     private static void sendNotModified(ChannelHandlerContext ctx, FullHttpRequest request) {
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_MODIFIED, Unpooled.EMPTY_BUFFER);
         setDateHeader(response);
-        sendAndCleanupConnection(ctx, request, response);
+        sendAndCleanupConnection(ctx, request, response, false);
     }
 
     /**

@@ -19,6 +19,7 @@
     <properties>
         <netty.version>4.1.54.Final</netty.version>
         <project.version>0.4.0-SNAPSHOT</project.version>
+        <fastjson.version>1.2.75</fastjson.version>
     </properties>
 
     <dependencyManagement>
@@ -32,6 +33,12 @@
                 <groupId>io.netty</groupId>
                 <artifactId>netty-all</artifactId>
                 <version>${netty.version}</version>
+            </dependency>
+            <!-- https://mvnrepository.com/artifact/com.alibaba/fastjson -->
+            <dependency>
+                <groupId>com.alibaba</groupId>
+                <artifactId>fastjson</artifactId>
+                <version>${fastjson.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
