@@ -20,7 +20,8 @@ import java.util.*;
  * 文件下载助手
  */
 public class FileDownloadHelper extends ResponseHelper {
-    public static void download(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
+    public static boolean download(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
+        final boolean keepAlive = HttpUtil.isKeepAlive(request);
         // Convert file separators.
         uri = uri.replace('/', File.separatorChar);
         // Convert to absolute path.
@@ -28,11 +29,11 @@ public class FileDownloadHelper extends ResponseHelper {
         File file = new File(path);
         if (file.isHidden() || !file.exists()) {
             sendError(ctx, HttpResponseStatus.NOT_FOUND, request);
-            return;
+            return keepAlive;
         }
         if (!file.isFile()) {
             sendError(ctx, HttpResponseStatus.FORBIDDEN, request);
-            return;
+            return keepAlive;
         }
         // Cache Validation
         String ifModifiedSince = request.headers().get(HttpHeaderNames.IF_MODIFIED_SINCE);
@@ -43,7 +44,7 @@ public class FileDownloadHelper extends ResponseHelper {
                 ifModifiedSinceDate = dateFormatter.parse(ifModifiedSince);
             } catch (ParseException e) {
                 sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
-                return;
+                return keepAlive;
             }
             // Only compare up to the second because the datetime format we send to the client
             // does not have milliseconds
@@ -51,7 +52,7 @@ public class FileDownloadHelper extends ResponseHelper {
             long fileLastModifiedSeconds = file.lastModified() / 1000;
             if (ifModifiedSinceDateSeconds == fileLastModifiedSeconds) {
                 sendNotModified(ctx, request);
-                return;
+                return keepAlive;
             }
         }
         // 需要跳过的字节数
@@ -62,7 +63,7 @@ public class FileDownloadHelper extends ResponseHelper {
                 skipLen = Integer.valueOf(lenPar.get(0));
             } catch (Exception e) {
                 sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
-                return;
+                return keepAlive;
             }
         }
         long fileLength;
@@ -72,21 +73,20 @@ public class FileDownloadHelper extends ResponseHelper {
             fileLength = raf.length();
         } catch (FileNotFoundException ignore) {
             sendError(ctx, HttpResponseStatus.NOT_FOUND, request);
-            return;
+            return keepAlive;
         } catch (IOException e) {
             sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
-            return;
+            return keepAlive;
         }
         if (skipLen < 0 || skipLen > fileLength) {
             sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
-            return;
+            return keepAlive;
         }
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
         HttpUtil.setContentLength(response, fileLength);
         setContentTypeHeader(response, file);
         setDateAndCacheHeaders(response, file, request);
 
-        final boolean keepAlive = HttpUtil.isKeepAlive(request);
         if (!keepAlive) {
             response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
         } else if (request.protocolVersion().equals(HttpVersion.HTTP_1_0)) {
@@ -109,7 +109,7 @@ public class FileDownloadHelper extends ResponseHelper {
                         ctx.newProgressivePromise());
             } catch (IOException e) {
                 sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, request);
-                return;
+                return keepAlive;
             }
             // HttpChunkedInput will write the end marker (LastHttpContent) for us.
             lastContentFuture = sendFileFuture;
@@ -136,6 +136,8 @@ public class FileDownloadHelper extends ResponseHelper {
             // Close the connection when the whole content is written out.
             lastContentFuture.addListener(ChannelFutureListener.CLOSE);
         }
+
+        return keepAlive;
     }
 
     /**

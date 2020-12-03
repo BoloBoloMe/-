@@ -10,7 +10,7 @@ import java.util.Map;
  * restful 操作助手
  */
 public class RestHelper {
-    public static void handle(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
-
+    public static boolean handle(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
+        return true;
     }
 }

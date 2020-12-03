@@ -23,7 +23,7 @@ public class PageHelper {
     /**
      * 根据访问路径返回页面内容
      */
-    public static void toPage(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
+    public static boolean toPage(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
         // Decide whether to close the connection or not.
         boolean keepAlive = HttpUtil.isKeepAlive(request);
         // Build the response object.
@@ -43,6 +43,7 @@ public class PageHelper {
 
         // Write the response and flush.
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+        return keepAlive;
     }
 
     private static ByteBuf findPage(String uri, Map<String, List<String>> params) {

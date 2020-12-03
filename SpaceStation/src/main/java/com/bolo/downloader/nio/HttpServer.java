@@ -1,4 +1,4 @@
-package com.bolo.downloader.net;
+package com.bolo.downloader.nio;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;

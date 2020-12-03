@@ -1,5 +1,6 @@
-package com.bolo.downloader.net;
+package com.bolo.downloader.nio;
 
+import com.bolo.downloader.factory.ReqQueueFactory;
 import com.bolo.downloader.utils.FileDownloadHelper;
 import com.bolo.downloader.utils.PageHelper;
 import com.bolo.downloader.utils.ResponseHelper;
@@ -10,6 +11,7 @@ import io.netty.handler.codec.http.*;
 import java.io.*;
 import java.net.URLDecoder;
 import java.util.*;
+import java.util.concurrent.BlockingDeque;
 import java.util.regex.Pattern;
 
 /**
@@ -31,21 +33,12 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
             ResponseHelper.sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
             return;
         }
+
+        // send OK and tell client must by keep alive
+        ResponseHelper.sendOK(ctx, request);
+        // add req to queue
         Map<String, List<String>> params = new QueryStringDecoder(request.uri()).parameters();
-        if (HttpMethod.GET.equals(request.method())) {
-            // access page apply GET method
-            PageHelper.toPage(uri, params, ctx, request);
-        } else if (HttpMethod.POST.equals(request.method())) {
-            // restful & download file apply POST method
-            if (uri.endsWith("/df")) {
-                FileDownloadHelper.download(uri, params, ctx, request);
-            } else {
-                RestHelper.handle(uri, params, ctx, request);
-            }
-        } else {
-            ResponseHelper.sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED, request);
-            return;
-        }
+        ReqQueueFactory.get().add(new ReqRecord( uri, params, ctx, request));
     }
 
     @Override
