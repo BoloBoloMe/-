@@ -47,13 +47,13 @@ public class LoggerFactory {
             if (record.getLevel() == Level.WARNING) {
                 Throwable exception = record.getThrown();
                 if (exception == null) {
-                    return String.format("%s [ERROR] [thread-id:%d] %s [line-num:%d]: %s", dateFormat.format(new Date(record.getMillis())), record.getThreadID(), record.getSourceClassName(), record.getSequenceNumber(), record.getMessage());
+                    return String.format("%s [ERROR] [thread-id:%d] %s [line-num:%d]: %s %s", dateFormat.format(new Date(record.getMillis())), record.getThreadID(), record.getSourceClassName(), record.getSequenceNumber(), record.getMessage(), lineSeparator);
                 } else {
                     return String.format("%s [ERROR] [thread-id:%d] %s [line-num:%d]: %s %s exception message:%s,%s",
                             dateFormat.format(new Date(record.getMillis())), record.getThreadID(), record.getSourceClassName(), record.getSequenceNumber(), record.getMessage(), lineSeparator, exception.getMessage(), getStackTrace(exception));
                 }
             }
-            return String.format("%s [INFO] [thread-id:%d] %s [line-num:%d]: %s", dateFormat.format(new Date(record.getMillis())), record.getThreadID(), record.getSourceClassName(), record.getSequenceNumber(), record.getMessage());
+            return String.format("%s [INFO] [thread-id:%d] %s [line-num:%d]: %s %s", dateFormat.format(new Date(record.getMillis())), record.getThreadID(), record.getSourceClassName(), record.getSequenceNumber(), record.getMessage(), lineSeparator);
         }
 
         private String getStackTrace(Throwable exception) {
