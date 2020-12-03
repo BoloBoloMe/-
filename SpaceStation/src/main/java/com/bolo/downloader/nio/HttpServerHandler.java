@@ -38,7 +38,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         ResponseHelper.sendOK(ctx, request);
         // add req to queue
         Map<String, List<String>> params = new QueryStringDecoder(request.uri()).parameters();
-        ReqQueueFactory.get().add(new ReqRecord( uri, params, ctx, request));
+        ReqQueueFactory.get().add(new ReqRecord(request.method(), uri, params, ctx, request));
     }
 
     @Override
