@@ -51,7 +51,7 @@ public class PageHelper {
         Page page = cache.get(uri);
         // find disk
         if (null == page) {
-            File target = new File(basic == null ? (basic = ConfFactory.get("staticFilePath")) : basic, uri);
+            File target = new File(basic == null ? (basic = ConfFactory.get("staticFilePath")) : basic, uUri);
             if (target.exists()) {
                 try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(target))) {
                     int len = (int) target.length();

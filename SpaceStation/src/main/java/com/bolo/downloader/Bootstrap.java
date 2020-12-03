@@ -8,9 +8,7 @@ import com.bolo.downloader.nio.HttpServer;
 import com.bolo.downloader.nio.ReqRecord;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
-import com.bolo.downloader.utils.PageHelper;
 import com.bolo.downloader.utils.RestHelper;
-import io.netty.handler.codec.http.HttpMethod;
 
 import javax.net.ssl.SSLException;
 import java.security.cert.CertificateException;
@@ -19,7 +17,8 @@ import java.util.concurrent.TimeUnit;
 
 
 public class Bootstrap {
-    public static final String CONF_FILE_PATH = "D:\\MyResource\\Desktop\\conf\\SpaceStation.conf";
+//        public static final String CONF_FILE_PATH = "D:\\MyResource\\Desktop\\conf\\SpaceStation.conf";
+    public static final String CONF_FILE_PATH = "";
     private static int PORT;
     private static final BlockingDeque<ReqRecord> deque = ReqQueueFactory.get();
     private static final ReqRecord LINKED_HEAD = new ReqRecord(null, null, null, null, null);
