@@ -52,7 +52,7 @@ public class Bootstrap {
             while (true) {
                 ReqRecord reqRecord;
                 try {
-                    reqRecord = deque.pollLast(2, TimeUnit.SECONDS);
+                    reqRecord = deque.pollLast(1, TimeUnit.SECONDS);
                     if (reqRecord == null) break;
                 } catch (InterruptedException e) {
                     break;
@@ -67,8 +67,8 @@ public class Bootstrap {
 
             // background loop
             try {
-                StoneMapFactory.getObject().flushWriteBuff();
                 LoggerFactory.roll();
+                StoneMapFactory.getObject().flushWriteBuff();
             } catch (Exception e) {
                 log.error("background loop throws exception!", e);
             }
@@ -77,13 +77,7 @@ public class Bootstrap {
     }
 
     private static void handelReqRecord(ReqRecord reqRecord) {
-        boolean deon = true;
-        if (HttpMethod.GET.equals(reqRecord.getMethod())) {
-            PageHelper.toPage(reqRecord.getUri(), reqRecord.getParams(), reqRecord.getCtx(), reqRecord.getRequest());
-        } else if (HttpMethod.POST.equals(reqRecord.getMethod())) {
-            deon = RestHelper.handle(reqRecord.getUri(), reqRecord.getParams(), reqRecord.getCtx(), reqRecord.getRequest());
-        }
-        reqRecord.setDone(deon);
+        reqRecord.setDone(RestHelper.handle(reqRecord.getUri(), reqRecord.getParams(), reqRecord.getCtx(), reqRecord.getRequest()));
     }
 
     private static void closeChannel(ReqRecord reqRecord) {

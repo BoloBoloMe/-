@@ -10,6 +10,7 @@ public class LoggerFactory {
     private static String logPath;
     private static String logFileName;
     private static String lastChangeLogFileDate;
+    private static long lastRollTime = 0;
 
     private static final String lineSeparator = System.lineSeparator();
 
@@ -85,6 +86,11 @@ public class LoggerFactory {
      * 创建新日期下的日志对象
      */
     public static void roll() {
+        if (System.currentTimeMillis() - lastRollTime < 120000) {
+            return;
+        } else {
+            lastRollTime = System.currentTimeMillis();
+        }
         String currDate = new SimpleDateFormat("YYYY-MM-dd").format(new Date());
         if (currDate.equals(lastChangeLogFileDate)) {
             return;
