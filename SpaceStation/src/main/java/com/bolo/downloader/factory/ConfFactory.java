@@ -18,11 +18,11 @@ public class ConfFactory {
         conf.put("port", "9000");
         conf.put("videoPath", "");
         conf.put("dbFilePath", "data/");
-        conf.put("wrireBuffSize", "16");
+        conf.put("wrireBuffSize", "8");
         conf.put("putSpedMax", "1");
         conf.put("writeLoopMax", "1");
         conf.put("staticFilePath", "static/");
-        conf.put("youtubeDLPath", "/");
+        conf.put("youtubeDLPath", "");
         conf.put("dbFileId", "0");
         conf.put("logPath", "log/");
         conf.put("logFileName", "run.log");
