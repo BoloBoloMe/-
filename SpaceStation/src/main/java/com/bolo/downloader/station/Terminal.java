@@ -1,16 +1,16 @@
 package com.bolo.downloader.station;
 
 
-
-import com.bolo.downloader.respool.log.Logger;
+import com.bolo.downloader.respool.log.LoggerFactory;
+import com.bolo.downloader.respool.log.MyLogger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
 public class Terminal {
-    private static Logger log = new Logger();
-    private static final String IDIOMATIC = "java@localhost:$  {}";
+    private static MyLogger log = LoggerFactory.getLogger();
+    private static final String IDIOMATIC = "java@localhost:$  %s";
 
     private static final String flag = "[download] 100% ";
 
@@ -47,14 +47,14 @@ public class Terminal {
                 try {
                     commandLineReader.close();
                 } catch (IOException e) {
-                    log.error("命令行的输入流资源释放发生异常，异常信息：{}" + e.getMessage());
+                    log.error("命令行的输入流资源释放发生异常，异常信息：%s" + e.getMessage());
                 }
             }
             if (null != errorReader) {
                 try {
                     errorReader.close();
                 } catch (IOException e) {
-                    log.error("命令行的异常输入流资源释放发生异常，异常信息：{}" + e.getMessage());
+                    log.error("命令行的异常输入流资源释放发生异常，异常信息：%s" + e.getMessage());
                 }
             }
             if (null != process && process.isAlive()) {

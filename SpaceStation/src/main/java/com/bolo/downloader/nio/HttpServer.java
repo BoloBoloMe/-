@@ -1,5 +1,7 @@
 package com.bolo.downloader.nio;
 
+import com.bolo.downloader.respool.log.LoggerFactory;
+import com.bolo.downloader.respool.log.MyLogger;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
@@ -15,6 +17,7 @@ import java.security.cert.CertificateException;
 public class HttpServer {
     private final boolean SSL = System.getProperty("ssl") != null;
     private final int port;
+    private MyLogger log = LoggerFactory.getLogger();
 
     public HttpServer(int port) {
         this.port = port;
@@ -40,6 +43,6 @@ public class HttpServer {
                 .channel(NioServerSocketChannel.class)
                 .childHandler(new HttpServerInitializer(sslCtx));
         Channel ch = bootstrap.bind(port).sync().channel();
-        System.out.println("服务启动成功,地址：" + (SSL ? "https://" : "http://") + "127.0.0.1:" + port);
+        log.info("服务启动成功,地址：" + (SSL ? "https://" : "http://") + "127.0.0.1:" + port);
     }
 }

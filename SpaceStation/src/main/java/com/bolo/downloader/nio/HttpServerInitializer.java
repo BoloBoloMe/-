@@ -30,6 +30,5 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
         pipeline.addLast(new HttpObjectAggregator(65536));
         pipeline.addLast(new ChunkedWriteHandler());
         pipeline.addLast(new HttpServerHandler());
-//        pipeline.addLast(new StringDecoder(Charset.forName("UTF-8")));
     }
 }

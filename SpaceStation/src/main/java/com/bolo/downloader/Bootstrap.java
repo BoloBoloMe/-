@@ -6,7 +6,8 @@ import com.bolo.downloader.factory.ReqQueueFactory;
 import com.bolo.downloader.factory.StoneMapFactory;
 import com.bolo.downloader.nio.HttpServer;
 import com.bolo.downloader.nio.ReqRecord;
-import com.bolo.downloader.respool.db.StoneMap;
+import com.bolo.downloader.respool.log.LoggerFactory;
+import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.utils.PageHelper;
 import com.bolo.downloader.utils.RestHelper;
 import io.netty.handler.codec.http.HttpMethod;
@@ -23,15 +24,18 @@ public class Bootstrap {
     private static final BlockingDeque<ReqRecord> deque = ReqQueueFactory.get();
     private static final ReqRecord LINKED_HEAD = new ReqRecord(null, null, null, null, null);
     private static ReqRecord LINKED_CURR = LINKED_HEAD;
+    private static MyLogger log;
 
     static {
         LINKED_CURR.putLinked(LINKED_HEAD, LINKED_HEAD);
+        LoggerFactory.setLogPath(ConfFactory.get("logPath"));
+        LoggerFactory.setLogFileName(ConfFactory.get("logFileName"));
+        log = LoggerFactory.getLogger();
     }
 
     public static void main(String[] args) throws CertificateException, InterruptedException, SSLException {
         PORT = Integer.valueOf(ConfFactory.get("port"));
         new HttpServer(PORT).start();
-
         while (true) {
             // linked loop
             while (LINKED_CURR != LINKED_HEAD) {
@@ -48,7 +52,7 @@ public class Bootstrap {
             while (true) {
                 ReqRecord reqRecord;
                 try {
-                    reqRecord = deque.pollLast(1, TimeUnit.SECONDS);
+                    reqRecord = deque.pollLast(2, TimeUnit.SECONDS);
                     if (reqRecord == null) break;
                 } catch (InterruptedException e) {
                     break;
@@ -62,12 +66,13 @@ public class Bootstrap {
             }
 
             // background loop
-            StoneMap stoneMap = StoneMapFactory.getObject();
             try {
-                stoneMap.flushWriteBuff();
+                StoneMapFactory.getObject().flushWriteBuff();
+                LoggerFactory.roll();
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("background loop throws exception!", e);
             }
+
         }
     }
 
@@ -87,7 +92,7 @@ public class Bootstrap {
                 reqRecord.getCtx().close();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("channel close throws exception!", e);
         }
     }
 }

@@ -24,6 +24,8 @@ public class ConfFactory {
         conf.put("staticFilePath", "static/");
         conf.put("youtubeDLPath", "/");
         conf.put("dbFileId", "0");
+        conf.put("logPath", "log/");
+        conf.put("logFileName", "run.log");
 
         final File confFile = new File("".equals(Bootstrap.CONF_FILE_PATH) ? "conf/SpaceStation.conf" : Bootstrap.CONF_FILE_PATH);
         if (confFile.exists()) {
