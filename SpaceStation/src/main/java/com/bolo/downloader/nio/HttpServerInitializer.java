@@ -27,7 +27,7 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
             pipeline.addLast(sslCtx.newHandler(ch.alloc()));
         }
         pipeline.addLast(new StringEncoder(Charset.forName("UTF-8")));
-        pipeline.addLast(new IdleStateHandler(60, 30, 0));
+        pipeline.addLast(new IdleStateHandler(60, 60, 0));
         pipeline.addLast(new HttpServerCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
         pipeline.addLast(new ChunkedWriteHandler());
