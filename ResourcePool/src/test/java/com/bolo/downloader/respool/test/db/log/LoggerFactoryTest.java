@@ -8,11 +8,13 @@ public class LoggerFactoryTest {
         LoggerFactory.setLogPath("D:\\MyResource\\Desktop\\log\\");
         LoggerFactory.setLogFileName("test.log");
         MyLogger log = LoggerFactory.getLogger();
-        log.info("你好，%s！", "小明");
+        log.info("info 参数：%s ，%s", "小明", "1");
+        log.info("info 无参数");
         try {
             throw new RuntimeException("2333333333333");
         } catch (Exception e) {
-            log.error("捕获异常！", e);
+            log.error("error 传递异常：", e);
+            log.error("error 无参数");
         }
     }
 }

@@ -12,8 +12,6 @@ public class LoggerFactory {
     private static String lastChangeLogFileDate;
     private static long lastRollTime = 0;
 
-    private static final String lineSeparator = System.lineSeparator();
-
     private static MyLogger myLogger = null;
 
     public static MyLogger getLogger() {
@@ -45,19 +43,20 @@ public class LoggerFactory {
         private final DateFormat dateFormat = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss:SSS");
 
         public String format(LogRecord record) {
+            String lineSeparator = System.lineSeparator();
             if (record.getLevel() == Level.WARNING) {
                 Throwable exception = record.getThrown();
                 if (exception == null) {
-                    return String.format("%s [ERROR] [thread-id:%d] %s [line-num:%d]: %s %s", dateFormat.format(new Date(record.getMillis())), record.getThreadID(), record.getSourceClassName(), record.getSequenceNumber(), record.getMessage(), lineSeparator);
+                    return String.format("%s [ERROR] [thread-id:%d]: %s %s", dateFormat.format(new Date(record.getMillis())), record.getThreadID(),  record.getMessage(), lineSeparator);
                 } else {
-                    return String.format("%s [ERROR] [thread-id:%d] %s [line-num:%d]: %s %s exception message:%s,%s",
-                            dateFormat.format(new Date(record.getMillis())), record.getThreadID(), record.getSourceClassName(), record.getSequenceNumber(), record.getMessage(), lineSeparator, exception.getMessage(), getStackTrace(exception));
+                    return String.format("%s [ERROR] [thread-id:%d]: %s %s exception message:%s,%s",
+                            dateFormat.format(new Date(record.getMillis())), record.getThreadID(), record.getMessage(), lineSeparator, exception.getMessage(), getStackTrace(exception, lineSeparator));
                 }
             }
-            return String.format("%s [INFO] [thread-id:%d] %s [line-num:%d]: %s %s", dateFormat.format(new Date(record.getMillis())), record.getThreadID(), record.getSourceClassName(), record.getSequenceNumber(), record.getMessage(), lineSeparator);
+            return String.format("%s [INFO] [thread-id:%d]: %s %s", dateFormat.format(new Date(record.getMillis())), record.getThreadID(),  record.getMessage(), lineSeparator);
         }
 
-        private String getStackTrace(Throwable exception) {
+        private String getStackTrace(Throwable exception, String lineSeparator) {
             StringBuilder buff = new StringBuilder();
             while (true) {
                 StackTraceElement[] elements = exception.getStackTrace();

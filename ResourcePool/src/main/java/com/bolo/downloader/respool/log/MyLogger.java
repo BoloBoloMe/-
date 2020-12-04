@@ -34,11 +34,6 @@ public class MyLogger {
         snapshot.log(Level.WARNING, msg, throwable);
     }
 
-    public void error(String msg, String... objs) {
-        Logger snapshot = logger.get();
-        snapshot.log(Level.WARNING, msg, objs);
-    }
-
     public void setLogger(Logger logger) {
         this.logger.lazySet(logger);
     }

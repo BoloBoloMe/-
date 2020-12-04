@@ -37,7 +37,7 @@ public class Terminal {
                 }
             }
             while ((export = errorReader.readLine()) != null) {
-                log.error(IDIOMATIC, export);
+                log.info(IDIOMATIC, export);
             }
             log.info("命令行执行完毕.");
         } catch (IOException e) {
@@ -47,14 +47,14 @@ public class Terminal {
                 try {
                     commandLineReader.close();
                 } catch (IOException e) {
-                    log.error("命令行的输入流资源释放发生异常，异常信息：%s" + e.getMessage());
+                    log.error("命令行的输入流资源释放发生异常，异常信息：" + e.getMessage());
                 }
             }
             if (null != errorReader) {
                 try {
                     errorReader.close();
                 } catch (IOException e) {
-                    log.error("命令行的异常输入流资源释放发生异常，异常信息：%s" + e.getMessage());
+                    log.error("命令行的异常输入流资源释放发生异常，异常信息：" + e.getMessage());
                 }
             }
             if (null != process && process.isAlive()) {
