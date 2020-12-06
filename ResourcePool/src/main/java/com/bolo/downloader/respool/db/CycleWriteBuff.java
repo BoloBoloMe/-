@@ -106,7 +106,7 @@ public class CycleWriteBuff<K, V> {
         writer.flush();
     }
 
-    private void newRow(String key, String value, int serial, Writer writer) throws IOException {
+    static void newRow(String key, String value, int serial, Writer writer) throws IOException {
         int keyLen = key.length();
         // serial
         writer.append((char) (serial % 65535)).append((char) (serial / 65535))

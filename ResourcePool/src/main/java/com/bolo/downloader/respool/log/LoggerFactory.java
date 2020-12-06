@@ -12,22 +12,13 @@ public class LoggerFactory {
     private static String lastChangeLogFileDate;
     private static long lastRollTime = 0;
 
-    private static MyLogger myLogger = null;
-
-    public static MyLogger getLogger() {
-        return null != myLogger ? myLogger : createSingleton();
-    }
-
-    private static synchronized MyLogger createSingleton() {
-        if (myLogger == null) {
-            return myLogger = new MyLogger(newLogger());
-        }
-        return myLogger;
+    public static MyLogger getLogger(Class clazz) {
+        return new MyLogger(clazz);
     }
 
     private static Logger newLogger() {
         try {
-            lastChangeLogFileDate = new SimpleDateFormat("YYYY-MM-dd").format(new Date());
+            lastChangeLogFileDate = new SimpleDateFormat("YYYY-MM-dd_HHmmss").format(new Date());
             logFileName = lastChangeLogFileDate + '_' + logFileName;
             Logger log = Logger.getLogger(logFileName);
             FileHandler handler = new FileHandler(logPath + logFileName);
@@ -47,13 +38,13 @@ public class LoggerFactory {
             if (record.getLevel() == Level.WARNING) {
                 Throwable exception = record.getThrown();
                 if (exception == null) {
-                    return String.format("%s [ERROR] [thread-id:%d]: %s %s", dateFormat.format(new Date(record.getMillis())), record.getThreadID(),  record.getMessage(), lineSeparator);
+                    return String.format("%s [ERROR] [thread-id:%d]: %s %s", dateFormat.format(new Date(record.getMillis())), record.getThreadID(), record.getMessage(), lineSeparator);
                 } else {
                     return String.format("%s [ERROR] [thread-id:%d]: %s %s exception message:%s,%s",
                             dateFormat.format(new Date(record.getMillis())), record.getThreadID(), record.getMessage(), lineSeparator, exception.getMessage(), getStackTrace(exception, lineSeparator));
                 }
             }
-            return String.format("%s [INFO] [thread-id:%d]: %s %s", dateFormat.format(new Date(record.getMillis())), record.getThreadID(),  record.getMessage(), lineSeparator);
+            return String.format("%s [INFO] [thread-id:%d]: %s %s", dateFormat.format(new Date(record.getMillis())), record.getThreadID(), record.getMessage(), lineSeparator);
         }
 
         private String getStackTrace(Throwable exception, String lineSeparator) {
@@ -95,6 +86,6 @@ public class LoggerFactory {
             return;
         }
         lastChangeLogFileDate = currDate;
-        myLogger.setLogger(newLogger());
+        SuperLogger.setLogger(newLogger());
     }
 }

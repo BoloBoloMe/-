@@ -1,40 +1,35 @@
 package com.bolo.downloader.respool.log;
 
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.logging.*;
 
-public class MyLogger {
+public class MyLogger extends SuperLogger {
+    final private Class clazz;
 
-    final private AtomicReference<Logger> logger = new AtomicReference<>();
-
-    MyLogger(Logger logger) {
-        this.logger.set(logger);
+    public MyLogger(Class clazz) {
+        this.clazz = clazz;
     }
 
     public void info(String msg) {
-        Logger snapshot = logger.get();
-        snapshot.info(msg);
+        Logger snapshot = getLogger().get();
+        snapshot.log(Level.INFO, String.format("%s : %s", clazz.getName(), msg), clazz);
     }
 
     public void info(String msg, String... objs) {
-        Logger snapshot = logger.get();
+        Logger snapshot = getLogger().get();
         String convertMsg = String.format(msg, objs);
-        snapshot.info(convertMsg);
+        snapshot.log(Level.INFO, String.format("%s : %s", clazz.getName(), convertMsg), clazz);
+
     }
 
 
     public void error(String msg) {
-        Logger snapshot = logger.get();
-        snapshot.warning(msg);
+        Logger snapshot = getLogger().get();
+        snapshot.log(Level.WARNING, String.format("%s : %s", clazz.getName(), msg), clazz);
     }
 
     public void error(String msg, Throwable throwable) {
-        Logger snapshot = logger.get();
-        snapshot.log(Level.WARNING, msg, throwable);
+        Logger snapshot = getLogger().get();
+        snapshot.log(Level.WARNING, String.format("%s : %s", clazz.getName(), msg), throwable);
     }
 
-    public void setLogger(Logger logger) {
-        this.logger.lazySet(logger);
-    }
 }

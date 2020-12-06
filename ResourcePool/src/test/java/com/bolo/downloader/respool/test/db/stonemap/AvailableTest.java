@@ -4,7 +4,7 @@ import com.bolo.downloader.respool.db.StoneMap;
 
 public class AvailableTest {
     public static void main(String[] args) {
-        StoneMap stoneMap = new StoneMap("D:\\MyResource\\Desktop\\data\\", 1, 3);
+        StoneMap stoneMap = new StoneMap("D:\\MyResource\\Desktop\\data\\", 1, 16);
         stoneMap.put("k_0", "v");
         stoneMap.put("k_1", "v");
         stoneMap.put("k_2", "v");
@@ -15,6 +15,8 @@ public class AvailableTest {
         stoneMap.clear();
         stoneMap.loadDbFile();
         stoneMap.put("k_4", "v");
+        stoneMap.rewriteDbFile();
+        stoneMap.put("k_4", "x");
         stoneMap.rewriteDbFile();
     }
 }

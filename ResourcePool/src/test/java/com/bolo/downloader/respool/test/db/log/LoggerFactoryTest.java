@@ -7,7 +7,8 @@ public class LoggerFactoryTest {
     public static void main(String[] args) {
         LoggerFactory.setLogPath("D:\\MyResource\\Desktop\\log\\");
         LoggerFactory.setLogFileName("test.log");
-        MyLogger log = LoggerFactory.getLogger();
+        LoggerFactory.roll();
+        MyLogger log = LoggerFactory.getLogger(LoggerFactoryTest.class);
         log.info("info 参数：%s ，%s", "小明", "1");
         log.info("info 无参数");
         try {

@@ -171,7 +171,7 @@ public class StoneMap implements Map<String, String> {
                 }
             }
         } catch (IOException e) {
-            throw new LogWriteException(e);
+            throw new LogReadException(e);
         }
     }
 
@@ -210,6 +210,7 @@ public class StoneMap implements Map<String, String> {
             boolean checkpointLater = false;
             char[] depictArea = new char[4];
             String line;
+            int row = 0;
             while (true) {
                 int len = reader.read(depictArea);
                 if (len <= 0) break;
@@ -218,15 +219,16 @@ public class StoneMap implements Map<String, String> {
                 if (null == line) break;
                 Node node = resolve(line, depictArea);
                 if (checkpointLater) {
-                    writer.write(line);
-                    writer.newLine();
+                    CycleWriteBuff.newRow(node.key, node.value, node.serial, writer);
+                    row++;
                 } else if (node.serial == 1) {
-                    writer.write(line);
-                    writer.newLine();
+                    CycleWriteBuff.newRow(node.key, node.value, node.serial, writer);
                     checkpointLater = true;
+                    row++;
                 }
+                if (row % 5 == 0) writer.flush();
             }
-            writer.flush();
+            if (row % 5 > 0) writer.flush();
         } catch (IOException e) {
             throw new LogWriteException(e);
         }

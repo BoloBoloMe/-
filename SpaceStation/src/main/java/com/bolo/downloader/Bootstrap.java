@@ -29,7 +29,7 @@ public class Bootstrap {
         LINKED_CURR.putLinked(LINKED_HEAD, LINKED_HEAD);
         LoggerFactory.setLogPath(ConfFactory.get("logPath"));
         LoggerFactory.setLogFileName(ConfFactory.get("logFileName"));
-        log = LoggerFactory.getLogger();
+        LoggerFactory.roll();
     }
 
     public static void main(String[] args) throws CertificateException, InterruptedException, SSLException {
