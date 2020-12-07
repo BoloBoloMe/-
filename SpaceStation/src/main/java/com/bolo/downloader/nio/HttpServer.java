@@ -17,7 +17,7 @@ import java.security.cert.CertificateException;
 public class HttpServer {
     private final boolean SSL = System.getProperty("ssl") != null;
     private final int port;
-    private MyLogger log = LoggerFactory.getLogger();
+    private MyLogger log = LoggerFactory.getLogger(HttpServer.class);
 
     public HttpServer(int port) {
         this.port = port;

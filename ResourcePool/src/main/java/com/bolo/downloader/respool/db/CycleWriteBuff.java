@@ -27,6 +27,8 @@ public class CycleWriteBuff<K, V> {
      */
     private final AtomicInteger serial = new AtomicInteger(0);
 
+    private volatile int checkpoint = 0;
+
     public CycleWriteBuff(int size, int putSpeedyMax, int writeLoopMax) {
         this.size = size;
         this.PUT_SPEEDY_MAX = putSpeedyMax;
@@ -123,9 +125,12 @@ public class CycleWriteBuff<K, V> {
         newRow(key, value, 0, writer);
     }
 
-    void checkpoint() {
+    int checkpoint() {
+        int checkpoint = serial.get();
         serial.set(0);
+        return checkpoint;
     }
+
 
     /**
      * buffer usage report

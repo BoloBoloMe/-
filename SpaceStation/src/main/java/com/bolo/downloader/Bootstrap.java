@@ -6,9 +6,11 @@ import com.bolo.downloader.factory.ReqQueueFactory;
 import com.bolo.downloader.factory.StoneMapFactory;
 import com.bolo.downloader.nio.HttpServer;
 import com.bolo.downloader.nio.ReqRecord;
+import com.bolo.downloader.respool.db.StoneMap;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
-import com.bolo.downloader.utils.RestHelper;
+import com.bolo.downloader.sync.Synchronizer;
+import com.bolo.downloader.utils.PostHelper;
 
 import javax.net.ssl.SSLException;
 import java.security.cert.CertificateException;
@@ -17,13 +19,13 @@ import java.util.concurrent.TimeUnit;
 
 
 public class Bootstrap {
-    //        public static final String CONF_FILE_PATH = "D:\\MyResource\\Desktop\\conf\\SpaceStation.conf";
-    public static final String CONF_FILE_PATH = "";
+    public static final String CONF_FILE_PATH = "D:\\MyResource\\Desktop\\conf\\SpaceStation.conf";
+    //    public static final String CONF_FILE_PATH = "";
     private static int PORT;
     private static final BlockingDeque<ReqRecord> deque = ReqQueueFactory.get();
     private static final ReqRecord LINKED_HEAD = new ReqRecord(null, null, null, null, null);
     private static ReqRecord LINKED_CURR = LINKED_HEAD;
-    private static MyLogger log;
+    private static MyLogger log = LoggerFactory.getLogger(Bootstrap.class);
 
     static {
         LINKED_CURR.putLinked(LINKED_HEAD, LINKED_HEAD);
@@ -33,6 +35,7 @@ public class Bootstrap {
     }
 
     public static void main(String[] args) throws CertificateException, InterruptedException, SSLException {
+        // start server
         PORT = Integer.valueOf(ConfFactory.get("port"));
         new HttpServer(PORT).start();
         while (true) {
@@ -67,7 +70,13 @@ public class Bootstrap {
             // background loop
             try {
                 LoggerFactory.roll();
-                StoneMapFactory.getObject().flushWriteBuff();
+                StoneMap stoneMap = StoneMapFactory.getObject();
+                if (stoneMap.modify() < 200) {
+                    stoneMap.flushWriteBuff();
+                } else {
+                    stoneMap.rewriteDbFile();
+                }
+                Synchronizer.clean();
             } catch (Exception e) {
                 log.error("background loop throws exception!", e);
             }
@@ -76,7 +85,7 @@ public class Bootstrap {
     }
 
     private static void handelReqRecord(ReqRecord reqRecord) {
-        reqRecord.setDone(RestHelper.handle(reqRecord.getUri(), reqRecord.getParams(), reqRecord.getCtx(), reqRecord.getRequest()));
+        reqRecord.setDone(PostHelper.doPOST(reqRecord.getUri(), reqRecord.getParams(), reqRecord.getCtx(), reqRecord.getRequest()));
     }
 
     private static void closeChannel(ReqRecord reqRecord) {

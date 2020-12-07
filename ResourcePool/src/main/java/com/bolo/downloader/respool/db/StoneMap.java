@@ -191,9 +191,9 @@ public class StoneMap implements Map<String, String> {
      * 数据文件重写：扫描当前缓冲池，写入数据文件，缩减占用空间
      */
     synchronized public void rewriteDbFile() {
-        // create new db file
+        final int checkpoint = writeBuff.checkpoint();
         modCounter.set(0);
-        writeBuff.checkpoint();
+        // create new db file
         Map<String, String> bufferPoolSnap = new HashMap<>(bufferPool);
         File newDbFile = new File(dbFilePath, dbFileName + ".tem." + Thread.currentThread().getId());
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(newDbFile))) {
@@ -203,37 +203,9 @@ public class StoneMap implements Map<String, String> {
         } catch (IOException e) {
             throw new LogWriteException(e);
         }
-        // merge db file
-        flushWriteBuff();
-        try (BufferedReader reader = new BufferedReader(new FileReader(dbFile));
-             BufferedWriter writer = new BufferedWriter(new FileWriter(newDbFile, true))) {
-            boolean checkpointLater = false;
-            char[] depictArea = new char[4];
-            String line;
-            int row = 0;
-            while (true) {
-                int len = reader.read(depictArea);
-                if (len <= 0) break;
-                else if (len != 4) throw new LogReadException("数据文件已损坏！");
-                line = reader.readLine();
-                if (null == line) break;
-                Node node = resolve(line, depictArea);
-                if (checkpointLater) {
-                    CycleWriteBuff.newRow(node.key, node.value, node.serial, writer);
-                    row++;
-                } else if (node.serial == 1) {
-                    CycleWriteBuff.newRow(node.key, node.value, node.serial, writer);
-                    checkpointLater = true;
-                    row++;
-                }
-                if (row % 5 == 0) writer.flush();
-            }
-            if (row % 5 > 0) writer.flush();
-        } catch (IOException e) {
-            throw new LogWriteException(e);
-        }
         // modifying dbFile
         if (dbFile.delete()) newDbFile.renameTo(dbFile);
+        flushWriteBuff();
     }
 
     /**

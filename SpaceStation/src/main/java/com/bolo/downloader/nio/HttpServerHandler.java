@@ -1,7 +1,7 @@
 package com.bolo.downloader.nio;
 
 import com.bolo.downloader.factory.ReqQueueFactory;
-import com.bolo.downloader.utils.PageHelper;
+import com.bolo.downloader.utils.GetHelper;
 import com.bolo.downloader.utils.ResponseHelper;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
@@ -36,7 +36,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         }
         if (HttpMethod.GET.equals(request.method())) {
             Map<String, List<String>> params = new QueryStringDecoder(request.uri()).parameters();
-            PageHelper.toPage(uri, params, ctx, request);
+            GetHelper.doGet(uri, params, ctx, request);
         } else if (HttpMethod.POST.equals(request.method())) {
             Map<String, List<String>> params = new HashMap<>();
             HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(new DefaultHttpDataFactory(false), request);

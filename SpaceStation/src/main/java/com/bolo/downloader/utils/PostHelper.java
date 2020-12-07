@@ -1,6 +1,5 @@
 package com.bolo.downloader.utils;
 
-import com.alibaba.fastjson.JSON;
 import com.bolo.downloader.factory.DownloaderFactory;
 import com.bolo.downloader.station.Downloader;
 import io.netty.channel.ChannelHandlerContext;
@@ -14,13 +13,13 @@ import java.util.Map;
 /**
  * restful 操作助手
  */
-public class RestHelper {
+public class PostHelper {
     private static Downloader downloader = DownloaderFactory.getObject();
 
     /**
      * @return isDone, 返回true将在方法结束后尝试关闭渠道
      */
-    public static boolean handle(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
+    public static boolean doPOST(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
         if (uri.equals("/df")) {
             return FileDownloadUtils.download(uri, params, ctx, request);
         }
@@ -44,14 +43,6 @@ public class RestHelper {
         if (uri.equals("/task/clear")) {
             downloader.clearTasks();
             ResponseHelper.sendText(ctx, HttpResponseStatus.OK, request, "列表已清空");
-        }
-        if (uri.equals("/task/list")) {
-            Map<String, String> result = downloader.listTasks();
-            ResponseHelper.sendJSON(ctx, HttpResponseStatus.OK, request, JSON.toJSONString(result));
-        }
-        if (uri.equals("/video/list")) {
-            List<String> result = downloader.listVideo();
-            ResponseHelper.sendJSON(ctx, HttpResponseStatus.OK, request, JSON.toJSONString(result));
         }
         ResponseHelper.sendText(ctx, HttpResponseStatus.OK, request, "未知的地址");
         return true;

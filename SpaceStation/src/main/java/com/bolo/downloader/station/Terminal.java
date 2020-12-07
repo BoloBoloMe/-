@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 public class Terminal {
-    private static MyLogger log = LoggerFactory.getLogger();
+    private static MyLogger log = LoggerFactory.getLogger(Terminal.class);
     private static final String IDIOMATIC = "java@localhost:$  %s";
 
     private static final String flag = "[download] 100% ";

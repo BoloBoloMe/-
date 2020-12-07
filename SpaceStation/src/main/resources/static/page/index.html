@@ -122,7 +122,7 @@
         // 异步加载任务列表数据
         function loadTaskListData() {
             $.ajax({
-                type: "POST",
+                type: "GET",
                 url: "/task/list",
                 success: function (res) {
                     var data = [];
@@ -141,7 +141,7 @@
         // 异步加载文件列表数据
         function loadFileListData() {
             $.ajax({
-                type: "POST",
+                type: "GET",
                 url: "/video/list",
                 success: function (res) {
                     var data = [];

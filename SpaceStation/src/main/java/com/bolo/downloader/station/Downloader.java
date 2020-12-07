@@ -1,12 +1,10 @@
 package com.bolo.downloader.station;
 
-import java.io.File;
+import com.bolo.downloader.sync.Synchronizer;
+
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * 下载器实现
@@ -14,10 +12,10 @@ import java.util.stream.Stream;
 public class Downloader {
     final private TaskList taskList = new TaskList();
     final static private ExecutorService taskRunner = Executors.newFixedThreadPool(5);
-
     private String videoPath;
-
     private String youtubeDLPath;
+
+    private Synchronizer synchronizer = new Synchronizer();
 
     public Downloader(String videoPath, String youtubeDLPath) {
         this.videoPath = videoPath;
@@ -51,7 +49,9 @@ public class Downloader {
     private boolean submitTask(String url) {
         taskRunner.submit(() -> {
             taskList.lockNextPending(url);
-            taskList.closure(url, Terminal.execYoutubeDL(url, youtubeDLPath));
+            boolean result = Terminal.execYoutubeDL(url, youtubeDLPath);
+            if (result) Synchronizer.scanDisc();
+            taskList.closure(url, result);
         });
         return true;
     }
@@ -60,7 +60,6 @@ public class Downloader {
      * 返回视频存放路径下的文件列表
      */
     public List<String> listVideo() {
-        String[] list = new File(new File("").getAbsolutePath()).list((dir, name) -> Pattern.matches(".+(\\.mp4|\\.webm|\\.wmv|\\.avi|\\.dat|\\.asf|\\.mpeg|\\.mpg|\\.rm|\\.rmvb|\\.ram|\\.flv|\\.3gp|\\.mov|\\.divx|\\.dv|\\.vob|\\.mkv|\\.qt|\\.cpk|\\.fli|\\.flc|\\.f4v|\\.m4v|\\.mod|\\.m2t|\\.swf|\\.mts|\\.m2ts|\\.3g2|\\.mpe|\\.ts|\\.div|\\.lavf|\\.dirac){1}", name.toLowerCase()));
-        return null == list ? new ArrayList<>() : Stream.of(list).collect(Collectors.toList());
+        return Synchronizer.fileList();
     }
 }

@@ -11,10 +11,12 @@ public class StoneMapFactory {
 
     private static synchronized StoneMap createSingleton() {
         if (null != stoneMap) return stoneMap;
-        return stoneMap = new StoneMap(ConfFactory.get("dbFilePath"),
+        stoneMap = new StoneMap(ConfFactory.get("dbFilePath"),
                 Integer.valueOf(ConfFactory.get("dbFileId")),
                 Integer.valueOf(ConfFactory.get("wrireBuffSize")),
                 Integer.valueOf(ConfFactory.get("putSpedMax")),
                 Integer.valueOf(ConfFactory.get("writeLoopMax")));
+        stoneMap.loadDbFile();
+        return stoneMap;
     }
 }

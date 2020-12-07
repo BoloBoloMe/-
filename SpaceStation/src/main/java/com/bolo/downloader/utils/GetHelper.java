@@ -1,6 +1,9 @@
 package com.bolo.downloader.utils;
 
+import com.alibaba.fastjson.JSON;
 import com.bolo.downloader.factory.ConfFactory;
+import com.bolo.downloader.factory.DownloaderFactory;
+import com.bolo.downloader.station.Downloader;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -16,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * 页面访问助手
  */
-public class PageHelper {
+public class GetHelper {
     private static final ConcurrentHashMap<String, Page> cache = new ConcurrentHashMap<>(32);
     private static final AtomicInteger allHitCount = new AtomicInteger(0);
 
@@ -30,7 +33,20 @@ public class PageHelper {
     /**
      * 根据访问路径返回页面内容
      */
-    public static void toPage(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
+    public static void doGet(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
+        Downloader downloader = DownloaderFactory.getObject();
+        if (uri.equals("/task/list")) {
+            Map<String, String> result = downloader.listTasks();
+            ResponseHelper.sendJSON(ctx, HttpResponseStatus.OK, request, JSON.toJSONString(result));
+        } else if (uri.equals("/video/list")) {
+            List<String> result = downloader.listVideo();
+            ResponseHelper.sendJSON(ctx, HttpResponseStatus.OK, request, JSON.toJSONString(result));
+        } else {
+            toPage(uri, params, ctx, request);
+        }
+    }
+
+    private static void toPage(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
         Page page = findPage(uri, params);
         // Build the response object.
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
