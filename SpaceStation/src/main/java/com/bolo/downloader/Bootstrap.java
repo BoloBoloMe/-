@@ -35,6 +35,9 @@ public class Bootstrap {
     }
 
     public static void main(String[] args) throws CertificateException, InterruptedException, SSLException {
+        // load stone map and cache file list
+        StoneMap stoneMap = StoneMapFactory.getObject();
+        Synchronizer.cache(stoneMap);
         // start server
         PORT = Integer.valueOf(ConfFactory.get("port"));
         new HttpServer(PORT).start();
@@ -70,7 +73,6 @@ public class Bootstrap {
             // background loop
             try {
                 LoggerFactory.roll();
-                StoneMap stoneMap = StoneMapFactory.getObject();
                 if (stoneMap.modify() < 200) {
                     stoneMap.flushWriteBuff();
                 } else {

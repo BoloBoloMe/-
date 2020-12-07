@@ -6,7 +6,8 @@ package com.bolo.downloader.sync;
 public enum SyncState {
     NEW("0", "待下载"),
     DOWNLOADING("1", "下载中"),
-    DOWNLOADED("2", "已下载");
+    DOWNLOADED("2", "已下载"),
+    LOSE("3", "已下载");
     private String code;
     private String desc;
 
