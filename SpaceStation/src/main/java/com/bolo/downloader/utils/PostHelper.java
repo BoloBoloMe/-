@@ -1,10 +1,11 @@
 package com.bolo.downloader.utils;
 
 import com.bolo.downloader.factory.DownloaderFactory;
+import com.bolo.downloader.respool.log.LoggerFactory;
+import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.station.Downloader;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.*;
 
 import java.util.Base64;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.Map;
  * restful 操作助手
  */
 public class PostHelper {
+    private final static MyLogger log = LoggerFactory.getLogger(PostHelper.class);
     private static Downloader downloader = DownloaderFactory.getObject();
 
     /**
@@ -21,12 +23,13 @@ public class PostHelper {
      */
     public static boolean doPOST(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
         if (uri.equals("/df")) {
-            return FileDownloadUtils.download(uri, params, ctx, request);
+            return FileDownloadHelper.handle(uri, params, ctx, request);
         }
         if (uri.equals("/task/add")) {
             if (params.get("url") == null || params.get("url").size() <= 0) {
                 ResponseHelper.sendText(ctx, HttpResponseStatus.OK, request, "请输入下载地址");
-                return true;
+
+                return false;
             }
             String targetAddr;
             try {

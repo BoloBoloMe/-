@@ -1,9 +1,12 @@
-package com.bolo.downloader.factory;
+package com.bolo.downloader.groundcontrol.factory;
 
 
-import com.bolo.downloader.Bootstrap;
+import com.bolo.downloader.groundcontrol.Cantor;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
@@ -15,19 +18,17 @@ public class ConfFactory {
 
 
     static {
-        conf.put("port", "9000");
-        conf.put("videoPath", "");
-        conf.put("dbFilePath", "data/");
-        conf.put("wrireBuffSize", "8");
+        conf.put("url", "http://127.0.0.1:9000/df");
+        conf.put("dbFileId", "100");
+        conf.put("dbFilePath", "/data/");
+        conf.put("logPath", "/log/");
+        conf.put("logFileName", "GroundControlCenter.log");
+        conf.put("filePath", "");
+        conf.put("wrireBuffSize", "10");
         conf.put("putSpedMax", "1");
         conf.put("writeLoopMax", "1");
-        conf.put("staticFilePath", "static/");
-        conf.put("youtubeDLPath", "");
-        conf.put("dbFileId", "0");
-        conf.put("logPath", "log/");
-        conf.put("logFileName", "SpaceStation.log");
 
-        final File confFile = new File("".equals(Bootstrap.CONF_FILE_PATH) ? "conf/SpaceStation.conf" : Bootstrap.CONF_FILE_PATH);
+        final File confFile = new File("".equals(Cantor.CONF_FILE_PATH) ? "conf/GroundControlCenter.conf" : Cantor.CONF_FILE_PATH);
         if (confFile.exists()) {
             final Properties properties;
             try (BufferedReader reader = new BufferedReader(new FileReader(confFile))) {

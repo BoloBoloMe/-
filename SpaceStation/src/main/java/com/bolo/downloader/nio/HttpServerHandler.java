@@ -1,6 +1,9 @@
 package com.bolo.downloader.nio;
 
 import com.bolo.downloader.factory.ReqQueueFactory;
+import com.bolo.downloader.respool.log.LoggerFactory;
+import com.bolo.downloader.respool.log.MyLogger;
+import com.bolo.downloader.utils.ByteBuffUtils;
 import com.bolo.downloader.utils.GetHelper;
 import com.bolo.downloader.utils.ResponseHelper;
 import io.netty.channel.*;
@@ -19,11 +22,12 @@ import java.util.regex.Pattern;
  * 根据请求地址，访问页面或下载文件
  */
 public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
-
+    static final private MyLogger log = LoggerFactory.getLogger(HttpServerHandler.class);
     private FullHttpRequest request;
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
+        String lineSeparator = System.lineSeparator();
         this.request = request;
         if (!request.decoderResult().isSuccess()) {
             ResponseHelper.sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
@@ -35,9 +39,15 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
             return;
         }
         if (HttpMethod.GET.equals(request.method())) {
+            // 读操作通过 GET METHOD 访问，同步处理
             Map<String, List<String>> params = new QueryStringDecoder(request.uri()).parameters();
             GetHelper.doGet(uri, params, ctx, request);
+            // 如果客户端请求，就立即关闭连接
+            if (ctx.channel().isOpen() && !HttpUtil.isKeepAlive(request)) {
+                ctx.writeAndFlush(ByteBuffUtils.empty()).addListener(ChannelFutureListener.CLOSE);
+            }
         } else if (HttpMethod.POST.equals(request.method())) {
+            // 写操作通过 POST METHOD 访问，异步处理
             Map<String, List<String>> params = new HashMap<>();
             HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(new DefaultHttpDataFactory(false), request);
             List<InterfaceHttpData> parmList = decoder.getBodyHttpDatas();
@@ -62,9 +72,13 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
-        if (ctx.channel().isActive()) {
-            ResponseHelper.sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, request);
+        log.error("操作异常！", cause);
+        if (ctx.channel().isOpen()) {
+            try {
+                ResponseHelper.sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, request);
+            } catch (Exception e) {
+                log.error("异常后响应-再次捕获异常！", e);
+            }
         }
     }
 

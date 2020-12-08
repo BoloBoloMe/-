@@ -11,6 +11,7 @@ import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.sync.Synchronizer;
 import com.bolo.downloader.utils.PostHelper;
+import io.netty.handler.codec.http.HttpUtil;
 
 import javax.net.ssl.SSLException;
 import java.security.cert.CertificateException;
@@ -23,12 +24,9 @@ public class Bootstrap {
     //    public static final String CONF_FILE_PATH = "";
     private static int PORT;
     private static final BlockingDeque<ReqRecord> deque = ReqQueueFactory.get();
-    private static final ReqRecord LINKED_HEAD = new ReqRecord(null, null, null, null, null);
-    private static ReqRecord LINKED_CURR = LINKED_HEAD;
     private static MyLogger log = LoggerFactory.getLogger(Bootstrap.class);
 
     static {
-        LINKED_CURR.putLinked(LINKED_HEAD, LINKED_HEAD);
         LoggerFactory.setLogPath(ConfFactory.get("logPath"));
         LoggerFactory.setLogFileName(ConfFactory.get("logFileName"));
         LoggerFactory.roll();
@@ -38,38 +36,26 @@ public class Bootstrap {
         // load stone map and cache file list
         StoneMap stoneMap = StoneMapFactory.getObject();
         Synchronizer.cache(stoneMap);
+        Synchronizer.fileList();
         // start server
         PORT = Integer.valueOf(ConfFactory.get("port"));
         new HttpServer(PORT).start();
         while (true) {
-            // linked loop
-            while (LINKED_CURR != LINKED_HEAD) {
-                handelReqRecord(LINKED_CURR);
-                LINKED_CURR = LINKED_CURR.getNext();
-                ReqRecord oldRecord;
-                if ((oldRecord = LINKED_CURR.getPrev()).isDone()) {
-                    oldRecord.delLinked();
-                    closeChannel(oldRecord);
-                }
-            }
-
-            // request loop
+            // write request loop
             while (true) {
                 ReqRecord reqRecord;
                 try {
+                    // 对于来自同一个连接的请求（比如当客户端使用连接池时），会有不同的请求对象，但这些对象关联的连接是同一个
                     reqRecord = deque.pollLast(1, TimeUnit.SECONDS);
-                    if (reqRecord == null) break;
+                    if (reqRecord == null || !reqRecord.getCtx().channel().isOpen()) break;
                 } catch (InterruptedException e) {
                     break;
                 }
                 handelReqRecord(reqRecord);
-                if (reqRecord.isDone()) {
+                if (reqRecord.isDone() || !HttpUtil.isKeepAlive(reqRecord.getRequest())) {
                     closeChannel(reqRecord);
-                } else {
-                    reqRecord.putLinked(LINKED_HEAD, LINKED_HEAD.getNext());
                 }
             }
-
             // background loop
             try {
                 LoggerFactory.roll();
@@ -82,7 +68,6 @@ public class Bootstrap {
             } catch (Exception e) {
                 log.error("background loop throws exception!", e);
             }
-
         }
     }
 

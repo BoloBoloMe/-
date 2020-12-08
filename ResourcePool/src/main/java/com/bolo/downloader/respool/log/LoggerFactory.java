@@ -19,9 +19,9 @@ public class LoggerFactory {
     private static Logger newLogger() {
         try {
             lastChangeLogFileDate = new SimpleDateFormat("YYYY-MM-dd_HHmmss").format(new Date());
-            logFileName = lastChangeLogFileDate + '_' + logFileName;
-            Logger log = Logger.getLogger(logFileName);
-            FileHandler handler = new FileHandler(logPath + logFileName);
+            String currFileName = lastChangeLogFileDate + '_' + logFileName;
+            Logger log = Logger.getLogger(currFileName);
+            FileHandler handler = new FileHandler(logPath + currFileName);
             handler.setFormatter(new LogFormatter());
             log.addHandler(handler);
             return log;

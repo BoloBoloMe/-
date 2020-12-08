@@ -91,6 +91,19 @@ public class Synchronizer {
                 cache.put(entry.getKey(), new Record(entry.getValue()));
     }
 
+    public static Record getRecord(String key, int version, String url, String fileName, SyncState state) {
+        if (key != null) return cache.get(key);
+        if (version <= 0 && url == null && fileName == null && state == null) return null;
+        for (Map.Entry<String, Record> entry : cache.entrySet()) {
+            Record record = entry.getValue();
+            if (version > 0 && record.getVersion() == version) return record;
+            if (url != null && url.equals(record.getUrl())) return record;
+            if (fileName != null && fileName.equals(record.getFileName())) return record;
+            if (state != null && state == record.getState()) return record;
+        }
+        return null;
+    }
+
 
     /**
      * 提交新增的文件记录

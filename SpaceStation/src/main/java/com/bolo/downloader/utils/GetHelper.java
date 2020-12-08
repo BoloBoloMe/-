@@ -3,11 +3,14 @@ package com.bolo.downloader.utils;
 import com.alibaba.fastjson.JSON;
 import com.bolo.downloader.factory.ConfFactory;
 import com.bolo.downloader.factory.DownloaderFactory;
+import com.bolo.downloader.respool.log.LoggerFactory;
+import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.station.Downloader;
-import io.netty.buffer.Unpooled;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
+import io.netty.util.ReferenceCountUtil;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -20,14 +23,16 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 页面访问助手
  */
 public class GetHelper {
+    private static final MyLogger log = LoggerFactory.getLogger(GetHelper.class);
     private static final ConcurrentHashMap<String, Page> cache = new ConcurrentHashMap<>(32);
     private static final AtomicInteger allHitCount = new AtomicInteger(0);
 
     private static String basic = null;
     private static final Page PAGE_NOT_FUND = new Page(null,
-            "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\"><title>404</title><link rel=\"stylesheet\" href=\"../layui/css/layui.css\"></head><body><div style=\"width:100%; height:400px;position:absolute; left:50%; top:50%; margin-left: -300px; margin-top: -200px;\"><i class=\"layui-icon layui-icon-face-cry\" style=\"font-size: 200px; color: crimson;\"></i><span style=\"font-size: 50px;\">404:未曾设想的道路</span></div></body></html>".getBytes(Charset.forName("UTF-8")),
+            "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\"><title>404</title><link rel=\"stylesheet\" href=\"../layui/css/layui.css\"></head><body><div style=\"width:100%; height:400px;position:absolute; left:50%; top:50%; margin-left: -300px; margin-top: -200px;\"><i class=\"layui-icon layui-icon-face-cry\" style=\"font-size: 200px; color: crimson;\"></i><span style=\"font-size: 50px;\">404:未曾设想的道路</span></div></body></html>".getBytes(Charset.forName("utf8")),
             "text/html");
-    private static final Page SERVER_ERROR = new Page(null, "<!DOCTYPE html><html><head>\n<meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\"><title>500</title><link rel=\"stylesheet\" href=\"../layui/css/layui.css\"></head><body><div style=\"width:100%; height:400px;position:absolute; left:50%; top:50%; margin-left: -300px; margin-top: -200px;\"><i class=\"layui-icon layui-icon-face-surprised\" style=\"font-size: 200px; color: crimson;\"></i><span style=\"font-size: 50px;\">ERROR: 一袋米要抗几楼</span></div></body></html>".getBytes(Charset.forName("UTF-8")),
+    private static final Page SERVER_ERROR = new Page(null,
+            "<!DOCTYPE html><html><head>\n<meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\"><title>500</title><link rel=\"stylesheet\" href=\"../layui/css/layui.css\"></head><body><div style=\"width:100%; height:400px;position:absolute; left:50%; top:50%; margin-left: -300px; margin-top: -200px;\"><i class=\"layui-icon layui-icon-face-surprised\" style=\"font-size: 200px; color: crimson;\"></i><span style=\"font-size: 50px;\">ERROR: 一袋米要抗几楼</span></div></body></html>".getBytes(Charset.forName("UTF-8")),
             "text/html");
 
     /**
@@ -46,14 +51,20 @@ public class GetHelper {
         }
     }
 
+
     private static void toPage(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
         Page page = findPage(uri, params);
-        // Build the response object.
-        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1,
-                request.decoderResult().isSuccess() ? HttpResponseStatus.OK : HttpResponseStatus.BAD_REQUEST, Unpooled.copiedBuffer(page.getContent()));
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, page.getContentType());
-        // Write the response and flush.
-        ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+        ByteBuf byteBuf = null;
+        try {
+            byteBuf = ByteBuffUtils.copy(page.getContent());
+            // Build the response object.
+            FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, request.decoderResult().isSuccess() ? HttpResponseStatus.OK : HttpResponseStatus.BAD_REQUEST, byteBuf);
+            response.headers().set(HttpHeaderNames.CONTENT_TYPE, page.getContentType());
+            // Write the response and flush.
+            ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+        } finally {
+            if (byteBuf != null && byteBuf.refCnt() > 0) ReferenceCountUtil.safeRelease(byteBuf);
+        }
     }
 
     private static Page findPage(String uri, Map<String, List<String>> params) {
@@ -72,11 +83,11 @@ public class GetHelper {
                 try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(target))) {
                     int len = (int) target.length();
                     byte[] content = new byte[len];
-                    in.read(content, 0, len);
+                    in.read(content);
                     page = new Page(uUri, content, getContentType(uUri));
                     caching(page);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("page file read error!", e);
                     return SERVER_ERROR;
                 }
             }
@@ -135,7 +146,6 @@ public class GetHelper {
         byte[] content;
         String contentType;
         AtomicInteger hitCount = new AtomicInteger(0);
-        long birthDay = System.currentTimeMillis();
 
         public Page(String uri, byte[] content, String contentType) {
             this.uri = uri;
@@ -161,10 +171,6 @@ public class GetHelper {
 
         public void hit() {
             this.hitCount.incrementAndGet();
-        }
-
-        public long getBirthDay() {
-            return birthDay;
         }
     }
 

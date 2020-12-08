@@ -37,7 +37,7 @@ public class HttpServer {
         }
 
         // Configure the server.
-        EventLoopGroup bothGroup = new NioEventLoopGroup(3);
+        EventLoopGroup bothGroup = new NioEventLoopGroup(1);
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.group(bothGroup)
                 .channel(NioServerSocketChannel.class)
