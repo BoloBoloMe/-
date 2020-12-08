@@ -40,7 +40,6 @@ public class ConfFactory {
                 conf.put(entry.getKey().toString(), entry.getValue().toString());
             }
         }
-
         for (Map.Entry<String, String> entry : conf.entrySet()) {
             if (NOTNULL.equals(entry.getValue())) {
                 throw new Error("缺少必要配置项：" + entry.getKey());

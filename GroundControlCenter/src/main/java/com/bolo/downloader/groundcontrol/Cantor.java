@@ -23,8 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Cantor {
-    public static final String CONF_FILE_PATH = "D:\\MyResource\\Desktop\\conf\\GroundControlCenter.conf";
-    //    public static final String CONF_FILE_PATH = "";0
+//    public static final String CONF_FILE_PATH = "D:\\MyResource\\Desktop\\conf\\GroundControlCenter.conf";
+        public static final String CONF_FILE_PATH = "";
     private static final MyLogger log = LoggerFactory.getLogger(Cantor.class);
 
     static private final String lastVerKey = "lastVer";

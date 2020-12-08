@@ -9,8 +9,6 @@ import java.util.logging.*;
 public class LoggerFactory {
     private static String logPath;
     private static String logFileName;
-    private static String lastChangeLogFileDate;
-    private static long lastRollTime = 0;
 
     public static MyLogger getLogger(Class clazz) {
         return new MyLogger(clazz);
@@ -18,8 +16,7 @@ public class LoggerFactory {
 
     private static Logger newLogger() {
         try {
-            lastChangeLogFileDate = new SimpleDateFormat("YYYY-MM-dd_HHmmss").format(new Date());
-            String currFileName = lastChangeLogFileDate + '_' + logFileName;
+            String currFileName = new SimpleDateFormat("YYYY-MM-dd_HHmmss").format(new Date()) + '_' + logFileName;
             Logger log = Logger.getLogger(currFileName);
             FileHandler handler = new FileHandler(logPath + currFileName);
             handler.setFormatter(new LogFormatter());
@@ -76,16 +73,6 @@ public class LoggerFactory {
      * 创建新日期下的日志对象
      */
     public static void roll() {
-        if (System.currentTimeMillis() - lastRollTime < 120000) {
-            return;
-        } else {
-            lastRollTime = System.currentTimeMillis();
-        }
-        String currDate = new SimpleDateFormat("YYYY-MM-dd").format(new Date());
-        if (currDate.equals(lastChangeLogFileDate)) {
-            return;
-        }
-        lastChangeLogFileDate = currDate;
         SuperLogger.setLogger(newLogger());
     }
 }
