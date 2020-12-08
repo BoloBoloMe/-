@@ -2,6 +2,7 @@ package com.bolo.downloader;
 
 
 import com.bolo.downloader.factory.ConfFactory;
+import com.bolo.downloader.factory.DownloaderFactory;
 import com.bolo.downloader.factory.ReqQueueFactory;
 import com.bolo.downloader.factory.StoneMapFactory;
 import com.bolo.downloader.nio.HttpServer;
@@ -36,11 +37,13 @@ public class Bootstrap {
         // load stone map and cache file list
         StoneMap stoneMap = StoneMapFactory.getObject();
         Synchronizer.cache(stoneMap);
-        Synchronizer.fileList();
+        log.info("服务端当前版本号：%s", Integer.toString(Synchronizer.getCurrVer()));
         // start server
         PORT = Integer.valueOf(ConfFactory.get("port"));
-        new HttpServer(PORT).start();
-        while (true) {
+        HttpServer server = new HttpServer(PORT);
+        server.start();
+        long lastScanDiscTime = 0;
+        for (long time = 1; ; time++) {
             // write request loop
             while (true) {
                 ReqRecord reqRecord;
@@ -51,6 +54,19 @@ public class Bootstrap {
                 } catch (InterruptedException e) {
                     break;
                 }
+                if ("/ssd".equals(reqRecord.getUri())) {
+                    try {
+                        Thread.sleep(500);
+                    } catch (Exception e) {
+                    }
+                    Synchronizer.scanDisc();
+                    Synchronizer.clean();
+                    stoneMap.rewriteDbFile();
+                    server.shutdown();
+                    DownloaderFactory.getObject().shudown();
+                    log.info("进程已结束！");
+                    return;
+                }
                 handelReqRecord(reqRecord);
                 if (reqRecord.isDone() || !HttpUtil.isKeepAlive(reqRecord.getRequest())) {
                     closeChannel(reqRecord);
@@ -59,12 +75,16 @@ public class Bootstrap {
             // background loop
             try {
                 LoggerFactory.roll();
+                if (time - lastScanDiscTime > 5) {
+                    lastScanDiscTime = time;
+                    Synchronizer.scanDisc();
+                    Synchronizer.clean();
+                }
                 if (stoneMap.modify() < 200) {
                     stoneMap.flushWriteBuff();
                 } else {
                     stoneMap.rewriteDbFile();
                 }
-                Synchronizer.clean();
             } catch (Exception e) {
                 log.error("background loop throws exception!", e);
             }

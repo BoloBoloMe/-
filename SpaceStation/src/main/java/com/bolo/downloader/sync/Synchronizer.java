@@ -3,6 +3,8 @@ package com.bolo.downloader.sync;
 import com.bolo.downloader.factory.ConfFactory;
 import com.bolo.downloader.factory.StoneMapFactory;
 import com.bolo.downloader.respool.db.StoneMap;
+import com.bolo.downloader.respool.log.LoggerFactory;
+import com.bolo.downloader.respool.log.MyLogger;
 
 import java.io.File;
 import java.util.*;
@@ -20,7 +22,7 @@ public class Synchronizer {
     static private final String lastVerKey = "lastVer";
     static private final AtomicInteger version = new AtomicInteger(0);
     static private final ConcurrentHashMap<String, Record> cache = new ConcurrentHashMap<>();
-    static private volatile boolean needScanDisc = true;
+    static private final MyLogger log = LoggerFactory.getLogger(Synchronizer.class);
 
     /**
      * 扫描文件存放目录，缓存文件列表
@@ -33,7 +35,7 @@ public class Synchronizer {
             if (!map().containsKey(fileName)) commit(fileName, SyncState.NEW, fileName, "");
         }
         for (String fileName : map().keySet()) {
-            if (!newList.contains(fileName)) {
+            if (!lastVerKey.equals(fileName) && !newList.contains(fileName)) {
                 commit(fileName, SyncState.LOSE, fileName, "");
             }
         }
@@ -55,11 +57,15 @@ public class Synchronizer {
      * 返回文件列表
      */
     public static List<String> fileList() {
-        if (needScanDisc) {
-            needScanDisc = false;
-            scanDisc();
-        }
         return fileList.get();
+    }
+
+    public static void isDownloaded(String key) {
+        Record record = cache.get(key);
+        if (record != null && record.getState() != SyncState.LOSE) {
+            record.setState(SyncState.DOWNLOADED);
+            commit(key, record);
+        }
     }
 
     /**
@@ -68,13 +74,15 @@ public class Synchronizer {
     public static void clean() {
         for (String key : cache.keySet()) {
             Record record = cache.get(key);
-            if (SyncState.DOWNLOADED == record.getState()) {
+            if (SyncState.DOWNLOADED == record.getState() || SyncState.LOSE == record.getState()) {
+                log.info("移除已遗失或已下载的缓存：" + record.getFileName());
                 File target = new File(ConfFactory.get("videoPath"), record.getFileName());
                 if (target.exists()) {
+                    log.info("删除已同步的文件：" + record.getFileName());
                     target.delete();
-                    cache.remove(key);
-                    map().remove(key);
                 }
+                cache.remove(key);
+                map().remove(key);
             }
         }
     }
@@ -124,9 +132,15 @@ public class Synchronizer {
      */
     private static void commit(String key, Record record) {
         StoneMap map = map();
+        String lastVerStr = map.get(lastVerKey);
+        Integer lastVer = null != lastVerStr ? Integer.valueOf(lastVerStr) : null;
         cache.put(key, record);
         map.put(key, record.value());
-        map.put(lastVerKey, version.toString());
+        if (lastVer == null || lastVer < record.getVersion()) {
+            String newVer = Integer.toString(record.getVersion());
+            map.put(lastVerKey, newVer);
+            log.info("服务器版本号更新:%s", newVer);
+        }
     }
 
     /**

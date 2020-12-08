@@ -6,6 +6,7 @@ import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.utils.ByteBuffUtils;
 import com.bolo.downloader.utils.GetHelper;
 import com.bolo.downloader.utils.ResponseHelper;
+import com.bolo.downloader.utils.ShutdownReqHelper;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.multipart.DefaultHttpDataFactory;
@@ -41,7 +42,11 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         if (HttpMethod.GET.equals(request.method())) {
             // 读操作通过 GET METHOD 访问，同步处理
             Map<String, List<String>> params = new QueryStringDecoder(request.uri()).parameters();
-            GetHelper.doGet(uri, params, ctx, request);
+            if (uri.equals("/ssd")) {
+                ShutdownReqHelper.shutdown(uri, params, ctx, request);
+            } else {
+                GetHelper.doGet(uri, params, ctx, request);
+            }
             // 如果客户端请求，就立即关闭连接
             if (ctx.channel().isOpen() && !HttpUtil.isKeepAlive(request)) {
                 ctx.writeAndFlush(ByteBuffUtils.empty()).addListener(ChannelFutureListener.CLOSE);

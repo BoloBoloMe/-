@@ -18,6 +18,7 @@ public class HttpServer {
     private final boolean SSL = System.getProperty("ssl") != null;
     private final int port;
     private MyLogger log = LoggerFactory.getLogger(HttpServer.class);
+    private EventLoopGroup bothGroup = new NioEventLoopGroup(1);
 
     public HttpServer(int port) {
         this.port = port;
@@ -37,12 +38,15 @@ public class HttpServer {
         }
 
         // Configure the server.
-        EventLoopGroup bothGroup = new NioEventLoopGroup(1);
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.group(bothGroup)
                 .channel(NioServerSocketChannel.class)
                 .childHandler(new HttpServerInitializer(sslCtx));
-        Channel ch = bootstrap.bind(port).sync().channel();
+        bootstrap.bind(port);
         log.info("服务启动成功,地址：" + (SSL ? "https://" : "http://") + "127.0.0.1:" + port);
+    }
+
+    public void shutdown() {
+        bothGroup.shutdownGracefully();
     }
 }

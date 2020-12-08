@@ -50,7 +50,6 @@ public class Downloader {
         taskRunner.submit(() -> {
             taskList.lockNextPending(url);
             boolean result = Terminal.execYoutubeDL(url, youtubeDLPath);
-            if (result) Synchronizer.scanDisc();
             taskList.closure(url, result);
         });
         return true;
@@ -61,5 +60,9 @@ public class Downloader {
      */
     public List<String> listVideo() {
         return Synchronizer.fileList();
+    }
+
+    public void shudown() {
+        taskRunner.shutdown();
     }
 }

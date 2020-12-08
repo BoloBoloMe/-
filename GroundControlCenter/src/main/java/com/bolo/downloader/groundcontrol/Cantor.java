@@ -64,8 +64,7 @@ public class Cantor {
         int lastVer = 0;
         long skip = 0;
         String lastFileName = null;
-        if (null != map.get(lastVerKey)) {
-            lastVer = Integer.valueOf(map.get(lastVerKey));
+        if (null != map.get(lastVerKey) && (lastVer = Integer.valueOf(map.get(lastVerKey))) > 0) {
             lastFileName = map.get(map.get(lastVerKey));
             skip = Long.valueOf(map.get(lastFileName));
         }
@@ -102,6 +101,7 @@ public class Cantor {
                         tar = new File(ConfFactory.get("filePath"), dfResponse.getFileNane());
                         if (tar.exists()) tar.delete();
                         tar.createNewFile();
+                        skip = tar.length();
                         continue;
                     }
                     if (dfResponse.getStatus() == 2) {

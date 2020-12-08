@@ -6,24 +6,8 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import io.netty.util.CharsetUtil;
-import io.netty.util.ReferenceCountUtil;
 
 public class ResponseHelper {
-
-    protected static final String HTTP_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz";
-    protected static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
-    protected static final int HTTP_CACHE_SECONDS = 60;
-
-    public static void sendPartialCont(ChannelHandlerContext ctx, FullHttpRequest request) {
-        DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.PARTIAL_CONTENT);
-        // if protocol is http 1.0 , tell the client must by keep alive
-        if (request.protocolVersion().equals(HttpVersion.HTTP_1_0)) {
-            response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
-        }
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
-        HttpUtil.setContentLength(response, 0);
-        sendAndCleanupConnection(ctx, request, response, false);
-    }
 
     public static void sendError(ChannelHandlerContext ctx, HttpResponseStatus status, FullHttpRequest request) {
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
@@ -33,29 +17,19 @@ public class ResponseHelper {
     }
 
     public static void sendText(ChannelHandlerContext ctx, HttpResponseStatus status, FullHttpRequest request, String text) {
-        ByteBuf byteBuf = null;
-        try {
-            byteBuf = ByteBuffUtils.copy(text, CharsetUtil.UTF_8);
-            FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, byteBuf);
-            response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
-            HttpUtil.setContentLength(response, response.content().readableBytes());
-            sendAndCleanupConnection(ctx, request, response, true);
-        } finally {
-            if (byteBuf != null && byteBuf.refCnt() > 0) ReferenceCountUtil.safeRelease(byteBuf);
-        }
+        ByteBuf byteBuf = ByteBuffUtils.copy(text, CharsetUtil.UTF_8);
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, byteBuf);
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
+        HttpUtil.setContentLength(response, response.content().readableBytes());
+        sendAndCleanupConnection(ctx, request, response, true);
     }
 
     public static void sendJSON(ChannelHandlerContext ctx, HttpResponseStatus status, FullHttpRequest request, String JSON) {
-        ByteBuf json = null;
-        try {
-            json = ByteBuffUtils.copy(JSON, CharsetUtil.UTF_8);
-            FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, json);
-            response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=UTF-8");
-            HttpUtil.setContentLength(response, response.content().readableBytes());
-            sendAndCleanupConnection(ctx, request, response, false);
-        } finally {
-            if (json != null && json.refCnt() > 0) ReferenceCountUtil.safeRelease(json);
-        }
+        ByteBuf json = ByteBuffUtils.copy(JSON, CharsetUtil.UTF_8);
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, json);
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json; charset=UTF-8");
+        HttpUtil.setContentLength(response, response.content().readableBytes());
+        sendAndCleanupConnection(ctx, request, response, false);
     }
 
     /**

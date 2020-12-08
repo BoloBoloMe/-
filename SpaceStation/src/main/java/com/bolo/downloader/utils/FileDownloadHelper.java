@@ -4,11 +4,11 @@ import com.bolo.downloader.factory.ConfFactory;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.sync.Record;
+import com.bolo.downloader.sync.SyncState;
 import com.bolo.downloader.sync.Synchronizer;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
-import io.netty.util.ReferenceCountUtil;
 
 import java.io.File;
 import java.io.RandomAccessFile;
@@ -53,24 +53,27 @@ public class FileDownloadHelper {
         int exampleVer = clientVer;
         while (exampleVer <= serverVer) {
             record = Synchronizer.getRecord(null, exampleVer++, null, null, null);
-            if (record != null && (tar = new File(ConfFactory.get("videoPath"), record.getFileName())).exists()) break;
+            if (record != null
+                    && record.getState() != SyncState.LOSE
+                    && record.getState() != SyncState.DOWNLOADED
+                    && (tar = new File(ConfFactory.get("videoPath"), record.getFileName())).exists()) break;
         }
         // 如果客户端版本号之后的所有版本都找不到文件，仍然返回 equalsResponse, 客户端仍然能继续正常运行
         if (record == null) {
-            log.error("服务器文件丢失！！！版本号：[" + clientVer + "," + serverVer + "]");
             ResponseHelper.sendAndCleanupConnection(ctx, request, equalsResponse, false);
             return false;
         }
         if (record.getVersion() == clientVer) {
             // 下载当前请求的文件
-            try (RandomAccessFile fileAcc = new RandomAccessFile(tar, "rws")) {
+            try (RandomAccessFile fileAcc = new RandomAccessFile(tar, "r")) {
                 if (skip >= fileAcc.length()) {
                     // 请求的文件已经同步至末尾，尝试获取下一个文件
+                    Synchronizer.isDownloaded(record.getFileName());
                     record = null;
                     exampleVer = clientVer + 1;
                     while (exampleVer <= serverVer) {
                         record = Synchronizer.getRecord(null, exampleVer++, null, null, null);
-                        if (record != null && new File(ConfFactory.get("videoPath"), record.getFileName()).exists())
+                        if (record != null && record.getState() != SyncState.LOSE && new File(ConfFactory.get("videoPath"), record.getFileName()).exists())
                             break;
                     }
                     if (record == null) {

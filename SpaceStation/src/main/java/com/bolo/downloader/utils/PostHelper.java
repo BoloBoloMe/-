@@ -28,7 +28,6 @@ public class PostHelper {
         if (uri.equals("/task/add")) {
             if (params.get("url") == null || params.get("url").size() <= 0) {
                 ResponseHelper.sendText(ctx, HttpResponseStatus.OK, request, "请输入下载地址");
-
                 return false;
             }
             String targetAddr;

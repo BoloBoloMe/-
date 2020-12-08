@@ -3,6 +3,8 @@ package com.bolo.downloader.utils;
 import com.alibaba.fastjson.JSON;
 import com.bolo.downloader.factory.ConfFactory;
 import com.bolo.downloader.factory.DownloaderFactory;
+import com.bolo.downloader.factory.ReqQueueFactory;
+import com.bolo.downloader.nio.ReqRecord;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.station.Downloader;
