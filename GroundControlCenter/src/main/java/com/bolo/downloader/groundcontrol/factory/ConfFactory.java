@@ -13,7 +13,6 @@ import java.util.TreeMap;
 
 public class ConfFactory {
     private static final String NOTNULL = "NOTNULL";
-
     private static final Map<String, String> conf = new TreeMap<>();
 
 
@@ -40,6 +39,8 @@ public class ConfFactory {
             for (Map.Entry<Object, Object> entry : properties.entrySet()) {
                 conf.put(entry.getKey().toString(), entry.getValue().toString());
             }
+        } else {
+            throw new Error("未找到配置文件！" + confFile.getPath());
         }
 
         for (Map.Entry<String, String> entry : conf.entrySet()) {
