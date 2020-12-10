@@ -23,10 +23,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Cantor {
-    //    public static final String CONF_FILE_PATH = "D:\\MyResource\\Desktop\\conf\\GroundControlCenter.conf";
-    public static final String CONF_FILE_PATH = "";
+    public static final String CONF_FILE_PATH = "/home/bolo/program/VideoDownloader_GroundControlCenter/conf/GroundControlCenter.conf";
+    //    public static final String CONF_FILE_PATH = "";
     private static final MyLogger log = LoggerFactory.getLogger(Cantor.class);
 
+    static private final int INIT_EXPECTED_LEN = 1024;
     static private final String lastVerKey = "lastVer";
     private static final ResponseHandler<DFResponse> RESPONSE_HANDLER = resp -> {
         DFResponse dfResponse = new DFResponse();
@@ -62,9 +63,9 @@ public class Cantor {
         // 客户端状态，当状态发生变化，需要打印日志
         int clientStatus = -1;
         // 单次请求的文件内容长度
-        int expectedLen = 1024;
+        int expectedLen = INIT_EXPECTED_LEN;
         // 每10次请求读超时数
-        int readTimeCount = 0;
+        int readTimeoutCount = 0;
         // stoneMap组成：lastVerKey->lastVer; lastVer->lastFileName, lastFileName->skip
         final StoneMap map = StoneMapFactory.getObject();
         int lastVer = 0;
@@ -99,6 +100,8 @@ public class Cantor {
                         if (clientStatus != 1) {
                             log.info("status: create new file：%s", dfResponse.getFileNane());
                             clientStatus = 1;
+                        } else {
+                            log.error("服务器连续返回新增文件响应！产生空文件：" + tar.getName());
                         }
                         // 有新的文件，创建文件
                         map.put(lastVerKey, Integer.toString(lastVer = dfResponse.getVersion()));
@@ -108,6 +111,8 @@ public class Cantor {
                         if (tar.exists()) tar.delete();
                         tar.createNewFile();
                         skip = tar.length();
+                        // 重置预期文件内容长度
+                        expectedLen = INIT_EXPECTED_LEN;
                         continue;
                     }
                     if (dfResponse.getStatus() == 2) {
@@ -129,7 +134,7 @@ public class Cantor {
                 } catch (Exception e) {
                     log.error("服务器请求失败！", e);
                     if (e.getMessage().contains("Read time out")) {
-                        readTimeCount++;
+                        readTimeoutCount++;
                     }
                 } finally {
                     if (map.modify() < 10) {
@@ -139,19 +144,21 @@ public class Cantor {
                     }
                 }
 
-                // 动态调整单次请求的内容长度,每10次请求作一次调整
-                if (time % 10 == 0) {
-                    if (readTimeCount >= 5) {
+                // 动态调整单次请求的内容长度,每10次写请求作一次调整
+                if (clientStatus == 2 && time % 10 == 0) {
+                    if (readTimeoutCount >= 5) {
                         // 有半数及以上请求超时,调低单次请求的文件内容长度,最低 128 byte
                         if (expectedLen > 128) {
                             expectedLen -= 128;
                         }
                     } else {
-                        // 有过半请求未超时,调高单次请求的文件内容长度
-                        expectedLen += 128;
+                        // 有过半请求未超时,调高单次请求的文件内容长度,最高 1m
+                        if (expectedLen < 1048576) {
+                            expectedLen += 128;
+                        }
                     }
                     // 重置超时统计
-                    readTimeCount = 0;
+                    readTimeoutCount = 0;
                 }
             }
         } catch (IOException e) {
