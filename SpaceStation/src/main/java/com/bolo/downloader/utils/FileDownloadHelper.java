@@ -37,8 +37,10 @@ public class FileDownloadHelper {
         // get params
         List<String> cvs = params.get("cv");
         List<String> sps = params.get("sp");
+        List<String> els = params.get("el");
         Integer clientVer = cvs == null || cvs.size() == 0 ? null : Integer.valueOf(cvs.get(0));
         Long skip = sps == null || sps.size() == 0 ? null : Long.valueOf(sps.get(0));
+        Integer expectedLen = els == null || els.size() == 0 ? null : Integer.valueOf(els.get(0));
         if (skip == null || clientVer == null) {
             ResponseHelper.sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
             return false;
@@ -84,10 +86,12 @@ public class FileDownloadHelper {
                     return false;
                 }
                 fileAcc.seek(skip);
-                byte[] con = new byte[256];
-                int len = fileAcc.read(con, 0, con.length);
-                ByteBuf content = ByteBuffUtils.copy(con, len);
-                ResponseHelper.sendAndCleanupConnection(ctx, request, createFileWriteResp(skip, record.getVersion(), content, len), false);
+                // 实际响应的文件内容长度取决于请求的长度
+                int conLen = null == expectedLen || expectedLen < 0 ? 1024 : expectedLen;
+                byte[] con = new byte[conLen];
+                int realLen = fileAcc.read(con, 0, con.length);
+                ByteBuf content = ByteBuffUtils.copy(con, realLen);
+                ResponseHelper.sendAndCleanupConnection(ctx, request, createFileWriteResp(skip, record.getVersion(), content, realLen), false);
             } catch (Exception e) {
                 log.error("服务器文件读取失败！", e);
                 ResponseHelper.sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, request);

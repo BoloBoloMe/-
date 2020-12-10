@@ -14,7 +14,7 @@ public class MyLogger extends SuperLogger {
         snapshot.log(Level.INFO, String.format("%s : %s", clazz.getName(), msg), clazz);
     }
 
-    public void info(String msg, String... objs) {
+    public void info(String msg, Object... objs) {
         Logger snapshot = getLogger().get();
         String convertMsg = String.format(msg, objs);
         snapshot.log(Level.INFO, String.format("%s : %s", clazz.getName(), convertMsg), clazz);

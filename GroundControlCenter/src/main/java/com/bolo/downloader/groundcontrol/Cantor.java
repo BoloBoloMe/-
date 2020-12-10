@@ -23,25 +23,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Cantor {
-//    public static final String CONF_FILE_PATH = "D:\\MyResource\\Desktop\\conf\\GroundControlCenter.conf";
-        public static final String CONF_FILE_PATH = "";
+    //    public static final String CONF_FILE_PATH = "D:\\MyResource\\Desktop\\conf\\GroundControlCenter.conf";
+    public static final String CONF_FILE_PATH = "";
     private static final MyLogger log = LoggerFactory.getLogger(Cantor.class);
 
     static private final String lastVerKey = "lastVer";
-    private static final byte[] con = new byte[256];
     private static final ResponseHandler<DFResponse> RESPONSE_HANDLER = resp -> {
         DFResponse dfResponse = new DFResponse();
         if (resp.getStatusLine().getStatusCode() / 100 != 2) {
             throw new RuntimeException("服务器返回操作失败响应码：" + resp.getStatusLine().getStatusCode());
         }
         try (InputStream in = resp.getEntity().getContent()) {
-            dfResponse.setStatus(Integer.valueOf(resp.getLastHeader("st").getValue()));
+            dfResponse.setStatus(Integer.parseInt(resp.getLastHeader("st").getValue()));
             dfResponse.setFileNane(resp.getLastHeader("fn") == null ? "" : URLDecoder.decode(resp.getLastHeader("fn").getValue(), "utf8"));
-            dfResponse.setSkip(Long.valueOf(resp.getLastHeader("sp").getValue()));
-            dfResponse.setVersion(Integer.valueOf(resp.getLastHeader("vs").getValue()));
+            dfResponse.setSkip(Long.parseLong(resp.getLastHeader("sp").getValue()));
+            dfResponse.setVersion(Integer.parseInt(resp.getLastHeader("vs").getValue()));
             if (dfResponse.getStatus() == 2) {
-                int realLen = in.read(con, 0, con.length);
-                dfResponse.setContent(con, realLen);
+                int conLen = Integer.parseInt(resp.getLastHeader("content-length").getValue());
+                byte[] content = new byte[conLen];
+                in.read(content, 0, conLen);
+                dfResponse.setContent(content);
             }
             dfResponse.setComplete(true);
         } catch (Exception e) {
@@ -58,8 +59,13 @@ public class Cantor {
     }
 
     public static void main(String[] args) {
-        // stoneMap组成：lastVerKey->lastVer; lastVer->lastFileName, lastFileName->skip
+        // 客户端状态，当状态发生变化，需要打印日志
         int clientStatus = -1;
+        // 单次请求的文件内容长度
+        int expectedLen = 1024;
+        // 每10次请求读超时数
+        int readTimeCount = 0;
+        // stoneMap组成：lastVerKey->lastVer; lastVer->lastFileName, lastFileName->skip
         final StoneMap map = StoneMapFactory.getObject();
         int lastVer = 0;
         long skip = 0;
@@ -72,9 +78,9 @@ public class Cantor {
             File tar = null;
             if (lastFileName != null) tar = new File(ConfFactory.get("filePath"), lastFileName);
             // synchronous loop
-            while (true) {
+            for (int time = 1; ; time++) {
                 try {
-                    DFResponse dfResponse = client.execute(createPostReq(lastVer, skip), RESPONSE_HANDLER);
+                    DFResponse dfResponse = client.execute(createPostReq(lastVer, skip, expectedLen), RESPONSE_HANDLER);
                     if (!dfResponse.isComplete()) {
                         log.error("服务器响应不可用，重新请求");
                         sleep(1000);
@@ -105,6 +111,7 @@ public class Cantor {
                         continue;
                     }
                     if (dfResponse.getStatus() == 2) {
+                        log.info("当前流量: %d byte.", dfResponse.getContent().length);
                         if (clientStatus != 2) {
                             log.info("status: write file: %s", tar.getName());
                             clientStatus = 2;
@@ -121,12 +128,30 @@ public class Cantor {
                     }
                 } catch (Exception e) {
                     log.error("服务器请求失败！", e);
+                    if (e.getMessage().contains("Read time out")) {
+                        readTimeCount++;
+                    }
                 } finally {
                     if (map.modify() < 10) {
                         map.flushWriteBuff();
                     } else {
                         map.rewriteDbFile();
                     }
+                }
+
+                // 动态调整单次请求的内容长度,每10次请求作一次调整
+                if (time % 10 == 0) {
+                    if (readTimeCount >= 5) {
+                        // 有半数及以上请求超时,调低单次请求的文件内容长度,最低 128 byte
+                        if (expectedLen > 128) {
+                            expectedLen -= 128;
+                        }
+                    } else {
+                        // 有过半请求未超时,调高单次请求的文件内容长度
+                        expectedLen += 128;
+                    }
+                    // 重置超时统计
+                    readTimeCount = 0;
                 }
             }
         } catch (IOException e) {
@@ -135,12 +160,13 @@ public class Cantor {
     }
 
 
-    private static HttpPost createPostReq(int currVer, long skip) {
+    private static HttpPost createPostReq(int currVer, long skip, int expectedLen) {
         HttpPost request = new HttpPost(ConfFactory.get("url"));
         request.setProtocolVersion(new ProtocolVersion("http", 1, 1));
         List<NameValuePair> params = new ArrayList<>();
         params.add(new BasicNameValuePair("cv", Integer.toString(currVer)));
         params.add(new BasicNameValuePair("sp", Long.toString(skip)));
+        params.add(new BasicNameValuePair("el", Integer.toString(expectedLen)));
         request.setEntity(new UrlEncodedFormEntity(params, StandardCharsets.UTF_8));
         request.setHeader("content-type", "text/plain; charset=UTF-8");
         request.setHeader("connection", "keep-alive");
@@ -161,9 +187,7 @@ public class Cantor {
 
         private boolean complete;
 
-        public void setContent(byte[] con, int realLen) {
-            byte[] content = new byte[realLen];
-            System.arraycopy(con, 0, content, 0, realLen);
+        public void setContent(byte[] content) {
             this.content = content;
         }
 
