@@ -3,9 +3,11 @@ package com.bolo.downloader.groundcontrol;
 
 import com.bolo.downloader.groundcontrol.factory.ConfFactory;
 import com.bolo.downloader.groundcontrol.factory.StoneMapFactory;
+import com.bolo.downloader.respool.coder.MD5Util;
 import com.bolo.downloader.respool.db.StoneMap;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
+import org.apache.http.Header;
 import org.apache.http.NameValuePair;
 import org.apache.http.ProtocolVersion;
 import org.apache.http.client.ResponseHandler;
@@ -19,31 +21,45 @@ import org.apache.http.message.BasicNameValuePair;
 import java.io.*;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Cantor {
-    public static final String CONF_FILE_PATH = "/home/bolo/program/VideoDownloader_GroundControlCenter/conf/GroundControlCenter.conf";
+    public static final String CONF_FILE_PATH = "/home/bolo/program/VideoDownloader/GroundControlCenter/conf/GroundControlCenter.conf";
     //    public static final String CONF_FILE_PATH = "";
     private static final MyLogger log = LoggerFactory.getLogger(Cantor.class);
 
-    static private final int INIT_EXPECTED_LEN = 1024;
+    static private final int INIT_EXPECTED_LEN = 2048;
     static private final String lastVerKey = "lastVer";
-    private static final ResponseHandler<DFResponse> RESPONSE_HANDLER = resp -> {
+    private static final ResponseHandler<DFResponse> RESPONSE_COVER = resp -> {
         DFResponse dfResponse = new DFResponse();
         if (resp.getStatusLine().getStatusCode() / 100 != 2) {
             throw new RuntimeException("服务器返回操作失败响应码：" + resp.getStatusLine().getStatusCode());
         }
         try (InputStream in = resp.getEntity().getContent()) {
             dfResponse.setStatus(Integer.parseInt(resp.getLastHeader("st").getValue()));
-            dfResponse.setFileNane(resp.getLastHeader("fn") == null ? "" : URLDecoder.decode(resp.getLastHeader("fn").getValue(), "utf8"));
             dfResponse.setSkip(Long.parseLong(resp.getLastHeader("sp").getValue()));
             dfResponse.setVersion(Integer.parseInt(resp.getLastHeader("vs").getValue()));
             if (dfResponse.getStatus() == 2) {
                 int conLen = Integer.parseInt(resp.getLastHeader("content-length").getValue());
                 byte[] content = new byte[conLen];
-                in.read(content, 0, conLen);
+                int realLen = 0;
+                while (realLen < conLen) {
+                    realLen += in.read(content, realLen, conLen);
+                }
+                if (realLen != conLen) {
+                    throw new RuntimeException("响应内容不完整，content-length=" + conLen + ", 实际获取长度=" + realLen);
+                }
                 dfResponse.setContent(content);
+            }
+            Header fn = resp.getLastHeader("fn");
+            if (fn == null || "".equals(fn.getValue())) {
+                dfResponse.setFileNane(null);
+            } else if (dfResponse.getStatus() == 4) {
+                dfResponse.setFileNane(fn.getValue());
+            } else {
+                dfResponse.setFileNane(URLDecoder.decode(fn.getValue(), "utf8"));
             }
             dfResponse.setComplete(true);
         } catch (Exception e) {
@@ -66,22 +82,29 @@ public class Cantor {
         int expectedLen = INIT_EXPECTED_LEN;
         // 每10次请求读超时数
         int readTimeoutCount = 0;
-        // stoneMap组成：lastVerKey->lastVer; lastVer->lastFileName, lastFileName->skip
+        // stoneMap组成：lastVerKey->lastVer; lastVer->lastFileName
         final StoneMap map = StoneMapFactory.getObject();
         int lastVer = 0;
         long skip = 0;
         String lastFileName = null;
-        if (null != map.get(lastVerKey) && (lastVer = Integer.valueOf(map.get(lastVerKey))) > 0) {
+        if (null != map.get(lastVerKey) && (lastVer = Integer.parseInt(map.get(lastVerKey))) > 0) {
             lastFileName = map.get(map.get(lastVerKey));
-            skip = Long.valueOf(map.get(lastFileName));
         }
         try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
             File tar = null;
-            if (lastFileName != null) tar = new File(ConfFactory.get("filePath"), lastFileName);
+            if (lastFileName != null) {
+                tar = new File(ConfFactory.get("filePath"), lastFileName);
+                if (!tar.exists()) {
+                    tar.createNewFile();
+                }
+                skip = tar.length();
+            }
             // synchronous loop
+            log.info("服务器地址:%s", ConfFactory.get("url"));
+            log.info("当前版本号:%d", lastVer);
             for (int time = 1; ; time++) {
                 try {
-                    DFResponse dfResponse = client.execute(createPostReq(lastVer, skip, expectedLen), RESPONSE_HANDLER);
+                    DFResponse dfResponse = client.execute(createPostReq(lastVer, skip, expectedLen), RESPONSE_COVER);
                     if (!dfResponse.isComplete()) {
                         log.error("服务器响应不可用，重新请求");
                         sleep(1000);
@@ -106,30 +129,50 @@ public class Cantor {
                         // 有新的文件，创建文件
                         map.put(lastVerKey, Integer.toString(lastVer = dfResponse.getVersion()));
                         map.put(map.get(lastVerKey), dfResponse.getFileNane());
-                        map.put(dfResponse.getFileNane(), "0");
                         tar = new File(ConfFactory.get("filePath"), dfResponse.getFileNane());
                         if (tar.exists()) tar.delete();
                         tar.createNewFile();
-                        skip = tar.length();
+                        skip = 0;
                         // 重置预期文件内容长度
                         expectedLen = INIT_EXPECTED_LEN;
                         continue;
                     }
                     if (dfResponse.getStatus() == 2) {
-                        log.info("当前流量: %d byte.", dfResponse.getContent().length);
+                        // 当前文件有数据需要继续写入
                         if (clientStatus != 2) {
                             log.info("status: write file: %s", tar.getName());
                             clientStatus = 2;
                         }
-                        // 当前文件有数据需要继续写入
+                        log.info("当前流量: %d byte.", dfResponse.getContent().length);
+                        if (skip != dfResponse.getSkip()) {
+                            log.error("响应的数据起始位置与请求的不一致！request skip=" + skip + ",response skip=" + dfResponse.getSkip());
+                            continue;
+                        }
                         try (RandomAccessFile accessFile = new RandomAccessFile(tar, "rws")) {
                             accessFile.seek(dfResponse.skip);
                             accessFile.write(dfResponse.getContent());
                             skip = accessFile.length();
-                            map.put(tar.getName(), Long.toString(skip));
                         } catch (Exception e) {
                             log.error("文件写入失败！fileName：" + tar.getName(), e);
                         }
+                        continue;
+                    }
+                    if (dfResponse.getStatus() == 4) {
+                        // 文件下载完毕 校验文件完整性
+                        try (RandomAccessFile accessFile = new RandomAccessFile(tar, "r")) {
+                            if (checkMD5(accessFile, dfResponse.getFileNane())) {
+                                log.info("文件 %s 下载成功.", tar.getName());
+                                // 文件内容校验正确,通知服务器下载结果
+                                skip = 0;
+                                expectedLen = 0;
+                            } else {
+                                // 文件内容校验错误,重新下载最后一部分数据
+                                log.error("文件下载出错！");
+                                expectedLen = 0;
+                                skip = 0;
+                            }
+                        }
+                        continue;
                     }
                 } catch (Exception e) {
                     log.error("服务器请求失败！", e);
@@ -137,28 +180,28 @@ public class Cantor {
                         readTimeoutCount++;
                     }
                 } finally {
+                    // 持久化
                     if (map.modify() < 10) {
                         map.flushWriteBuff();
                     } else {
                         map.rewriteDbFile();
                     }
-                }
-
-                // 动态调整单次请求的内容长度,每10次写请求作一次调整
-                if (clientStatus == 2 && time % 10 == 0) {
-                    if (readTimeoutCount >= 5) {
-                        // 有半数及以上请求超时,调低单次请求的文件内容长度,最低 128 byte
-                        if (expectedLen > 128) {
-                            expectedLen -= 128;
+                    // 动态调整单次请求的内容长度,每10次写请求作一次调整
+                    if (clientStatus == 2 && time % 10 == 0) {
+                        if (readTimeoutCount >= 5) {
+                            // 有半数及以上请求超时,调低单次请求的文件内容长度,最低 128 byte
+                            if (expectedLen > 128) {
+                                expectedLen -= 128;
+                            }
+                        } else {
+                            // 有过半请求未超时,调高单次请求的文件内容长度,最高 1m
+                            if (expectedLen < 1048576) {
+                                expectedLen += 128;
+                            }
                         }
-                    } else {
-                        // 有过半请求未超时,调高单次请求的文件内容长度,最高 1m
-                        if (expectedLen < 1048576) {
-                            expectedLen += 128;
-                        }
+                        // 重置超时统计
+                        readTimeoutCount = 0;
                     }
-                    // 重置超时统计
-                    readTimeoutCount = 0;
                 }
             }
         } catch (IOException e) {
@@ -184,7 +227,7 @@ public class Cantor {
     }
 
     private static class DFResponse {
-        // 0-数据一致态; 1-文件新增态，存在新的文件，fileName 存放着新文件名; 2-文件同步态，content保存着当前文件的新内容; 3-文件已遗失;
+        // 0-数据一致态; 1-文件新增态，存在新的文件，fileName 存放着新文件名; 2-文件同步态，content保存着当前文件的新内容; 3-文件已遗失; 4-文件已结束;
         private int status;
         private String fileNane;
         private int version;
@@ -248,5 +291,20 @@ public class Cantor {
             Thread.sleep(time);
         } catch (InterruptedException e) {
         }
+    }
+
+    private static boolean checkMD5(File target, String md5) throws IOException, NoSuchAlgorithmException {
+        String tarMD5 = MD5Util.md5HashCode32(new RandomAccessFile(target, "r"));
+        return md5.equals(tarMD5);
+    }
+
+    private static boolean checkMD5(RandomAccessFile target, String md5) throws IOException, NoSuchAlgorithmException {
+        String tarMD5 = MD5Util.md5HashCode32(target);
+        return md5.equals(tarMD5);
+    }
+
+    private static boolean checkMD5(byte[] con, String md5) throws IOException, NoSuchAlgorithmException {
+        String tarMD5 = MD5Util.md5HashCode32(con);
+        return md5.equals(tarMD5);
     }
 }

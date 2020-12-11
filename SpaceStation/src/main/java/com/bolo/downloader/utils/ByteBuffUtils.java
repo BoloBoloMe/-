@@ -36,14 +36,10 @@ public class ByteBuffUtils {
         return buf;
     }
 
-    public static void relase(ByteBuf byteBuf) {
-        try {
 
-        } catch (Exception e) {
-
-        }
+    public static ByteBuf bigBuff() {
+        return allocator.buffer(FileDownloadHelper.MAX_CONTENT_LENGTH);
     }
-
 
     public static ByteBuf empty() {
         return Unpooled.EMPTY_BUFFER;

@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 
 
 public class Bootstrap {
-//        public static final String CONF_FILE_PATH = "D:\\MyResource\\Desktop\\conf\\SpaceStation.conf";
-    public static final String CONF_FILE_PATH = "";
+        public static final String CONF_FILE_PATH = "/home/bolo/program/VideoDownloader/SpaceStation/conf/SpaceStation.conf";
+//    public static final String CONF_FILE_PATH = "";
     private static int PORT;
     private static final BlockingDeque<ReqRecord> deque = ReqQueueFactory.get();
     private static MyLogger log = LoggerFactory.getLogger(Bootstrap.class);
