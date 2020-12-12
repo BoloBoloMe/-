@@ -30,8 +30,7 @@ import java.util.Base64;
 import java.util.List;
 
 public class Cantor {
-    public static final String CONF_FILE_PATH = "/home/bolo/program/VideoDownloader/GroundControlCenter/conf/GroundControlCenter.conf";
-    //    public static final String CONF_FILE_PATH = "";
+    public static final String CONF_FILE_PATH = "conf/GroundControlCenter.conf";
     static private final MyLogger log = LoggerFactory.getLogger(Cantor.class);
     static private final int INIT_EXPECTED_LEN = 2048;
     static private final String KEY_LAST_VER = "lastVer";
@@ -82,6 +81,7 @@ public class Cantor {
     }
 
     public static void main(String[] args) {
+        ConfFactory.load(CONF_FILE_PATH);
         // 客户端状态，当状态发生变化，需要打印日志; 单次请求的文件内容长度; 每10次请求读超时数;
         int clientStatus = -1, expectedLen = INIT_EXPECTED_LEN, readTimeoutCount = 0;
         // stoneMap组成：lastVerKey->lastVer; lastVer->lastFileName

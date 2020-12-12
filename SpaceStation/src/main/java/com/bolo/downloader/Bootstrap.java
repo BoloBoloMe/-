@@ -19,20 +19,13 @@ import java.util.concurrent.TimeUnit;
 
 
 public class Bootstrap {
-    public static final String CONF_FILE_PATH = "/home/bolo/program/VideoDownloader/SpaceStation/conf/SpaceStation.conf";
+    private static final String CONF_FILE_PATH = "conf/SpaceStation.conf";
     private static final BlockingDeque<ReqRecord> deque = ReqQueueFactory.get();
     private static MyLogger log = LoggerFactory.getLogger(Bootstrap.class);
-
-    static {
-        LoggerFactory.setLogPath(ConfFactory.get("logPath"));
-        LoggerFactory.setLogFileName(ConfFactory.get("logFileName"));
-        LoggerFactory.roll();
-    }
+    private static StoneMap stoneMap;
 
     public static void main(String[] args) {
-        // load stone map and cache file list
-        StoneMap stoneMap = StoneMapFactory.getObject();
-        Synchronizer.cache(stoneMap);
+        init();
         log.info("服务端当前版本号：%s", Integer.toString(Synchronizer.getCurrVer()));
         // start httpServer
         HttpServer httpServer = new HttpServer(Integer.parseInt(ConfFactory.get("port")), false);
@@ -87,6 +80,21 @@ public class Bootstrap {
                 log.error("background loop throws exception!", e);
             }
         }
+    }
+
+    /**
+     * 初始化程序
+     */
+    private static void init() {
+        // load configure
+        ConfFactory.load(CONF_FILE_PATH);
+        // init logger
+        LoggerFactory.setLogPath(ConfFactory.get("logPath"));
+        LoggerFactory.setLogFileName(ConfFactory.get("logFileName"));
+        LoggerFactory.roll();
+        // load stone map and cache file list
+        stoneMap = StoneMapFactory.getObject();
+        Synchronizer.cache(stoneMap);
     }
 
     private static void handelReqRecord(ReqRecord reqRecord) {

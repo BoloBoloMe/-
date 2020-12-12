@@ -11,11 +11,13 @@ public class MyLogger extends SuperLogger {
 
     public void info(String msg) {
         Logger snapshot = getLogger().get();
+        if (snapshot == null) return;
         snapshot.log(Level.INFO, String.format("%s : %s", clazz.getName(), msg), clazz);
     }
 
     public void info(String msg, Object... objs) {
         Logger snapshot = getLogger().get();
+        if (snapshot == null) return;
         String convertMsg = String.format(msg, objs);
         snapshot.log(Level.INFO, String.format("%s : %s", clazz.getName(), convertMsg), clazz);
 
@@ -24,11 +26,13 @@ public class MyLogger extends SuperLogger {
 
     public void error(String msg) {
         Logger snapshot = getLogger().get();
+        if (snapshot == null) return;
         snapshot.log(Level.WARNING, String.format("%s : %s", clazz.getName(), msg), clazz);
     }
 
     public void error(String msg, Throwable throwable) {
         Logger snapshot = getLogger().get();
+        if (snapshot == null) return;
         snapshot.log(Level.WARNING, String.format("%s : %s", clazz.getName(), msg), throwable);
     }
 
