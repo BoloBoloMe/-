@@ -20,6 +20,8 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 
 import java.io.*;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.net.SocketTimeoutException;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
@@ -35,7 +37,6 @@ public class Cantor {
     static private final int INIT_EXPECTED_LEN = 2048;
     static private final String KEY_LAST_VER = "lastVer";
     static private final String KEY_IS_DONE = "isDone";
-    static private final boolean encrypt = Integer.parseInt(ConfFactory.get("rsa")) > 0;
     static private final ResponseHandler<DFResponse> RESPONSE_COVER = resp -> {
         DFResponse dfResponse = new DFResponse();
         if (resp.getStatusLine().getStatusCode() / 100 != 2) {
@@ -74,14 +75,11 @@ public class Cantor {
         return dfResponse;
     };
 
-    static {
-        LoggerFactory.setLogPath(ConfFactory.get("logPath"));
-        LoggerFactory.setLogFileName(ConfFactory.get("logFileName"));
-        LoggerFactory.roll();
-    }
 
     public static void main(String[] args) {
-        ConfFactory.load(CONF_FILE_PATH);
+        init();
+        printProcessInfo();
+        boolean encrypt = Integer.parseInt(ConfFactory.get("rsa")) > 0;
         // 客户端状态，当状态发生变化，需要打印日志; 单次请求的文件内容长度; 每10次请求读超时数;
         int clientStatus = -1, expectedLen = INIT_EXPECTED_LEN, readTimeoutCount = 0;
         // stoneMap组成：lastVerKey->lastVer; lastVer->lastFileName
@@ -271,6 +269,21 @@ public class Cantor {
         return request;
     }
 
+    private static void init() {
+        ConfFactory.load(CONF_FILE_PATH);
+        LoggerFactory.setLogPath(ConfFactory.get("logPath"));
+        LoggerFactory.setLogFileName(ConfFactory.get("logFileName"));
+        LoggerFactory.roll();
+    }
+
+    private static void printProcessInfo() {
+        RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
+        String name = runtime.getName();
+        System.out.println("当前进程： " + name);
+        log.info("当前进程： " + name);
+
+    }
+
     private static class DFResponse {
         // 0-数据一致态; 1-文件新增态，存在新的文件，fileName 存放着新文件名; 2-文件同步态，content保存着当前文件的新内容; 3-文件已遗失; 4-文件已结束; 5-keyId无效
         private int status;
@@ -361,4 +374,5 @@ public class Cantor {
         String tarMD5 = MD5Util.md5HashCode32(con);
         return md5.equals(tarMD5);
     }
+
 }
