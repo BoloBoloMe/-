@@ -2,6 +2,7 @@ package com.bolo.downloader.utils;
 
 import com.bolo.downloader.factory.ConfFactory;
 import com.bolo.downloader.respool.coder.MD5Util;
+import com.bolo.downloader.respool.coder.RSAUtils;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.sync.Record;
@@ -14,18 +15,20 @@ import io.netty.handler.codec.http.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPublicKey;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
 public class FileDownloadHelper {
     private static final MyLogger log = LoggerFactory.getLogger(FileDownloadHelper.class);
     private static final FullHttpResponse equalsResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, ByteBuffUtils.empty());
-    public static final int MAX_CONTENT_LENGTH = 65536; // 64k
+    private static final int MAX_CONTENT_LENGTH = 65536; // 64k
     private static final byte[] contentArr = new byte[MAX_CONTENT_LENGTH];
-
+    private static final Charset charset = Charset.forName("utf8");
 
     static {
         // init equals response
@@ -43,9 +46,23 @@ public class FileDownloadHelper {
         List<String> cvs = params.get("cv");
         List<String> sps = params.get("sp");
         List<String> els = params.get("el");
+        List<String> pcs = params.get("pc");
+        List<String> kis = params.get("ki");
         Integer clientVer = cvs == null || cvs.size() == 0 ? null : Integer.valueOf(cvs.get(0));
         Long skip = sps == null || sps.size() == 0 ? null : Long.valueOf(sps.get(0));
-        Integer expectedLen = els == null || els.size() == 0 ? 1024 : Integer.parseInt(els.get(0));
+        int expectedLen = els == null || els.size() == 0 ? 1024 : Integer.parseInt(els.get(0));
+        String keyId = (kis == null || kis.size() == 0) ? null : kis.get(0);
+        RSAPublicKey publicKey = null;
+        if (null != pcs && pcs.size() > 0) {
+            keyId = ctx.channel().id().asLongText();
+            String pc = pcs.get(0);
+            publicKey = KeyUtils.add(keyId, pc);
+        } else if (keyId != null) {
+            publicKey = KeyUtils.get(keyId);
+            if (publicKey == null) {
+                ResponseHelper.sendAndCleanupConnection(ctx, request, createKeyIdInvalidResp(), false);
+            }
+        }
         if (skip == null || clientVer == null) {
             ResponseHelper.sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
             return false;
@@ -65,7 +82,7 @@ public class FileDownloadHelper {
             if (nextRecord == null) {
                 ResponseHelper.sendAndCleanupConnection(ctx, request, equalsResponse, false);
             } else {
-                ResponseHelper.sendAndCleanupConnection(ctx, request, createNextFileResp(nextRecord, "1"), false);
+                ResponseHelper.sendAndCleanupConnection(ctx, request, createNextFileResp(nextRecord, "1", publicKey, keyId), false);
             }
             return false;
         }
@@ -78,7 +95,7 @@ public class FileDownloadHelper {
                 // 暂无需要下载的文件,返回 equalsResponse
                 ResponseHelper.sendAndCleanupConnection(ctx, request, equalsResponse, false);
             } else {
-                ResponseHelper.sendAndCleanupConnection(ctx, request, createNextFileResp(record, "3"), false);
+                ResponseHelper.sendAndCleanupConnection(ctx, request, createNextFileResp(record, "3", publicKey, keyId), false);
             }
             return false;
         }
@@ -98,9 +115,16 @@ public class FileDownloadHelper {
                 conLen = MAX_CONTENT_LENGTH;
             }
             int realLen = fileAcc.read(contentArr, 0, conLen);
+            byte[] writeBuff;
+            if (publicKey == null || "".equals(publicKey)) {
+                writeBuff = contentArr;
+            } else {
+                writeBuff = RSAUtils.encode(contentArr, realLen, publicKey);
+                realLen = writeBuff.length;
+            }
             content = ByteBuffUtils.bigBuff();
-            content.writeBytes(contentArr, 0, realLen);
-            ResponseHelper.sendAndCleanupConnection(ctx, request, createFileWriteResp(skip, record.getVersion(), content, realLen, ""), false);
+            content.writeBytes(writeBuff, 0, realLen);
+            ResponseHelper.sendAndCleanupConnection(ctx, request, createFileWriteResp(skip, record.getVersion(), content, realLen, keyId, ""), false);
         } catch (Exception e) {
             log.error("服务器文件读取失败！", e);
             ResponseHelper.sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, request);
@@ -122,38 +146,59 @@ public class FileDownloadHelper {
         return record;
     }
 
-    private static FullHttpResponse createNextFileResp(Record nextRecord, String status) {
+    private static FullHttpResponse createNextFileResp(Record nextRecord, String status, RSAPublicKey key, String keyId) {
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, ByteBuffUtils.empty());
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
         response.headers().set("st", status);
         response.headers().set("sp", "0");
         response.headers().set("vs", Integer.toString(nextRecord.getVersion()));
+        if (keyId != null) response.headers().set("ki", keyId);
         try {
-            response.headers().set("fn", URLEncoder.encode(nextRecord.getFileName(), "utf8"));
-        } catch (UnsupportedEncodingException e) {
+            if (key == null) {
+                response.headers().set("fn", URLEncoder.encode(nextRecord.getFileName(), "utf8"));
+            } else {
+                byte[] fileName = nextRecord.getFileName().getBytes(charset);
+                String base64Name = Base64.getEncoder().encodeToString(RSAUtils.encode(fileName, fileName.length, key));
+                String urlEncodeName = URLEncoder.encode(base64Name, "utf8");
+                response.headers().set("fn", urlEncodeName);
+            }
+        } catch (Exception e) {
+            log.error("文件名编码失败！", e);
         }
         HttpUtil.setContentLength(response, 0);
         return response;
     }
 
-    private static FullHttpResponse createFileWriteResp(long spik, int version, ByteBuf content, int len, String md5) {
+    private static FullHttpResponse createFileWriteResp(long spik, int version, ByteBuf content, int len, String keyId, String md5) {
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, content);
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
         response.headers().set("st", "2");
         response.headers().set("sp", Long.toString(spik));
         response.headers().set("vs", Integer.toString(version));
         response.headers().set("fn", md5);
+        if (keyId != null) response.headers().set("ki", keyId);
         HttpUtil.setContentLength(response, len);
         return response;
     }
 
-    private static FullHttpResponse createFileEndResp(int version, long spik, String md5) {
+    private static FullHttpResponse createFileEndResp(int version, long skip, String md5) {
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, ByteBuffUtils.empty());
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
         response.headers().set("st", "4");
-        response.headers().set("sp", spik);
+        response.headers().set("sp", skip);
         response.headers().set("vs", Integer.toString(version));
         response.headers().set("fn", md5);
+        HttpUtil.setContentLength(response, 0);
+        return response;
+    }
+
+    private static FullHttpResponse createKeyIdInvalidResp() {
+        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, ByteBuffUtils.empty());
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
+        response.headers().set("st", "5");
+        response.headers().set("sp", "0");
+        response.headers().set("vs", "0");
+        response.headers().set("fn", "");
         HttpUtil.setContentLength(response, 0);
         return response;
     }

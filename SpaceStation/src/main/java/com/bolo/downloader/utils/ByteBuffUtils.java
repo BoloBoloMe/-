@@ -38,7 +38,7 @@ public class ByteBuffUtils {
 
 
     public static ByteBuf bigBuff() {
-        return allocator.buffer(FileDownloadHelper.MAX_CONTENT_LENGTH);
+        return allocator.buffer(71808);
     }
 
     public static ByteBuf empty() {

@@ -26,8 +26,9 @@ public class ConfFactory {
         conf.put("wrireBuffSize", "10");
         conf.put("putSpedMax", "1");
         conf.put("writeLoopMax", "1");
+        conf.put("rsa", "0");
 
-        final File confFile = new File("".equals(Cantor.CONF_FILE_PATH) ? "conf/GroundControlCenter.conf" : Cantor.CONF_FILE_PATH);
+        final File confFile = new File(Cantor.CONF_FILE_PATH);
         if (confFile.exists()) {
             final Properties properties;
             try (BufferedReader reader = new BufferedReader(new FileReader(confFile))) {

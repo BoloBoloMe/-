@@ -7,9 +7,11 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 
+import javax.net.ssl.SSLEngine;
 import java.nio.charset.Charset;
 
 public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
@@ -24,7 +26,10 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
     public void initChannel(SocketChannel ch) {
         ChannelPipeline pipeline = ch.pipeline();
         if (sslCtx != null) {
-            pipeline.addLast(sslCtx.newHandler(ch.alloc()));
+            SSLEngine sslEngine = sslCtx.newEngine(ch.alloc());
+            sslEngine.setNeedClientAuth(false);
+            SslHandler sslHandler = new SslHandler(sslEngine);
+            pipeline.addLast(sslHandler);
         }
         pipeline.addLast(new StringEncoder(Charset.forName("UTF-8")));
         pipeline.addLast(new IdleStateHandler(60, 60, 0));

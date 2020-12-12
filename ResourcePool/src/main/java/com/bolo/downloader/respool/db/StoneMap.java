@@ -146,6 +146,7 @@ public class StoneMap implements Map<String, String> {
             TreeMap<Integer, Node> sort = new TreeMap<>();
             String line;
             char[] depictArea = new char[4];
+            int maxSerial = 0;
             while (true) {
                 int len = reader.read(depictArea);
                 if (len <= 0) break;
@@ -157,6 +158,7 @@ public class StoneMap implements Map<String, String> {
                     if (node.serial == 0) {
                         bufferPool.put(node.key, node.value);
                     } else {
+                        if (node.serial > maxSerial) maxSerial = node.serial;
                         sort.put(node.serial, node);
                     }
                     modCounter.incrementAndGet();
@@ -170,6 +172,7 @@ public class StoneMap implements Map<String, String> {
                     bufferPool.put(node.key, node.value);
                 }
             }
+            writeBuff.resetSerialInit(maxSerial);
         } catch (IOException e) {
             throw new LogReadException(e);
         }

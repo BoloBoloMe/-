@@ -14,16 +14,12 @@ import com.bolo.downloader.sync.Synchronizer;
 import com.bolo.downloader.utils.PostHelper;
 import io.netty.handler.codec.http.HttpUtil;
 
-import javax.net.ssl.SSLException;
-import java.security.cert.CertificateException;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 
 public class Bootstrap {
-        public static final String CONF_FILE_PATH = "/home/bolo/program/VideoDownloader/SpaceStation/conf/SpaceStation.conf";
-//    public static final String CONF_FILE_PATH = "";
-    private static int PORT;
+    public static final String CONF_FILE_PATH = "/home/bolo/program/VideoDownloader/SpaceStation/conf/SpaceStation.conf";
     private static final BlockingDeque<ReqRecord> deque = ReqQueueFactory.get();
     private static MyLogger log = LoggerFactory.getLogger(Bootstrap.class);
 
@@ -33,15 +29,18 @@ public class Bootstrap {
         LoggerFactory.roll();
     }
 
-    public static void main(String[] args) throws CertificateException, InterruptedException, SSLException {
+    public static void main(String[] args) {
         // load stone map and cache file list
         StoneMap stoneMap = StoneMapFactory.getObject();
         Synchronizer.cache(stoneMap);
         log.info("服务端当前版本号：%s", Integer.toString(Synchronizer.getCurrVer()));
-        // start server
-        PORT = Integer.valueOf(ConfFactory.get("port"));
-        HttpServer server = new HttpServer(PORT);
-        server.start();
+        // start httpServer
+        HttpServer httpServer = new HttpServer(Integer.parseInt(ConfFactory.get("port")), false);
+        try {
+            httpServer.start();
+        } catch (Exception e) {
+            throw new Error("服务器启动失败", e);
+        }
         long lastScanDiscTime = 0;
         for (long time = 1; ; time++) {
             // write request loop
@@ -62,7 +61,7 @@ public class Bootstrap {
                     Synchronizer.scanDisc();
                     Synchronizer.clean();
                     stoneMap.rewriteDbFile();
-                    server.shutdown();
+                    httpServer.shutdown();
                     DownloaderFactory.getObject().shudown();
                     log.info("进程已结束！");
                     return;
@@ -79,7 +78,7 @@ public class Bootstrap {
                     Synchronizer.scanDisc();
                     Synchronizer.clean();
                 }
-                if (stoneMap.modify() < 200) {
+                if (stoneMap.modify() < 16) {
                     stoneMap.flushWriteBuff();
                 } else {
                     stoneMap.rewriteDbFile();

@@ -29,6 +29,7 @@ public class CycleWriteBuff<K, V> {
 
     private volatile int checkpoint = 0;
 
+
     public CycleWriteBuff(int size, int putSpeedyMax, int writeLoopMax) {
         this.size = size;
         this.PUT_SPEEDY_MAX = putSpeedyMax;
@@ -43,6 +44,15 @@ public class CycleWriteBuff<K, V> {
         }
         wirteNote.set(entry);
         readNote.set(entry);
+    }
+
+    /**
+     * 重置流水号到当前最新值
+     *
+     * @param serial
+     */
+    public void resetSerialInit(int serial) {
+        this.serial.set(serial);
     }
 
     public void put(K key, V value) {
