@@ -1,16 +1,13 @@
 package test;
 
-import org.junit.Test;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ThreadPoolTest {
-    @Test
     public void testFixedThreadPool() {
         ExecutorService threadPool = Executors.newFixedThreadPool(1);
 
@@ -40,7 +37,6 @@ public class ThreadPoolTest {
 //        while (true) ;
     }
 
-    @Test
     public void testScheduledThreadPool() {
         ScheduledExecutorService threadPool = Executors.newScheduledThreadPool(1);
         threadPool.scheduleAtFixedRate(() -> System.out.println("执行ScheduledThreadTask"), 5,10, SECONDS);

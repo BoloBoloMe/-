@@ -7,7 +7,7 @@
     <groupId>com.bolo.downloader</groupId>
     <artifactId>VideoDownloader</artifactId>
     <packaging>pom</packaging>
-    <version>0.4.1-SNAPSHOT</version>
+    <version>0.4.1</version>
     <description>视频下载器</description>
     <modules>
         <module>SpaceStation</module>
