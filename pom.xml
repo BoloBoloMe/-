@@ -7,7 +7,7 @@
     <groupId>com.bolo.downloader</groupId>
     <artifactId>VideoDownloader</artifactId>
     <packaging>pom</packaging>
-    <version>0.4.1</version>
+    <version>0.4.2</version>
     <description>视频下载器</description>
     <modules>
         <module>SpaceStation</module>
@@ -17,7 +17,7 @@
 
     <!-- 配置版本参数 -->
     <properties>
-        <project.version>0.4.1-SNAPSHOT</project.version>
+        <project.version>0.4.2</project.version>
         <netty.version>4.1.54.Final</netty.version>
         <fastjson.version>1.2.75</fastjson.version>
         <httpclient.version>4.5.12</httpclient.version>
