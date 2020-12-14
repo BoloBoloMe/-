@@ -37,7 +37,7 @@ public class Bootstrap {
         long lastScanDiscTime = 0;
         for (long time = 1; ; time++) {
             // write request loop
-            while (true) {
+            for (int i = 0; i < 10; i++) {
                 ReqRecord reqRecord;
                 try {
                     // 对于来自同一个连接的请求（比如当客户端使用连接池时），会有不同的请求对象，但这些对象关联的连接是同一个
