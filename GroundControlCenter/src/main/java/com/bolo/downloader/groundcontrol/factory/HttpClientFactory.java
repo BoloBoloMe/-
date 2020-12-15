@@ -1,4 +1,4 @@
-package com.bolo.downloader.groundcontrol;
+package com.bolo.downloader.groundcontrol.factory;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;

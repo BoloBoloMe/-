@@ -1,13 +1,13 @@
-package com.bolo.downloader.utils;
+package com.bolo.downloader.helper;
 
 import com.alibaba.fastjson.JSON;
 import com.bolo.downloader.factory.ConfFactory;
 import com.bolo.downloader.factory.DownloaderFactory;
-import com.bolo.downloader.factory.ReqQueueFactory;
-import com.bolo.downloader.nio.ReqRecord;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.station.Downloader;
+import com.bolo.downloader.utils.ByteBuffUtils;
+import com.bolo.downloader.utils.ResponseUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -40,17 +40,20 @@ public class GetHelper {
     /**
      * 根据访问路径返回页面内容
      */
-    public static void doGet(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
+    public static boolean handle(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
         Downloader downloader = DownloaderFactory.getObject();
         if (uri.equals("/task/list")) {
             Map<String, String> result = downloader.listTasks();
-            ResponseHelper.sendJSON(ctx, HttpResponseStatus.OK, request, JSON.toJSONString(result));
+            ResponseUtil.sendJSON(ctx, HttpResponseStatus.OK, request, JSON.toJSONString(result));
         } else if (uri.equals("/video/list")) {
             List<String> result = downloader.listVideo();
-            ResponseHelper.sendJSON(ctx, HttpResponseStatus.OK, request, JSON.toJSONString(result));
+            ResponseUtil.sendJSON(ctx, HttpResponseStatus.OK, request, JSON.toJSONString(result));
+        } else if (uri.equals("/ssd")) {
+            ShutdownReqHelper.handle(uri, params, ctx, request);
         } else {
             toPage(uri, params, ctx, request);
         }
+        return false;
     }
 
 

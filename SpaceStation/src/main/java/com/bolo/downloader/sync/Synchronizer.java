@@ -9,6 +9,8 @@ import com.bolo.downloader.respool.log.MyLogger;
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
@@ -23,23 +25,8 @@ public class Synchronizer {
     static private final AtomicInteger version = new AtomicInteger(0);
     static private final ConcurrentHashMap<String, Record> cache = new ConcurrentHashMap<>();
     static private final MyLogger log = LoggerFactory.getLogger(Synchronizer.class);
+    final static private ExecutorService flushThread = Executors.newSingleThreadExecutor();
 
-    /**
-     * 扫描文件存放目录，缓存文件列表
-     */
-    public static void scanDisc() {
-        String[] fileArr = new File(new File(ConfFactory.get("videoPath")).getAbsolutePath()).list((dir, name) -> Pattern.matches(FILE_NAME_PATTERN, name.toLowerCase()));
-        List<String> newList = Arrays.asList(fileArr == null ? new String[]{} : fileArr);
-        fileList.lazySet(newList);
-        for (String fileName : newList) {
-            if (!map().containsKey(fileName)) commit(fileName, SyncState.NEW, fileName, "");
-        }
-        for (String fileName : map().keySet()) {
-            if (!lastVerKey.equals(fileName) && !newList.contains(fileName)) {
-                commit(fileName, SyncState.LOSE, fileName, "");
-            }
-        }
-    }
 
     /**
      * 获取当前版本号
@@ -68,24 +55,6 @@ public class Synchronizer {
         }
     }
 
-    /**
-     * 删除已下载的文件
-     */
-    public static void clean() {
-        for (String key : cache.keySet()) {
-            Record record = cache.get(key);
-            if (SyncState.DOWNLOADED == record.getState() || SyncState.LOSE == record.getState()) {
-                log.info("移除已遗失或已下载的缓存：" + record.getFileName());
-                File target = new File(ConfFactory.get("videoPath"), record.getFileName());
-                if (target.exists()) {
-                    log.info("删除已同步的文件：" + record.getFileName());
-                    target.delete();
-                }
-                cache.remove(key);
-                map().remove(key);
-            }
-        }
-    }
 
     /**
      * 缓存持久化的map
@@ -110,6 +79,42 @@ public class Synchronizer {
             if (state != null && state == record.getState()) return record;
         }
         return null;
+    }
+
+    /**
+     * 删除已下载的文件
+     */
+    private static void clean() {
+        for (String key : cache.keySet()) {
+            Record record = cache.get(key);
+            if (SyncState.DOWNLOADED == record.getState() || SyncState.LOSE == record.getState()) {
+                log.info("移除已遗失或已下载的缓存：" + record.getFileName());
+                File target = new File(ConfFactory.get("videoPath"), record.getFileName());
+                if (target.exists()) {
+                    log.info("删除已同步的文件：" + record.getFileName());
+                    target.delete();
+                }
+                cache.remove(key);
+                map().remove(key);
+            }
+        }
+    }
+
+    /**
+     * 扫描文件存放目录，缓存文件列表
+     */
+    private static void scanDisc() {
+        String[] fileArr = new File(new File(ConfFactory.get("videoPath")).getAbsolutePath()).list((dir, name) -> Pattern.matches(FILE_NAME_PATTERN, name.toLowerCase()));
+        List<String> newList = Arrays.asList(fileArr == null ? new String[]{} : fileArr);
+        fileList.lazySet(newList);
+        for (String fileName : newList) {
+            if (!map().containsKey(fileName)) commit(fileName, SyncState.NEW, fileName, "");
+        }
+        for (String fileName : map().keySet()) {
+            if (!lastVerKey.equals(fileName) && !newList.contains(fileName)) {
+                commit(fileName, SyncState.LOSE, fileName, "");
+            }
+        }
     }
 
 
@@ -157,5 +162,27 @@ public class Synchronizer {
         return StoneMapFactory.getObject();
     }
 
+
+    /**
+     * 异步刷新
+     */
+    private static void aFlush() {
+        final StoneMap stoneMap = map();
+        flushThread.submit(() -> {
+            scanDisc();
+            clean();
+            if (stoneMap.modify() < 16) {
+                stoneMap.flushWriteBuff();
+            } else {
+                stoneMap.rewriteDbFile();
+            }
+        });
+    }
+
+    public static void shudown() {
+        flushThread.shutdown();
+        scanDisc();
+        clean();
+    }
 
 }

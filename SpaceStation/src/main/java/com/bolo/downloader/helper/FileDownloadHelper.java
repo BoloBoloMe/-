@@ -1,33 +1,35 @@
-package com.bolo.downloader.utils;
+package com.bolo.downloader.helper;
 
 import com.bolo.downloader.factory.ConfFactory;
 import com.bolo.downloader.respool.coder.MD5Util;
-import com.bolo.downloader.respool.coder.RSAUtils;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.sync.Record;
 import com.bolo.downloader.sync.SyncState;
 import com.bolo.downloader.sync.Synchronizer;
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
+import com.bolo.downloader.utils.ByteBuffUtils;
+import com.bolo.downloader.utils.ResponseUtil;
+import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
+import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.stream.ChunkedFile;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.security.NoSuchAlgorithmException;
-import java.security.interfaces.RSAPublicKey;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class FileDownloadHelper {
     private static final MyLogger log = LoggerFactory.getLogger(FileDownloadHelper.class);
     private static final FullHttpResponse equalsResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, ByteBuffUtils.empty());
-    private static final int MAX_CONTENT_LENGTH = 65536; // 64k
-    private static final byte[] contentArr = new byte[MAX_CONTENT_LENGTH];
     private static final Charset charset = Charset.forName("utf8");
 
     static {
@@ -46,29 +48,15 @@ public class FileDownloadHelper {
         List<String> cvs = params.get("cv");
         List<String> sps = params.get("sp");
         List<String> els = params.get("el");
-        List<String> pcs = params.get("pc");
-        List<String> kis = params.get("ki");
         Integer clientVer = cvs == null || cvs.size() == 0 ? null : Integer.valueOf(cvs.get(0));
         Long skip = sps == null || sps.size() == 0 ? null : Long.valueOf(sps.get(0));
         int expectedLen = els == null || els.size() == 0 ? 1024 : Integer.parseInt(els.get(0));
-        String keyId = (kis == null || kis.size() == 0) ? null : kis.get(0);
-        RSAPublicKey publicKey = null;
-        if (null != pcs && pcs.size() > 0) {
-            keyId = ctx.channel().id().asLongText();
-            String pc = pcs.get(0);
-            publicKey = KeyUtils.add(keyId, pc);
-        } else if (keyId != null) {
-            publicKey = KeyUtils.get(keyId);
-            if (publicKey == null) {
-                ResponseHelper.sendAndCleanupConnection(ctx, request, createKeyIdInvalidResp(), false);
-            }
-        }
         if (skip == null || clientVer == null) {
-            ResponseHelper.sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
+            ResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
             return false;
         }
         if (serverVer < clientVer) {
-            ResponseHelper.sendAndCleanupConnection(ctx, request, equalsResponse, false);
+            ResponseUtil.sendAndCleanupConnection(ctx, request, equalsResponse, false);
             return false;
         }
         // serverVer >= clientVer
@@ -80,9 +68,9 @@ public class FileDownloadHelper {
             Record nextRecord = getNextRecord(clientVer);
             // 如果客户端版本号之后的所有版本都找不到文件,返回 equalsResponse
             if (nextRecord == null) {
-                ResponseHelper.sendAndCleanupConnection(ctx, request, equalsResponse, false);
+                ResponseUtil.sendAndCleanupConnection(ctx, request, equalsResponse, false);
             } else {
-                ResponseHelper.sendAndCleanupConnection(ctx, request, createNextFileResp(nextRecord, "1", publicKey, keyId), false);
+                ResponseUtil.sendAndCleanupConnection(ctx, request, createNextFileResp(nextRecord, "1"), false);
             }
             return false;
         }
@@ -93,41 +81,66 @@ public class FileDownloadHelper {
             record = getNextRecord(clientVer);
             if (record == null) {
                 // 暂无需要下载的文件,返回 equalsResponse
-                ResponseHelper.sendAndCleanupConnection(ctx, request, equalsResponse, false);
+                ResponseUtil.sendAndCleanupConnection(ctx, request, equalsResponse, false);
             } else {
-                ResponseHelper.sendAndCleanupConnection(ctx, request, createNextFileResp(record, "3", publicKey, keyId), false);
+                ResponseUtil.sendAndCleanupConnection(ctx, request, createNextFileResp(record, "3"), false);
             }
             return false;
         }
         // 要下载的文件还在，下载当前文件
-        ByteBuf content;
-        try (RandomAccessFile fileAcc = new RandomAccessFile(ConfFactory.get("videoPath") + File.separator + record.getFileName(), "r")) {
-            long fileLen;
-            if (skip >= (fileLen = fileAcc.length())) {
+        File file = new File(ConfFactory.get("videoPath") + File.separator + record.getFileName());
+        try (RandomAccessFile fileAcc = new RandomAccessFile(file, "r")) {
+            long fileLen = fileAcc.length();
+            if (skip >= fileLen) {
                 // 文件已读至末尾
-                ResponseHelper.sendAndCleanupConnection(ctx, request, createFileEndResp(record.getVersion(), fileLen, getFileMD5(fileAcc)), false);
+                ResponseUtil.sendAndCleanupConnection(ctx, request, createFileEndResp(record.getVersion(), fileLen, getFileMD5(fileAcc)), false);
                 return false;
             }
             fileAcc.seek(skip);
-            // 实际响获取的长度要考虑文件实际长度和服务器的内存限制
-            int conLen = expectedLen;
-            if (expectedLen > MAX_CONTENT_LENGTH) {
-                conLen = MAX_CONTENT_LENGTH;
-            }
-            int realLen = fileAcc.read(contentArr, 0, conLen);
-            byte[] writeBuff;
-            if (publicKey == null || "".equals(publicKey)) {
-                writeBuff = contentArr;
+            HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+            HttpUtil.setContentLength(response, fileLen);
+            response.headers().set(HttpHeaderNames.CONTENT_TYPE, Files.probeContentType(file.toPath()));
+            setDateAndCacheHeaders(response, file);
+
+            // Write the initial line and the header.
+            ctx.write(response);
+
+            // Write the content.
+            ChannelFuture sendFileFuture;
+            ChannelFuture lastContentFuture;
+            if (ctx.pipeline().get(SslHandler.class) == null) {
+                sendFileFuture =
+                        ctx.write(new DefaultFileRegion(fileAcc.getChannel(), 0, fileLen), ctx.newProgressivePromise());
+                // Write the end marker.
+                lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
             } else {
-                writeBuff = RSAUtils.encode(contentArr, realLen, publicKey);
-                realLen = writeBuff.length;
+                sendFileFuture =
+                        ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(fileAcc, 0, fileLen, 8192)),
+                                ctx.newProgressivePromise());
+                // HttpChunkedInput will write the end marker (LastHttpContent) for us.
+                lastContentFuture = sendFileFuture;
             }
-            content = ByteBuffUtils.bigBuff();
-            content.writeBytes(writeBuff, 0, realLen);
-            ResponseHelper.sendAndCleanupConnection(ctx, request, createFileWriteResp(skip, record.getVersion(), content, realLen, keyId, ""), false);
+
+            sendFileFuture.addListener(new ChannelProgressiveFutureListener() {
+                @Override
+                public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) {
+                    if (total < 0) { // total unknown
+                        log.error(" Transfer progress: " + progress);
+                    } else {
+                        log.error(future.channel() + " Transfer progress: " + progress + " / " + total);
+                    }
+                }
+
+                @Override
+                public void operationComplete(ChannelProgressiveFuture future) {
+                    log.info(" Transfer complete.");
+                }
+            });
+
+
         } catch (Exception e) {
             log.error("服务器文件读取失败！", e);
-            ResponseHelper.sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, request);
+            ResponseUtil.sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, request);
         }
         return false;
     }
@@ -146,38 +159,19 @@ public class FileDownloadHelper {
         return record;
     }
 
-    private static FullHttpResponse createNextFileResp(Record nextRecord, String status, RSAPublicKey key, String keyId) {
+    private static FullHttpResponse createNextFileResp(Record nextRecord, String status) {
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, ByteBuffUtils.empty());
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
         response.headers().set("st", status);
         response.headers().set("sp", "0");
         response.headers().set("vs", Integer.toString(nextRecord.getVersion()));
-        if (keyId != null) response.headers().set("ki", keyId);
         try {
-            if (key == null) {
-                response.headers().set("fn", URLEncoder.encode(nextRecord.getFileName(), "utf8"));
-            } else {
-                byte[] fileName = nextRecord.getFileName().getBytes(charset);
-                String base64Name = Base64.getEncoder().encodeToString(RSAUtils.encode(fileName, fileName.length, key));
-                String urlEncodeName = URLEncoder.encode(base64Name, "utf8");
-                response.headers().set("fn", urlEncodeName);
-            }
+            String urlEncodeName = URLEncoder.encode(nextRecord.getFileName(), "utf8");
+            response.headers().set("fn", urlEncodeName);
         } catch (Exception e) {
             log.error("文件名编码失败！", e);
         }
         HttpUtil.setContentLength(response, 0);
-        return response;
-    }
-
-    private static FullHttpResponse createFileWriteResp(long spik, int version, ByteBuf content, int len, String keyId, String md5) {
-        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, content);
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
-        response.headers().set("st", "2");
-        response.headers().set("sp", Long.toString(spik));
-        response.headers().set("vs", Integer.toString(version));
-        response.headers().set("fn", md5);
-        if (keyId != null) response.headers().set("ki", keyId);
-        HttpUtil.setContentLength(response, len);
         return response;
     }
 
@@ -207,9 +201,29 @@ public class FileDownloadHelper {
         return MD5Util.md5HashCode32(file);
     }
 
-    private static String getFileMD5(RandomAccessFile file, long len) throws IOException, NoSuchAlgorithmException {
-        return MD5Util.md5HashCode32(file, len);
+    private static final String HTTP_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz";
+    private static final String HTTP_DATE_GMT_TIMEZONE = "GMT";
+    private static final int HTTP_CACHE_SECONDS = 60;
+
+    /**
+     * Sets the Date and Cache headers for the HTTP Response
+     *
+     * @param response    HTTP response
+     * @param fileToCache file to extract content type
+     */
+    private static void setDateAndCacheHeaders(HttpResponse response, File fileToCache) {
+        SimpleDateFormat dateFormatter = new SimpleDateFormat(HTTP_DATE_FORMAT, Locale.US);
+        dateFormatter.setTimeZone(TimeZone.getTimeZone(HTTP_DATE_GMT_TIMEZONE));
+
+        // Date header
+        Calendar time = new GregorianCalendar();
+        response.headers().set(HttpHeaderNames.DATE, dateFormatter.format(time.getTime()));
+
+        // Add cache headers
+        time.add(Calendar.SECOND, HTTP_CACHE_SECONDS);
+        response.headers().set(HttpHeaderNames.EXPIRES, dateFormatter.format(time.getTime()));
+        response.headers().set(HttpHeaderNames.CACHE_CONTROL, "private, max-age=" + HTTP_CACHE_SECONDS);
+        response.headers().set(
+                HttpHeaderNames.LAST_MODIFIED, dateFormatter.format(new Date(fileToCache.lastModified())));
     }
-
-
 }

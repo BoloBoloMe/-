@@ -4,9 +4,9 @@ import com.bolo.downloader.factory.ReqQueueFactory;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.utils.ByteBuffUtils;
-import com.bolo.downloader.utils.GetHelper;
-import com.bolo.downloader.utils.ResponseHelper;
-import com.bolo.downloader.utils.ShutdownReqHelper;
+import com.bolo.downloader.helper.GetHelper;
+import com.bolo.downloader.utils.ResponseUtil;
+import com.bolo.downloader.helper.ShutdownReqHelper;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.multipart.DefaultHttpDataFactory;
@@ -31,28 +31,20 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         String lineSeparator = System.lineSeparator();
         this.request = request;
         if (!request.decoderResult().isSuccess()) {
-            ResponseHelper.sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
+            ResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
             return;
         }
         final String uri = sanitizeUri(request.uri());
         if (null == uri) {
-            ResponseHelper.sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
+            ResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
             return;
         }
         if (HttpMethod.GET.equals(request.method())) {
-            // 读操作通过 GET METHOD 访问，同步处理
+            // 读操作通过 GET METHOD 访问
             Map<String, List<String>> params = new QueryStringDecoder(request.uri()).parameters();
-            if (uri.equals("/ssd")) {
-                ShutdownReqHelper.shutdown(uri, params, ctx, request);
-            } else {
-                GetHelper.doGet(uri, params, ctx, request);
-            }
-            // 如果客户端请求，就立即关闭连接
-            if (ctx.channel().isOpen() && !HttpUtil.isKeepAlive(request)) {
-                ctx.writeAndFlush(ByteBuffUtils.empty()).addListener(ChannelFutureListener.CLOSE);
-            }
+            GetHelper.handle(uri, params, ctx, request);
         } else if (HttpMethod.POST.equals(request.method())) {
-            // 写操作通过 POST METHOD 访问，异步处理
+            // 写操作通过 POST METHOD 访问
             Map<String, List<String>> params = new HashMap<>();
             HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(new DefaultHttpDataFactory(false), request);
             List<InterfaceHttpData> parmList = decoder.getBodyHttpDatas();
@@ -71,7 +63,11 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
             }
             ReqQueueFactory.get().add(new ReqRecord(request.method(), uri, params, ctx, request));
         } else {
-            ResponseHelper.sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED, request);
+            ResponseUtil.sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED, request);
+        }
+        // 如果客户端请求，就立即关闭连接
+        if (ctx.channel().isOpen() && !HttpUtil.isKeepAlive(request)) {
+            ctx.writeAndFlush(ByteBuffUtils.empty()).addListener(ChannelFutureListener.CLOSE);
         }
     }
 
@@ -80,7 +76,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         log.error("操作异常！", cause);
         if (ctx.channel().isOpen()) {
             try {
-                ResponseHelper.sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, request);
+                ResponseUtil.sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, request);
             } catch (Exception e) {
                 log.error("异常后响应-再次捕获异常！", e);
             }

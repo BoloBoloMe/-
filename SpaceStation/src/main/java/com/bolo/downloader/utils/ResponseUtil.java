@@ -7,7 +7,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import io.netty.util.CharsetUtil;
 
-public class ResponseHelper {
+public class ResponseUtil {
 
     public static void sendError(ChannelHandlerContext ctx, HttpResponseStatus status, FullHttpRequest request) {
         FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status);
