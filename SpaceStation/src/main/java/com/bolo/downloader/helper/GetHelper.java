@@ -46,8 +46,8 @@ public class GetHelper {
             Map<String, String> result = downloader.listTasks();
             ResponseUtil.sendJSON(ctx, HttpResponseStatus.OK, request, JSON.toJSONString(result));
         } else if (uri.equals("/video/list")) {
-            List<String> result = downloader.listVideo();
-            ResponseUtil.sendJSON(ctx, HttpResponseStatus.OK, request, JSON.toJSONString(result));
+            String result = downloader.listVideo();
+            ResponseUtil.sendJSON(ctx, HttpResponseStatus.OK, request, result);
         } else if (uri.equals("/ssd")) {
             ShutdownReqHelper.handle(uri, params, ctx, request);
         } else {

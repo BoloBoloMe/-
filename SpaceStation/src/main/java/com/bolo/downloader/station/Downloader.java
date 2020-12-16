@@ -15,8 +15,6 @@ public class Downloader {
     private String videoPath;
     private String youtubeDLPath;
 
-    private Synchronizer synchronizer = new Synchronizer();
-
     public Downloader(String videoPath, String youtubeDLPath) {
         this.videoPath = videoPath;
         this.youtubeDLPath = youtubeDLPath;
@@ -51,6 +49,9 @@ public class Downloader {
             taskList.lockNextPending(url);
             boolean result = Terminal.execYoutubeDL(url, youtubeDLPath);
             taskList.closure(url, result);
+            if (result) {
+                Synchronizer.flush();
+            }
         });
         return true;
     }
@@ -58,7 +59,7 @@ public class Downloader {
     /**
      * 返回视频存放路径下的文件列表
      */
-    public List<String> listVideo() {
+    public String listVideo() {
         return Synchronizer.fileList();
     }
 

@@ -1,12 +1,11 @@
 package com.bolo.downloader.nio;
 
-import com.bolo.downloader.factory.ReqQueueFactory;
+import com.bolo.downloader.helper.PostHelper;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.utils.ByteBuffUtils;
 import com.bolo.downloader.helper.GetHelper;
 import com.bolo.downloader.utils.ResponseUtil;
-import com.bolo.downloader.helper.ShutdownReqHelper;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.multipart.DefaultHttpDataFactory;
@@ -28,7 +27,6 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
-        String lineSeparator = System.lineSeparator();
         this.request = request;
         if (!request.decoderResult().isSuccess()) {
             ResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
@@ -61,7 +59,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                     }
                 }
             }
-            ReqQueueFactory.get().add(new ReqRecord(request.method(), uri, params, ctx, request));
+            PostHelper.handle(uri, params, ctx, request);
         } else {
             ResponseUtil.sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED, request);
         }
@@ -104,7 +102,6 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         if ((endIndex = uri.indexOf('?')) >= 0) {
             uri = uri.substring(0, endIndex);
         }
-
         return uri.equals("/") ? "/page/index.html" : uri;
     }
 }

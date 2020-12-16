@@ -42,8 +42,47 @@ public class FileDownloadHelper {
         HttpUtil.setContentLength(equalsResponse, 0);
     }
 
+    private static void download(ChannelHandlerContext ctx, FullHttpRequest request, RandomAccessFile fileAcc, long fileLen) {
+        try {
+            // Write the content.
+            ChannelFuture sendFileFuture;
+            ChannelFuture lastContentFuture;
+            if (ctx.pipeline().get(SslHandler.class) == null) {
+                sendFileFuture =
+                        ctx.write(new DefaultFileRegion(fileAcc.getChannel(), 0, fileLen), ctx.newProgressivePromise());
+                // Write the end marker.
+                lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+            } else {
+                sendFileFuture =
+                        ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(fileAcc, 0, fileLen, 8192)),
+                                ctx.newProgressivePromise());
+                // HttpChunkedInput will write the end marker (LastHttpContent) for us.
+                lastContentFuture = sendFileFuture;
+            }
+
+            sendFileFuture.addListener(new ChannelProgressiveFutureListener() {
+                @Override
+                public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) {
+                    if (total < 0) { // total unknown
+                        log.error(" Transfer progress: " + progress);
+                    } else {
+                        log.error(future.channel() + " Transfer progress: " + progress + " / " + total);
+                    }
+                }
+
+                @Override
+                public void operationComplete(ChannelProgressiveFuture future) {
+                    log.info(" Transfer complete.");
+                }
+            });
+        } catch (Exception e) {
+            log.error("向客户端发送文件时发生异常！", e);
+            ResponseUtil.sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, request);
+        }
+    }
+
     public static boolean handle(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
-        int serverVer = Synchronizer.getCurrVer();
+        final int serverVer = Synchronizer.getCurrVer();
         // get params
         List<String> cvs = params.get("cv");
         List<String> sps = params.get("sp");
@@ -100,46 +139,16 @@ public class FileDownloadHelper {
             HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
             HttpUtil.setContentLength(response, fileLen);
             response.headers().set(HttpHeaderNames.CONTENT_TYPE, Files.probeContentType(file.toPath()));
+            response.headers().set("st", "2");
+            response.headers().set("vs", Integer.toString(record.getVersion()));
+
             setDateAndCacheHeaders(response, file);
 
             // Write the initial line and the header.
             ctx.write(response);
-
-            // Write the content.
-            ChannelFuture sendFileFuture;
-            ChannelFuture lastContentFuture;
-            if (ctx.pipeline().get(SslHandler.class) == null) {
-                sendFileFuture =
-                        ctx.write(new DefaultFileRegion(fileAcc.getChannel(), 0, fileLen), ctx.newProgressivePromise());
-                // Write the end marker.
-                lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
-            } else {
-                sendFileFuture =
-                        ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(fileAcc, 0, fileLen, 8192)),
-                                ctx.newProgressivePromise());
-                // HttpChunkedInput will write the end marker (LastHttpContent) for us.
-                lastContentFuture = sendFileFuture;
-            }
-
-            sendFileFuture.addListener(new ChannelProgressiveFutureListener() {
-                @Override
-                public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) {
-                    if (total < 0) { // total unknown
-                        log.error(" Transfer progress: " + progress);
-                    } else {
-                        log.error(future.channel() + " Transfer progress: " + progress + " / " + total);
-                    }
-                }
-
-                @Override
-                public void operationComplete(ChannelProgressiveFuture future) {
-                    log.info(" Transfer complete.");
-                }
-            });
-
-
+            Synchronizer.ranDownloadToClient(() -> download(ctx, request, fileAcc, fileLen));
         } catch (Exception e) {
-            log.error("服务器文件读取失败！", e);
+            log.error("客户端的文件下载请求处理失败！", e);
             ResponseUtil.sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, request);
         }
         return false;
