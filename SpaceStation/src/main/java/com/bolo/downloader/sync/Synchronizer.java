@@ -30,7 +30,6 @@ public class Synchronizer {
     static private final AtomicReference<StoneMap> stoneMap = new AtomicReference<>(null);
     static private final MyLogger log = LoggerFactory.getLogger(Synchronizer.class);
     static private final ReentrantLock lock = new ReentrantLock();
-    private static final ExecutorService executor = Executors.newSingleThreadExecutor();
 
 
     /**
@@ -58,7 +57,6 @@ public class Synchronizer {
      */
     public static void clean() {
         map().rewriteDbFile();
-        executor.shutdownNow();
     }
 
 
@@ -90,11 +88,6 @@ public class Synchronizer {
             map().put(key, record.value());
         }
     }
-
-    public static void ranDownloadToClient(Runnable runnable) {
-        executor.submit(runnable);
-    }
-
 
     public static Record getRecord(String key, int version, String url, String fileName, SyncState state) {
         if (key != null) return cache.get(key);

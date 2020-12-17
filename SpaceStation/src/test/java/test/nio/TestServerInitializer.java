@@ -8,6 +8,7 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.IdleStateHandler;
+import test.nio.handler.HttpFileDownloadHandler;
 
 import java.nio.charset.Charset;
 
@@ -23,5 +24,8 @@ public class TestServerInitializer extends ChannelInitializer<SocketChannel> {
         pipeline.addLast(new HttpObjectAggregator(65536));
         pipeline.addLast(new ChunkedWriteHandler());
         pipeline.addLast(new HttpFileDownloadHandler());
+//        pipeline.addLast(new FirstInboundHandler());
+//        pipeline.addLast(new SecondInboundHandler());
+//        pipeline.addLast(new FirstOutboundHandler());
     }
 }

@@ -11,7 +11,7 @@ import java.util.concurrent.Executors;
  */
 public class Downloader {
     final private TaskList taskList = new TaskList();
-    final static private ExecutorService taskRunner = Executors.newFixedThreadPool(5);
+    final static private ExecutorService taskRunner = Executors.newFixedThreadPool(1);
     private String videoPath;
     private String youtubeDLPath;
 

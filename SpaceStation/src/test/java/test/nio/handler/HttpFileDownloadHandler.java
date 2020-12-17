@@ -1,4 +1,4 @@
-package test.nio;
+package test.nio.handler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -36,7 +36,6 @@ import java.util.Locale;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
 
-import static io.netty.handler.codec.http.HttpMethod.*;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static io.netty.handler.codec.http.HttpVersion.*;
 
@@ -57,11 +56,11 @@ public class HttpFileDownloadHandler extends SimpleChannelInboundHandler<FullHtt
             sendError(ctx, BAD_REQUEST);
             return;
         }
-
-        if (!GET.equals(request.method())) {
-            this.sendError(ctx, METHOD_NOT_ALLOWED);
-            return;
-        }
+//
+//        if (!GET.equals(request.method())) {
+//            this.sendError(ctx, METHOD_NOT_ALLOWED);
+//            return;
+//        }
 
         final boolean keepAlive = HttpUtil.isKeepAlive(request);
         final String uri = request.uri();
@@ -204,7 +203,7 @@ public class HttpFileDownloadHandler extends SimpleChannelInboundHandler<FullHtt
         }
 
         // Convert to absolute path.
-        return SystemPropertyUtil.get("user.dir") + File.separator + uri;
+        return "/home/bolo/program/VideoDownloader/SpaceStation/" + uri;
     }
 
     private static final Pattern ALLOWED_FILE_NAME = Pattern.compile("[^-\\._]?[^<>&\\\"]*");
@@ -348,6 +347,7 @@ public class HttpFileDownloadHandler extends SimpleChannelInboundHandler<FullHtt
      * @param file     file to extract content type
      */
     private static void setContentTypeHeader(HttpResponse response, File file) throws IOException {
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, Files.probeContentType(file.toPath()));
+//        response.headers().set(HttpHeaderNames.CONTENT_TYPE, Files.probeContentType(file.toPath()));
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "Content-Disposition:attachment;filename=" + file.getName());
     }
 }

@@ -1,4 +1,4 @@
-package com.bolo.downloader.helper;
+package com.bolo.downloader.nio.handler;
 
 import com.bolo.downloader.factory.ConfFactory;
 import com.bolo.downloader.respool.coder.MD5Util;
@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -81,7 +80,7 @@ public class FileDownloadHelper {
         }
     }
 
-    public static boolean handle(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
+    public static void handle(Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
         final int serverVer = Synchronizer.getCurrVer();
         // get params
         List<String> cvs = params.get("cv");
@@ -92,11 +91,11 @@ public class FileDownloadHelper {
         int expectedLen = els == null || els.size() == 0 ? 1024 : Integer.parseInt(els.get(0));
         if (skip == null || clientVer == null) {
             ResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
-            return false;
+            return;
         }
         if (serverVer < clientVer) {
             ResponseUtil.sendAndCleanupConnection(ctx, request, equalsResponse, false);
-            return false;
+            return;
         }
         // serverVer >= clientVer
         if (expectedLen <= 0) {
@@ -111,7 +110,7 @@ public class FileDownloadHelper {
             } else {
                 ResponseUtil.sendAndCleanupConnection(ctx, request, createNextFileResp(nextRecord, "1"), false);
             }
-            return false;
+            return;
         }
         // expectedLen > 0 下载文件
         Record record = Synchronizer.getRecord(null, clientVer, null, null, null);
@@ -124,34 +123,30 @@ public class FileDownloadHelper {
             } else {
                 ResponseUtil.sendAndCleanupConnection(ctx, request, createNextFileResp(record, "3"), false);
             }
-            return false;
+            return;
         }
         // 要下载的文件还在，下载当前文件
         File file = new File(ConfFactory.get("videoPath") + File.separator + record.getFileName());
-        try (RandomAccessFile fileAcc = new RandomAccessFile(file, "r")) {
-            long fileLen = fileAcc.length();
-            if (skip >= fileLen) {
-                // 文件已读至末尾
-                ResponseUtil.sendAndCleanupConnection(ctx, request, createFileEndResp(record.getVersion(), fileLen, getFileMD5(fileAcc)), false);
-                return false;
-            }
-            fileAcc.seek(skip);
-            HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-            HttpUtil.setContentLength(response, fileLen);
-            response.headers().set(HttpHeaderNames.CONTENT_TYPE, Files.probeContentType(file.toPath()));
-            response.headers().set("st", "2");
-            response.headers().set("vs", Integer.toString(record.getVersion()));
-
-            setDateAndCacheHeaders(response, file);
-
-            // Write the initial line and the header.
-            ctx.write(response);
-            Synchronizer.ranDownloadToClient(() -> download(ctx, request, fileAcc, fileLen));
-        } catch (Exception e) {
-            log.error("客户端的文件下载请求处理失败！", e);
-            ResponseUtil.sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, request);
+        RandomAccessFile fileAcc = new RandomAccessFile(file, "r");
+        long fileLen = fileAcc.length();
+        if (skip >= fileLen) {
+            // 文件已读至末尾
+            ResponseUtil.sendAndCleanupConnection(ctx, request, createFileEndResp(record.getVersion(), fileLen, getFileMD5(fileAcc)), false);
+            return;
         }
-        return false;
+        fileAcc.seek(skip);
+        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+        HttpUtil.setContentLength(response, fileLen);
+//        response.headers().set(HttpHeaderNames.CONTENT_TYPE, Files.probeContentType(file.toPath()));
+        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "Content-Disposition:attachment;filename=" + file.getName());
+        response.headers().set("st", "2");
+        response.headers().set("vs", Integer.toString(record.getVersion()));
+        setDateAndCacheHeaders(response, file);
+
+        // Write the initial line and the header.
+        ctx.write(response);
+        download(ctx, request, fileAcc, fileLen);
+        return;
     }
 
     private static Record getNextRecord(int currVer) {

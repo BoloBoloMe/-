@@ -15,6 +15,8 @@ import org.apache.http.ProtocolVersion;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -114,7 +116,7 @@ public class Cantor {
                         continue;
                     }
                     if (dfResponse.getStatus() == 1 || dfResponse.getStatus() == 3) {
-                        // 有新的文件，创建文件
+                        // 有新的文件
                         if (clientStatus != 1) {
                             log.info("status: create new file：%s", dfResponse.getFileNane());
                             clientStatus = 1;
@@ -124,6 +126,8 @@ public class Cantor {
                         map.put(KEY_LAST_VER, Integer.toString(dfResponse.getVersion()));
                         map.put(KEY_LAST_FILE, dfResponse.getFileNane());
                         map.put(KEY_FILE_STATE, VAL_FILE_STATE_NEW);
+                        // 下载文件
+                        download(client, dfResponse, new File(filePath, dfResponse.fileNane));
                         // 重置请求参数
                         lastVer = dfResponse.getVersion();
                         expectedValue = 1;
@@ -298,5 +302,24 @@ public class Cantor {
         return md5.equals(tarMD5);
     }
 
+    private static void download(CloseableHttpClient client, DFResponse dfResponse, File tar) {
+        try {
+            if (!tar.exists()) tar.createNewFile();
+            CloseableHttpResponse response = client.execute(createPostReq(dfResponse.getVersion(), 0, 1));
+            try (InputStream inputStream = response.getEntity().getContent();
+                 OutputStream outputStream = new FileOutputStream(tar)) {
+                byte[] buf = new byte[2048];
+                int len;
+                while (0 < (len = inputStream.read(buf))) {
+                    outputStream.write(buf, 0, len);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 }

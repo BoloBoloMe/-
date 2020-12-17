@@ -1,22 +1,19 @@
-package com.bolo.downloader.helper;
+package com.bolo.downloader.utils;
 
 import com.bolo.downloader.Bootstrap;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
-import com.bolo.downloader.utils.ResponseUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.List;
-import java.util.Map;
 
-public class ShutdownReqHelper {
-    private static final MyLogger log = LoggerFactory.getLogger(ShutdownReqHelper.class);
+public class ShutdownUtil {
+    private static final MyLogger log = LoggerFactory.getLogger(ShutdownUtil.class);
 
-    public static boolean handle(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
+    public static boolean handleShutdownReq(ChannelHandlerContext ctx, FullHttpRequest request) {
         SocketAddress socketAddress = ctx.channel().remoteAddress();
         if (socketAddress instanceof InetSocketAddress) {
             InetSocketAddress inetSocketAddress = (InetSocketAddress) socketAddress;

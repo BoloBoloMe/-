@@ -3,19 +3,13 @@ package com.bolo.downloader;
 
 import com.bolo.downloader.factory.ConfFactory;
 import com.bolo.downloader.factory.DownloaderFactory;
-import com.bolo.downloader.factory.ReqQueueFactory;
 import com.bolo.downloader.nio.HttpServer;
-import com.bolo.downloader.nio.ReqRecord;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.sync.Synchronizer;
 
-import java.util.concurrent.BlockingDeque;
-
-
 public class Bootstrap {
     private static final String CONF_FILE_PATH = "conf/SpaceStation.conf";
-    private static final BlockingDeque<ReqRecord> deque = ReqQueueFactory.get();
     private static MyLogger log = LoggerFactory.getLogger(Bootstrap.class);
     private static HttpServer httpServer;
 
@@ -30,7 +24,7 @@ public class Bootstrap {
         Synchronizer.flush();
         log.info("服务端当前版本号：%s", Integer.toString(Synchronizer.getCurrVer()));
         // start httpServer
-        httpServer = new HttpServer(Integer.parseInt(ConfFactory.get("port")), false);
+        httpServer = new HttpServer(Integer.parseInt(ConfFactory.get("port")));
         try {
             httpServer.start();
         } catch (Exception e) {
