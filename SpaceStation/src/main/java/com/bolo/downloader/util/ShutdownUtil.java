@@ -1,6 +1,6 @@
 package com.bolo.downloader.util;
 
-import com.bolo.downloader.Bootstrap;
+import com.bolo.downloader.ServerBootstrap;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import io.netty.channel.ChannelHandlerContext;
@@ -26,7 +26,7 @@ public class ShutdownUtil {
                         Thread.sleep(500);
                     } catch (Exception e) {
                     }
-                    Bootstrap.shutdownGracefully();
+                    ServerBootstrap.shutdownGracefully();
                 });
                 cleaner.setDaemon(false);
                 cleaner.setName("ClearThread");

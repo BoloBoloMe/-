@@ -20,9 +20,9 @@ import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 
-public class NewCantor {
+public class ClientBootstrap {
     private static final String CONF_FILE_PATH = "conf/GroundControlCenter.conf";
-    static private final MyLogger log = LoggerFactory.getLogger(NewCantor.class);
+    static private final MyLogger log = LoggerFactory.getLogger(ClientBootstrap.class);
 
 
     public static void main(String[] args) {
