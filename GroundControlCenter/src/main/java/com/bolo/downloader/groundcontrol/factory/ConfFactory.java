@@ -1,8 +1,6 @@
 package com.bolo.downloader.groundcontrol.factory;
 
 
-import com.bolo.downloader.groundcontrol.Cantor;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
