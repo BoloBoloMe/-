@@ -1,4 +1,4 @@
-package com.bolo.downloader.utils;
+package com.bolo.downloader.util;
 
 
 import com.bolo.downloader.factory.ConfFactory;

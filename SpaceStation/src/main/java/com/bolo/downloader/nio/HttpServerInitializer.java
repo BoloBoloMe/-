@@ -1,8 +1,6 @@
 package com.bolo.downloader.nio;
 
-import com.bolo.downloader.nio.handler.HttpFileDownloadHandler;
 import com.bolo.downloader.nio.handler.HttpServerHandler;
-import com.bolo.downloader.nio.handler.SayHiHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;

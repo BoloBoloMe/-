@@ -1,8 +1,7 @@
-package com.bolo.downloader.utils;
+package com.bolo.downloader.util;
 
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
-import io.netty.channel.ChannelId;
 
 import java.security.KeyFactory;
 import java.security.PublicKey;

@@ -2,13 +2,10 @@ package com.bolo.downloader.nio.handler;
 
 import com.alibaba.fastjson.JSON;
 import com.bolo.downloader.factory.DownloaderFactory;
-import com.bolo.downloader.utils.PageUtil;
-import com.bolo.downloader.utils.ShutdownUtil;
+import com.bolo.downloader.util.*;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.station.Downloader;
-import com.bolo.downloader.utils.ByteBuffUtils;
-import com.bolo.downloader.utils.ResponseUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -177,9 +174,9 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
 
     private void download(ChannelHandlerContext ctx, Map<String, List<String>> params, FullHttpRequest request) {
         try {
-            FileDownloadHelper.handle(params,ctx,request);
+            FileDownloadUtil.handle(params, ctx, request);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("文件下载异常！", e);
         }
     }
 }
