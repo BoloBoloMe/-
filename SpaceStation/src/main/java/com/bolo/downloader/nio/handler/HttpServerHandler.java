@@ -78,6 +78,7 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
                 ResponseUtil.sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, request);
             } catch (Exception e) {
                 log.error("异常后响应-再次捕获异常！", e);
+                ctx.close();
             }
         } else {
             ctx.close();
@@ -175,7 +176,8 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         try {
             FileDownloadUtil.handle(params, ctx, request);
         } catch (Exception e) {
-            log.error("文件下载异常！", e);
+            log.info("文件传送发生异常: " + e.getMessage());
+            ResponseUtil.sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, request);
         }
     }
 }

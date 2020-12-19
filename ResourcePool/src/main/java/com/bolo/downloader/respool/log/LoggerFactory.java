@@ -20,6 +20,7 @@ public class LoggerFactory {
             Logger log = Logger.getLogger(currFileName);
             FileHandler handler = new FileHandler(logPath + currFileName);
             handler.setFormatter(new LogFormatter());
+            handler.setEncoding("utf-8");
             log.addHandler(handler);
             return log;
         } catch (IOException e) {

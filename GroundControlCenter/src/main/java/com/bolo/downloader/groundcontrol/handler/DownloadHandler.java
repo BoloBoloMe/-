@@ -14,6 +14,7 @@ import java.security.NoSuchAlgorithmException;
 
 public class DownloadHandler extends AbstractResponseHandler {
     private MyLogger log = LoggerFactory.getLogger(DownloadHandler.class);
+    private final int bufferSize = 8192;
 
     @Override
     boolean interested(int responseStatus) {
@@ -22,7 +23,7 @@ public class DownloadHandler extends AbstractResponseHandler {
 
     @Override
     HttpRequestBase handleResponse(Response response) {
-        log.info("[transfer] 开始文件传送.name=", response.getFileNane());
+        log.info("[transfer] 开始文件传送.name=%s", response.getFileNane());
         StoneMap map = StoneMapFactory.getObject();
         int lastVer = Integer.parseInt(map.get(StoneMapDict.KEY_LAST_VER));
         File tar = new File(ConfFactory.get("filePath"), response.getFileNane());
@@ -31,39 +32,48 @@ public class DownloadHandler extends AbstractResponseHandler {
                 tar.createNewFile();
             } catch (IOException e) {
                 log.error("[transfer] 文件创建失败！name=" + response.getFileNane(), e);
-                return post(lastVer, 1);
+                return post(lastVer, 1, 0);
             }
         }
-        try (BufferedInputStream inputStream = new BufferedInputStream(response.getEntity().getContent(), 8192);
-             BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tar, true))) {
-            // 跳过已下载的字节
-            long pass = 0, skip = tar.length();
-            while (pass < skip) pass += inputStream.read();
-            // 下载文件
-            byte[] buff = new byte[8192];
+        // 下载文件
+        try (BufferedInputStream inputStream = new BufferedInputStream(response.getEntity().getContent(), bufferSize);
+             BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tar, true), bufferSize)) {
+            byte[] buff = new byte[bufferSize];
             int len;
-            while (0 < (len = inputStream.read(buff))) {
+            for (int num = 1; 0 < (len = inputStream.read(buff)); num++) {
                 outputStream.write(buff, 0, len);
+                if (num % 100 == 0) {
+                    outputStream.flush();
+                }
             }
             outputStream.flush();
-            if (tar.length() == response.getContentLength()) {
-                // 文件下载完毕,校验文件完整性
+            log.info("[transfer] 文件传送结束.");
+        } catch (Exception e) {
+            log.error("[transfer] 文件传送时发生异常！ name=" + response.getFileNane(), e);
+        }
+        // 校验文件
+        long fileLen = tar.length();
+        try {
+            if (fileLen == response.getFileSize()) {
+                log.info("[transfer] 接收的数据已达文件大小,开始校验数据的完整性");
                 if (checkMD5(tar, response.getMd5())) {
-                    log.info("[transfer] 文件传送完毕,name=%s", response.getFileNane());
+                    log.info("[transfer] 文件完整性校验通过,传输已完成. name=%s", response.getFileNane());
                     map.put(StoneMapDict.KEY_FILE_STATE, StoneMapDict.VAL_FILE_STATE_DOWNLOAD);
-                    map.flushWriteBuff();
-                    return post(lastVer, -1);
+                        map.flushWriteBuff();
+                    return post(lastVer, -1, 0);
                 } else {
                     log.error("[transfer] 文件数据不正确，删除文件并重新下载！name=" + response.getFileNane());
                     if (tar.exists()) tar.delete();
+                    return post(lastVer, 1, 0);
                 }
+            } else {
+                log.info("文件数据尚未传送完整,重新请求文件数据.");
+                return post(lastVer, 1, fileLen);
             }
         } catch (Exception e) {
-            log.error("[transfer] 写入文件数据时发生异常！ name=" + response.getFileNane(), e);
+            log.error("数据完整性校验异常！", e);
         }
-        log.error("[transfer] 传送中止! 传送即将重新开始.name=" + response.getFileNane());
-        // 走到这里说吗文件下载最终未成功，继续下载当前文件
-        return post(lastVer, 1);
+        return post(lastVer, 1, fileLen);
     }
 
     private boolean checkMD5(File file, String md5) throws IOException, NoSuchAlgorithmException {

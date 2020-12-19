@@ -1,7 +1,6 @@
 package com.bolo.downloader.util;
 
 import com.bolo.downloader.factory.ConfFactory;
-import com.bolo.downloader.respool.coder.MD5Util;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.sync.Record;
@@ -13,12 +12,9 @@ import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedFile;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -28,7 +24,6 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 public class FileDownloadUtil {
     private static final MyLogger log = LoggerFactory.getLogger(FileDownloadUtil.class);
     private static final FullHttpResponse equalsResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, ByteBuffUtils.empty());
-    private static final Charset charset = Charset.forName("utf8");
 
     static {
         // init equals response
@@ -44,17 +39,31 @@ public class FileDownloadUtil {
         // get params
         List<String> cvs = params.get("cv");
         List<String> els = params.get("el");
-        if (cvs == null || cvs.size() == 0 || els == null || els.size() == 0) {
+        List<String> sks = params.get("sk");
+        if (cvs == null || cvs.size() == 0 || els == null || els.size() == 0 || sks == null || sks.size() == 0) {
+            ResponseUtil.sendError(ctx, HttpResponseStatus.PAYMENT_REQUIRED, request);
+            return;
+        }
+        final int clientVer, expectedLen;
+        final long skip;
+        try {
+            clientVer = Integer.parseInt(cvs.get(0));
+            expectedLen = Integer.parseInt(els.get(0));
+            skip = Long.parseLong(sks.get(0));
+        } catch (Exception e) {
+            ResponseUtil.sendError(ctx, HttpResponseStatus.PAYMENT_REQUIRED, request);
+            return;
+        }
+        if (clientVer < 0 || expectedLen < -1 || skip < 0) {
             ResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
             return;
         }
-        int clientVer = Integer.parseInt(cvs.get(0));
-        int expectedLen = Integer.parseInt(els.get(0));
         if (serverVer < clientVer) {
             ResponseUtil.sendAndCleanupConnection(ctx, request, equalsResponse, false);
             return;
         }
-        if (expectedLen <= -1) {
+        // expectedLen == -1, 删除文件
+        if (expectedLen == -1) {
             // 文件已经同步完毕,更新当前文件记录的状态
             Record currRecord = Synchronizer.getRecord(null, clientVer, null, null, null);
             if (null != currRecord) Synchronizer.isDownloaded(currRecord.getFileName());
@@ -84,21 +93,23 @@ public class FileDownloadUtil {
             }
         } else {
             // 要下载的文件还在，下载当前文件
-            download(ctx, file);
+            download(ctx, file, record.getMd5(), skip);
         }
     }
 
-    private static void download(ChannelHandlerContext ctx, File file) throws Exception {
+    private static void download(ChannelHandlerContext ctx, File file, String md5, long skip) throws Exception {
         RandomAccessFile fileAcc = new RandomAccessFile(file, "r");
-        long fileLen = fileAcc.length();
+        final long fileLen = fileAcc.length();
+        final long transLen = fileLen - skip;
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-        HttpUtil.setContentLength(response, fileLen);
+        HttpUtil.setContentLength(response, transLen);
 //        response.headers().set(HttpHeaderNames.CONTENT_TYPE, Files.probeContentType(file.toPath()));
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/octet-stream");
         response.headers().set(HttpHeaderNames.CONTENT_DISPOSITION, "attachment;filename=DownloadFile");
         response.headers().set("st", "2");
         response.headers().set("fn", encodeFileName(file.getName()));
-        response.headers().set("md", getFileMD5(fileAcc));
+        response.headers().set("md", md5);
+        response.headers().set("fs", fileLen);
 
         setDateAndCacheHeaders(response, file);
         // Write the initial line and the header.
@@ -106,36 +117,40 @@ public class FileDownloadUtil {
         // Write the content.
         ChannelFuture sendFileFuture;
         ChannelFuture lastContentFuture;
-        if (ctx.pipeline().get(SslHandler.class) == null) {
+        if (skip >= fileAcc.length()) {
+            lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+        } else if (ctx.pipeline().get(SslHandler.class) == null) {
             sendFileFuture =
-                    ctx.write(new DefaultFileRegion(fileAcc.getChannel(), 0, fileLen), ctx.newProgressivePromise());
+                    ctx.write(new DefaultFileRegion(fileAcc.getChannel(), skip, transLen), ctx.newProgressivePromise());
             // Write the end marker.
             lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+            sendFileFuture.addListener(channelProgressiveFutureListener);
         } else {
             sendFileFuture =
-                    ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(fileAcc, 0, fileLen, 8192)),
+                    ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(fileAcc, skip, transLen, 8192)),
                             ctx.newProgressivePromise());
             // HttpChunkedInput will write the end marker (LastHttpContent) for us.
             lastContentFuture = sendFileFuture;
+            sendFileFuture.addListener(channelProgressiveFutureListener);
         }
-
-        sendFileFuture.addListener(new ChannelProgressiveFutureListener() {
-            @Override
-            public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) {
-                if (total < 0) { // total unknown
-                    log.info("[file transfers] 传送数据: %d byte", progress);
-                } else {
-                    log.info("[file transfers] 传送数据: %d/%d byte ", progress, total);
-                }
-            }
-
-            @Override
-            public void operationComplete(ChannelProgressiveFuture future) {
-                log.info(" [file transfers] 文件传送完成.");
-            }
-        });
     }
 
+
+    private static final ChannelProgressiveFutureListener channelProgressiveFutureListener = new ChannelProgressiveFutureListener() {
+        @Override
+        public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) {
+            if (total < 0) { // total unknown
+                log.info("[file transfers] 传送数据: %d byte", progress);
+            } else {
+                log.info("[file transfers] 传送数据: %d/%d byte ", progress, total);
+            }
+        }
+
+        @Override
+        public void operationComplete(ChannelProgressiveFuture future) {
+            log.info(" [file transfers] 文件传送结束.");
+        }
+    };
 
     private static Record getNextRecord(int currVer) {
         Record record = null;
@@ -161,10 +176,6 @@ public class FileDownloadUtil {
         return response;
     }
 
-
-    private static String getFileMD5(RandomAccessFile file) throws IOException, NoSuchAlgorithmException {
-        return MD5Util.md5HashCode32(file);
-    }
 
     private static final String HTTP_DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss zzz";
     private static final String HTTP_DATE_GMT_TIMEZONE = "GMT";

@@ -21,9 +21,9 @@ public class EqualsHandler extends AbstractResponseHandler {
         int lastVer = Integer.parseInt(map.get(StoneMapDict.KEY_LAST_VER));
         log.info("[equals] version=%s", lastVer);
         try {
-            Thread.sleep(15000);
+            Thread.sleep(180000);
         } catch (InterruptedException e) {
         }
-        return post(lastVer, 1);
+        return post(lastVer, 1, 0);
     }
 }

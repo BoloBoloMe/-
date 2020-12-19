@@ -43,7 +43,7 @@ abstract public class AbstractResponseHandler implements ResponseHandler<HttpReq
         // 没有childHandlers处理响应
         StoneMap map = StoneMapFactory.getObject();
         int lastVer = Integer.parseInt(map.get(StoneMapDict.KEY_LAST_VER));
-        return post(lastVer, 1);
+        return post(lastVer, 1, 0);
     }
 
     abstract boolean interested(int responseStatus);
@@ -51,12 +51,13 @@ abstract public class AbstractResponseHandler implements ResponseHandler<HttpReq
     abstract HttpRequestBase handleResponse(Response response);
 
 
-    public static HttpPost post(int currVer, int expectedLen) {
+    public static HttpPost post(int currVer, int expectedLen, long skip) {
         HttpPost request = new HttpPost(ConfFactory.get("url"));
         request.setProtocolVersion(new ProtocolVersion("http", 1, 1));
         List<NameValuePair> params = new ArrayList<>();
         params.add(new BasicNameValuePair("cv", Integer.toString(currVer)));
         params.add(new BasicNameValuePair("el", Integer.toString(expectedLen)));
+        params.add(new BasicNameValuePair("sk", Long.toString(skip)));
         request.setEntity(new UrlEncodedFormEntity(params, StandardCharsets.UTF_8));
         request.setHeader("content-type", "text/plain; charset=UTF-8");
         request.setHeader("connection", "keep-alive");
@@ -84,7 +85,7 @@ abstract public class AbstractResponseHandler implements ResponseHandler<HttpReq
                 // Socket 输入流
                 response.setEntity(resp.getEntity());
                 response.setMd5(resp.getLastHeader("md").getValue());
-                response.setContentLength(Long.parseLong(resp.getLastHeader("content-length").getValue()));
+                response.setFileSize(Long.parseLong(resp.getLastHeader("fs").getValue()));
             } else {
                 response.setVersion(Integer.parseInt(resp.getLastHeader("vs").getValue()));
             }
@@ -100,7 +101,7 @@ abstract public class AbstractResponseHandler implements ResponseHandler<HttpReq
         private int version;
         private String fileNane;
         private String md5;
-        private long contentLength;
+        private long fileSize;
         private HttpEntity entity;
 
         int getStatus() {
@@ -135,12 +136,12 @@ abstract public class AbstractResponseHandler implements ResponseHandler<HttpReq
             this.md5 = md5;
         }
 
-        long getContentLength() {
-            return contentLength;
+        long getFileSize() {
+            return fileSize;
         }
 
-        void setContentLength(long contentLength) {
-            this.contentLength = contentLength;
+        void setFileSize(long fileSize) {
+            this.fileSize = fileSize;
         }
 
         HttpEntity getEntity() {

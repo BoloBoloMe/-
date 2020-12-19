@@ -17,7 +17,7 @@ public class NewFileHandler extends AbstractResponseHandler {
 
     @Override
     HttpRequestBase handleResponse(Response response) {
-        log.info("[update]: version=%d,name=", response.getVersion(), response.getFileNane());
+        log.info("[update]: version=%d,name=%s", response.getVersion(), response.getFileNane());
         StoneMap map = StoneMapFactory.getObject();
         map.put(StoneMapDict.KEY_LAST_VER, Integer.toString(response.getVersion()));
         map.put(StoneMapDict.KEY_LAST_FILE, response.getFileNane());
@@ -27,6 +27,6 @@ public class NewFileHandler extends AbstractResponseHandler {
         } else {
             map.flushWriteBuff();
         }
-        return post(response.getVersion(), 1);
+        return post(response.getVersion(), 1, 0);
     }
 }

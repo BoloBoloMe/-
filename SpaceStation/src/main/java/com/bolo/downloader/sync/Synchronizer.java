@@ -2,15 +2,18 @@ package com.bolo.downloader.sync;
 
 import com.bolo.downloader.factory.ConfFactory;
 import com.bolo.downloader.factory.StoneMapFactory;
+import com.bolo.downloader.respool.coder.MD5Util;
 import com.bolo.downloader.respool.db.StoneMap;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
@@ -95,7 +98,7 @@ public class Synchronizer {
         for (Map.Entry<String, Record> entry : cache.entrySet()) {
             Record record = entry.getValue();
             if (version > 0 && record.getVersion() == version) return record;
-            if (url != null && url.equals(record.getUrl())) return record;
+            if (url != null && url.equals(record.getMd5())) return record;
             if (fileName != null && fileName.equals(record.getFileName())) return record;
             if (state != null && state == record.getState()) return record;
         }
@@ -146,12 +149,19 @@ public class Synchronizer {
      * 扫描文件目录，更新文件列表
      */
     private static void scanDisc() {
-        String[] fileArr = new File(new File(ConfFactory.get("videoPath")).getAbsolutePath()).list((dir, name) -> Pattern.matches(VIDEO_NAME_PATTERN, name.toLowerCase()));
+        final String videoPath = ConfFactory.get("videoPath");
+        String[] fileArr = new File(videoPath).list((dir, name) -> Pattern.matches(VIDEO_NAME_PATTERN, name.toLowerCase()));
         StoneMap map = map();
         // 扫描是否有新增的文件
         for (String fileName : fileArr) {
             if (!map.containsKey(fileName)) {
-                Record record = new Record(VAL_LAST_VER.incrementAndGet(), SyncState.NEW, fileName, "");
+                String md5;
+                try (RandomAccessFile target = new RandomAccessFile(new File(videoPath, fileName), "r")) {
+                    md5 = MD5Util.md5HashCode32(target);
+                } catch (Exception e) {
+                    throw new RuntimeException("文件校验码计算失败！", e);
+                }
+                Record record = new Record(VAL_LAST_VER.incrementAndGet(), SyncState.NEW, fileName, md5);
                 cache.put(fileName, record);
                 map.put(fileName, record.value());
                 map.put(KEY_LAST_VER, Integer.toString(VAL_LAST_VER.get()));

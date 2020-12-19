@@ -73,27 +73,35 @@ public class ClientBootstrap {
      * 根据StoneMap中的信息构建请求对象
      */
     private static HttpUriRequest createRequestFromStone() {
-        // StoneMap键值对关系：lastVerKey->lastVer; lastVer->lastFileName; lastFileName-> isDone
         final StoneMap map = StoneMapFactory.getObject();
         int expectedValue, lastVer;
+        long skip;
         if (null != map.get(StoneMapDict.KEY_LAST_VER) && null != map.get(StoneMapDict.KEY_LAST_FILE) && null != map.get(StoneMapDict.KEY_FILE_STATE)) {
             // StoneMap 保存着进程关闭前的状态，进行读取
             lastVer = Integer.parseInt(map.get(StoneMapDict.KEY_LAST_VER));
             if (StoneMapDict.VAL_FILE_STATE_DOWNLOAD.equals(map.get(StoneMapDict.KEY_FILE_STATE))) {
                 // 上次关闭前下载的文件已经完成下载，通知服务器清除文件
                 expectedValue = -1;
+                skip = 0;
             } else {
                 // 上次关闭前下载的文件尚未完成下载，向服务器请求文件内容
                 expectedValue = 1;
+                File target = new File(ConfFactory.get("filePath"), map.get(StoneMapDict.KEY_LAST_FILE));
+                if (target.exists()) {
+                    skip = target.length();
+                } else {
+                    skip = 0;
+                }
             }
         } else {
             // StoneMap 中没有保存有效信息，初始化各变量
             lastVer = 0;
             expectedValue = 1;
+            skip = 0;
             map.clear();
         }
-        log.info("根据StoneMap构建请求: version=%d,expectedValue=%d", lastVer, expectedValue);
-        return AbstractResponseHandler.post(lastVer, expectedValue);
+        log.info("根据StoneMap构建请求: version=%d,expectedValue=%d,skip=%d", lastVer, expectedValue, skip);
+        return AbstractResponseHandler.post(lastVer, expectedValue, skip);
     }
 
     private static void sleep(long time) {

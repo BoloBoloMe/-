@@ -14,10 +14,12 @@ public class TestJDKLog {
     public static void main(String[] args) {
 
         try {
-            FileHandler handler = new FileHandler("D:\\MyResource\\Desktop\\log\\test.log");
+            FileHandler handler = new FileHandler("/home/bolo/Desktop/test.log");
             handler.setFormatter(new myFormat());
+            handler.setEncoding("utf-8");
             log.addHandler(handler);
             log.info("hello word!");
+            log.info("你好世界！");
         } catch (SecurityException e) {
             e.printStackTrace();
         } catch (IOException e) {
