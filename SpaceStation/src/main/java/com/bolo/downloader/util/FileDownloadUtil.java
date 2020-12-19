@@ -123,15 +123,15 @@ public class FileDownloadUtil {
             @Override
             public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) {
                 if (total < 0) { // total unknown
-                    log.error(" Transfer progress: " + progress);
+                    log.info("[file transfers] 传送数据: %d byte", progress);
                 } else {
-                    log.error(future.channel() + " Transfer progress: " + progress + " / " + total);
+                    log.info("[file transfers] 传送数据: %d/%d byte ", progress, total);
                 }
             }
 
             @Override
             public void operationComplete(ChannelProgressiveFuture future) {
-                log.info(" Transfer complete.");
+                log.info(" [file transfers] 文件传送完成.");
             }
         });
     }

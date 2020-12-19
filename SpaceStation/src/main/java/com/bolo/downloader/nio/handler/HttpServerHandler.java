@@ -111,7 +111,6 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
     }
 
     private void get(String uri, Map<String, List<String>> params, ChannelHandlerContext ctx, FullHttpRequest request) {
-        log.info("get uri:%s,params:%s", uri, JSON.toJSON(params));
         Downloader downloader = DownloaderFactory.getObject();
         switch (uri) {
             case "/task/list": {

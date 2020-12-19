@@ -67,7 +67,7 @@ abstract public class AbstractResponseHandler implements ResponseHandler<HttpReq
         return request;
     }
 
-    private static Response analyzeResponse(HttpResponse resp) {
+    static Response analyzeResponse(HttpResponse resp) {
         Response response = new Response();
         if (resp.getStatusLine().getStatusCode() / 200 != 1) {
             throw new IllegalArgumentException("服务器返回操作失败响应码：" + resp.getStatusLine().getStatusCode());
