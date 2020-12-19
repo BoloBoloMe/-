@@ -12,6 +12,8 @@ import com.bolo.downloader.groundcontrol.handler.NewFileHandler;
 import com.bolo.downloader.respool.db.StoneMap;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.HttpHostConnectException;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -27,6 +29,50 @@ public class ClientBootstrap {
 
     public static void main(String[] args) {
         init();
+        final CloseableHttpClient client = HttpClientFactory.http();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                client.close();
+                StoneMapFactory.getObject().rewriteDbFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }));
+        ResponseHandler<HttpRequestBase> handlers = new EqualsHandler().join(new NewFileHandler()).join(new DownloadHandler());
+        log.info("客户端启动成功.");
+        log.info("服务器地址: %s", ConfFactory.get("url"));
+        HttpUriRequest request = createRequestFromStone();
+        while (!Thread.interrupted()) {
+            try {
+                request = client.execute(request, handlers);
+                continue;
+            } catch (HttpHostConnectException e) {
+                log.error("服务器无法访问！", e);
+                sleep(10000);
+            } catch (IOException e) {
+                log.error("捕获异常！", e);
+            }
+            request = createRequestFromStone();
+        }
+    }
+
+
+    private static void init() {
+        RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
+        String name = runtime.getName();
+        System.out.println("当前进程： " + name);
+        log.info("当前进程： " + name);
+        ConfFactory.load(CONF_FILE_PATH);
+        LoggerFactory.setLogPath(ConfFactory.get("logPath"));
+        LoggerFactory.setLogFileName(ConfFactory.get("logFileName"));
+        LoggerFactory.roll();
+    }
+
+
+    /**
+     * 根据StoneMap中的信息构建请求对象
+     */
+    private static HttpUriRequest createRequestFromStone() {
         // StoneMap键值对关系：lastVerKey->lastVer; lastVer->lastFileName; lastFileName-> isDone
         final StoneMap map = StoneMapFactory.getObject();
         int expectedValue, lastVer;
@@ -46,42 +92,8 @@ public class ClientBootstrap {
             expectedValue = 1;
             map.clear();
         }
-        final CloseableHttpClient client = HttpClientFactory.http();
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                client.close();
-                StoneMapFactory.getObject().rewriteDbFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }));
-        AbstractResponseHandler parentHandler = new EqualsHandler().join(new NewFileHandler()).join(new DownloadHandler());
-        log.info("客户端启动成功.");
-        log.info("当前版本号: %d", lastVer);
-        log.info("访问的服务器地址: %s", ConfFactory.get("url"));
-        HttpUriRequest request = AbstractResponseHandler.post(lastVer, expectedValue);
-        while (!Thread.interrupted()) {
-            try {
-                request = client.execute(request, parentHandler);
-            } catch (HttpHostConnectException e) {
-                log.error("服务器无法访问！", e);
-                sleep(10000);
-            } catch (IOException e) {
-                log.error("捕获异常！", e);
-            }
-        }
-    }
-
-
-    private static void init() {
-        RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
-        String name = runtime.getName();
-        System.out.println("当前进程： " + name);
-        log.info("当前进程： " + name);
-        ConfFactory.load(CONF_FILE_PATH);
-        LoggerFactory.setLogPath(ConfFactory.get("logPath"));
-        LoggerFactory.setLogFileName(ConfFactory.get("logFileName"));
-        LoggerFactory.roll();
+        log.info("根据StoneMap构建请求: version=%d,expectedValue=%d", lastVer, expectedValue);
+        return AbstractResponseHandler.post(lastVer, expectedValue);
     }
 
     private static void sleep(long time) {
