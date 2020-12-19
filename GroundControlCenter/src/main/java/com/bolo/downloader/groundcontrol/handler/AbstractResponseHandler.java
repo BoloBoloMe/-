@@ -52,6 +52,11 @@ abstract public class AbstractResponseHandler implements ResponseHandler<HttpReq
 
 
     public static HttpPost post(int currVer, int expectedLen, long skip) {
+        return post(currVer,expectedLen,skip,30000);
+    }
+
+
+    public static HttpPost post(int currVer, int expectedLen, long skip, int timeout) {
         HttpPost request = new HttpPost(ConfFactory.get("url"));
         request.setProtocolVersion(new ProtocolVersion("http", 1, 1));
         List<NameValuePair> params = new ArrayList<>();
@@ -63,7 +68,7 @@ abstract public class AbstractResponseHandler implements ResponseHandler<HttpReq
         request.setHeader("connection", "keep-alive");
         RequestConfig.Builder configBuilder = RequestConfig.copy(RequestConfig.DEFAULT);
         // 设置请求和传输超时
-        configBuilder.setSocketTimeout(30000).setConnectionRequestTimeout(30000);
+        configBuilder.setSocketTimeout(timeout).setConnectionRequestTimeout(timeout);
         request.setConfig(configBuilder.build());
         return request;
     }

@@ -104,7 +104,7 @@ public class ClientBootstrap {
         return AbstractResponseHandler.post(lastVer, expectedValue, skip);
     }
 
-    private static void sleep(long time) {
+    public static void sleep(long time) {
         try {
             Thread.sleep(time);
         } catch (InterruptedException e) {

@@ -1,5 +1,6 @@
 package com.bolo.downloader.groundcontrol.handler;
 
+import com.bolo.downloader.groundcontrol.ClientBootstrap;
 import com.bolo.downloader.groundcontrol.dict.StoneMapDict;
 import com.bolo.downloader.groundcontrol.factory.ConfFactory;
 import com.bolo.downloader.groundcontrol.factory.StoneMapFactory;
@@ -10,6 +11,7 @@ import com.bolo.downloader.respool.log.MyLogger;
 import org.apache.http.client.methods.HttpRequestBase;
 
 import java.io.*;
+import java.net.SocketTimeoutException;
 import java.security.NoSuchAlgorithmException;
 
 public class DownloadHandler extends AbstractResponseHandler {
@@ -36,6 +38,7 @@ public class DownloadHandler extends AbstractResponseHandler {
             }
         }
         // 下载文件
+        boolean catchTimeout = false;
         try (BufferedInputStream inputStream = new BufferedInputStream(response.getEntity().getContent(), bufferSize);
              BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tar, true), bufferSize)) {
             byte[] buff = new byte[bufferSize];
@@ -48,6 +51,9 @@ public class DownloadHandler extends AbstractResponseHandler {
             }
             outputStream.flush();
             log.info("[transfer] 文件传送结束.");
+        } catch (SocketTimeoutException e) {
+            log.info("[transfer] SocketTimeout!", e);
+            catchTimeout = true;
         } catch (Exception e) {
             log.error("[transfer] 文件传送时发生异常！ name=" + response.getFileNane(), e);
         }
@@ -59,7 +65,7 @@ public class DownloadHandler extends AbstractResponseHandler {
                 if (checkMD5(tar, response.getMd5())) {
                     log.info("[transfer] 文件完整性校验通过,传输已完成. name=%s", response.getFileNane());
                     map.put(StoneMapDict.KEY_FILE_STATE, StoneMapDict.VAL_FILE_STATE_DOWNLOAD);
-                        map.flushWriteBuff();
+                    map.flushWriteBuff();
                     return post(lastVer, -1, 0);
                 } else {
                     log.error("[transfer] 文件数据不正确，删除文件并重新下载！name=" + response.getFileNane());
@@ -67,11 +73,18 @@ public class DownloadHandler extends AbstractResponseHandler {
                     return post(lastVer, 1, 0);
                 }
             } else {
-                log.info("文件数据尚未传送完整,重新请求文件数据.");
-                return post(lastVer, 1, fileLen);
+                log.info("[transfer] 文件数据尚未传送完整,重新请求文件数据.");
+                // 如果请求文件数据时捕获了超时，就等待服务器一段时间再重新发送请求，且下次请求的超时时间设置为1分钟
+                if (catchTimeout) {
+                    log.info("[transfer] 因发生SocketTimeout, 下次请求将延后一分钟发送.");
+                    ClientBootstrap.sleep(60000);
+                    return post(lastVer, 1, fileLen, 90000);
+                } else {
+                    return post(lastVer, 1, fileLen);
+                }
             }
         } catch (Exception e) {
-            log.error("数据完整性校验异常！", e);
+            log.error("[transfer] 数据完整性校验异常！", e);
         }
         return post(lastVer, 1, fileLen);
     }

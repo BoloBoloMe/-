@@ -1,5 +1,6 @@
 package com.bolo.downloader.groundcontrol.handler;
 
+import com.bolo.downloader.groundcontrol.ClientBootstrap;
 import com.bolo.downloader.groundcontrol.dict.StoneMapDict;
 import com.bolo.downloader.groundcontrol.factory.StoneMapFactory;
 import com.bolo.downloader.respool.db.StoneMap;
@@ -20,10 +21,7 @@ public class EqualsHandler extends AbstractResponseHandler {
         StoneMap map = StoneMapFactory.getObject();
         int lastVer = Integer.parseInt(map.get(StoneMapDict.KEY_LAST_VER));
         log.info("[equals] version=%s", lastVer);
-        try {
-            Thread.sleep(180000);
-        } catch (InterruptedException e) {
-        }
+        ClientBootstrap.sleep(180000);
         return post(lastVer, 1, 0);
     }
 }
