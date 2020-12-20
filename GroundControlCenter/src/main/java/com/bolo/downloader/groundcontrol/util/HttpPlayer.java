@@ -13,6 +13,7 @@ import io.netty.handler.stream.ChunkedFile;
 
 import java.io.File;
 import java.io.RandomAccessFile;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,10 +31,15 @@ public class HttpPlayer {
         flushTimer.schedule(new TimerTask() {
             @Override
             public void run() {
+                log.info("定期扫描文件目录");
                 String mediaPaths = ConfFactory.get("mediaPath");
                 if (null != mediaPaths) {
                     String[] paths = mediaPaths.split(",");
-                    scan(paths);
+                    File[] dirs = new File[paths.length];
+                    for (int i = 0; i < paths.length; i++) {
+                        dirs[i] = new File(paths[i]);
+                    }
+                    scan(dirs);
                 }
             }
         }, 0L, 300000L);
@@ -47,9 +53,13 @@ public class HttpPlayer {
     public static String fileListJson(String name) {
         StringBuilder result = new StringBuilder().append('[');
         for (String key : fileList.keySet()) {
-            if (name != null && key.contains(name)) {
-                result.append('"').append(key).append('"').append(',');
+            result.append('"');
+            if (name == null) {
+                result.append(key);
+            } else if (key.contains(name)) {
+                result.append(key);
             }
+            result.append('"').append(',');
         }
         int lastIndex = result.length() - 1;
         if (result.lastIndexOf(",") == lastIndex) {
@@ -71,8 +81,7 @@ public class HttpPlayer {
             final long transLen = fileLen - skip;
             HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
             HttpUtil.setContentLength(response, transLen);
-//        response.headers().set(HttpHeaderNames.CONTENT_TYPE, Files.probeContentType(file.toPath()));
-            response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/octet-stream");
+            response.headers().set(HttpHeaderNames.CONTENT_TYPE, Files.probeContentType(file.toPath()));
             response.headers().set(HttpHeaderNames.CONTENT_DISPOSITION, "attachment;filename=DownloadFile");
             setDateAndCacheHeaders(response, file);
             // Write the initial line and the header.
@@ -139,14 +148,13 @@ public class HttpPlayer {
 
     final static private String VIDEO_NAME_PATTERN = ".+(\\.mp4|\\.webm|\\.wmv|\\.avi|\\.dat|\\.asf|\\.mpeg|\\.mpg|\\.rm|\\.rmvb|\\.ram|\\.flv|\\.3gp|\\.mov|\\.divx|\\.dv|\\.vob|\\.mkv|\\.qt|\\.cpk|\\.fli|\\.flc|\\.f4v|\\.m4v|\\.mod|\\.m2t|\\.swf|\\.mts|\\.m2ts|\\.3g2|\\.mpe|\\.ts|\\.div|\\.lavf|\\.dirac){1}";
 
-    private static void scan(String[] paths) {
-        for (String path : paths) {
-            File target = new File(path);
+    private static void scan(File[] paths) {
+        for (File target : paths) {
             String name = target.getName();
             if (target.isDirectory()) {
-                String[] childPath = target.list();
-                if (childPath != null) {
-                    scan(childPath);
+                File[] child = target.listFiles();
+                if (child != null) {
+                    scan(child);
                 }
             } else if (target.isFile() && !fileList.containsKey(name) && !target.isHidden() && Pattern.matches(VIDEO_NAME_PATTERN, name.toLowerCase())) {
                 fileList.put(name, target);
