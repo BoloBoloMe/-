@@ -1,6 +1,6 @@
 package com.bolo.downloader.respool.test.db.coder;
 
-import com.bolo.downloader.respool.coder.RSAUtils;
+import com.bolo.downloader.respool.coder.ras.RSAUtils;
 
 import java.util.Arrays;
 

@@ -1,4 +1,4 @@
-package com.bolo.downloader.nio;
+package com.bolo.downloader.groundcontrol.nio;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -11,7 +11,7 @@ import io.netty.handler.timeout.IdleStateHandler;
 
 import java.nio.charset.Charset;
 
-public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
+public class MediaServerInitializer extends ChannelInitializer<SocketChannel> {
 
 
     @Override
@@ -22,6 +22,6 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
         pipeline.addLast(new HttpServerCodec());
         pipeline.addLast(new HttpObjectAggregator(1024));
         pipeline.addLast(new ChunkedWriteHandler());
-        pipeline.addLast(new HttpServerHandler());
+        pipeline.addLast(new MediaHandler());
     }
 }

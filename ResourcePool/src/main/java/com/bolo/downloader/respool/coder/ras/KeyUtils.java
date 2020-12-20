@@ -1,4 +1,4 @@
-package com.bolo.downloader.util;
+package com.bolo.downloader.respool.coder.ras;
 
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;

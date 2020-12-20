@@ -1,7 +1,6 @@
-package com.bolo.downloader.util;
+package com.bolo.downloader.respool.nio;
 
 
-import com.bolo.downloader.factory.ConfFactory;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 
@@ -27,6 +26,10 @@ public class PageUtil {
             "<!DOCTYPE html><html><head>\n<meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\"><title>500</title><link rel=\"stylesheet\" href=\"../layui/css/layui.css\"></head><body><div style=\"width:100%; height:400px;position:absolute; left:50%; top:50%; margin-left: -300px; margin-top: -200px;\"><i class=\"layui-icon layui-icon-face-surprised\" style=\"font-size: 200px; color: crimson;\"></i><span style=\"font-size: 50px;\">ERROR: 一袋米要抗几楼</span></div></body></html>".getBytes(Charset.forName("UTF-8")),
             "text/html");
 
+    public static void setBasic(String basic) {
+        PageUtil.basic = basic;
+    }
+
     public static Page findPage(String uri, Map<String, List<String>> params) {
         // 统一的uri
         String uUri = uri;
@@ -38,7 +41,7 @@ public class PageUtil {
         Page page = cache.get(uri);
         // find disk
         if (null == page) {
-            File target = new File(basic == null ? (basic = ConfFactory.get("staticFilePath")) : basic, uUri);
+            File target = new File(basic, uUri);
             if (target.exists()) {
                 try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(target))) {
                     int len = (int) target.length();

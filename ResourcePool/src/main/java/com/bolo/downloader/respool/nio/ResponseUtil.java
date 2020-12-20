@@ -1,4 +1,4 @@
-package com.bolo.downloader.util;
+package com.bolo.downloader.respool.nio;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;

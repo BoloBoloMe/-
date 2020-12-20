@@ -1,6 +1,6 @@
 package test;
 
-import com.bolo.downloader.util.ByteBuffUtils;
+import com.bolo.downloader.respool.nio.ByteBuffUtils;
 import io.netty.buffer.ByteBuf;
 
 import java.nio.charset.Charset;

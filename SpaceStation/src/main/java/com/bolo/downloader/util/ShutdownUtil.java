@@ -3,6 +3,7 @@ package com.bolo.downloader.util;
 import com.bolo.downloader.ServerBootstrap;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
+import com.bolo.downloader.respool.nio.ResponseUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;

@@ -9,9 +9,12 @@ import com.bolo.downloader.groundcontrol.handler.AbstractResponseHandler;
 import com.bolo.downloader.groundcontrol.handler.DownloadHandler;
 import com.bolo.downloader.groundcontrol.handler.EqualsHandler;
 import com.bolo.downloader.groundcontrol.handler.NewFileHandler;
+import com.bolo.downloader.groundcontrol.nio.MediaServer;
+import com.bolo.downloader.groundcontrol.util.HttpPlayer;
 import com.bolo.downloader.respool.db.StoneMap;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
+import com.bolo.downloader.respool.nio.PageUtil;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -24,20 +27,15 @@ import java.lang.management.RuntimeMXBean;
 
 public class ClientBootstrap {
     private static final String CONF_FILE_PATH = "conf/GroundControlCenter.conf";
-    static private final MyLogger log = LoggerFactory.getLogger(ClientBootstrap.class);
-
+    private static final MyLogger log = LoggerFactory.getLogger(ClientBootstrap.class);
+    private static MediaServer server;
+    private static CloseableHttpClient client;
 
     public static void main(String[] args) {
         init();
-        final CloseableHttpClient client = HttpClientFactory.http();
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                client.close();
-                StoneMapFactory.getObject().rewriteDbFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }));
+        client = HttpClientFactory.http();
+        server = new MediaServer(Integer.parseInt(ConfFactory.get("port")));
+        server.start();
         ResponseHandler<HttpRequestBase> handlers = new EqualsHandler().join(new NewFileHandler()).join(new DownloadHandler());
         log.info("客户端启动成功.");
         log.info("服务器地址: %s", ConfFactory.get("url"));
@@ -56,6 +54,15 @@ public class ClientBootstrap {
         }
     }
 
+    public static void shutdownGracefully() {
+        try {
+            server.shutdown();
+            client.close();
+            StoneMapFactory.getObject().rewriteDbFile();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     private static void init() {
         RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
@@ -66,6 +73,7 @@ public class ClientBootstrap {
         LoggerFactory.setLogPath(ConfFactory.get("logPath"));
         LoggerFactory.setLogFileName(ConfFactory.get("logFileName"));
         LoggerFactory.roll();
+        PageUtil.setBasic(ConfFactory.get("staticFilePath"));
     }
 
 

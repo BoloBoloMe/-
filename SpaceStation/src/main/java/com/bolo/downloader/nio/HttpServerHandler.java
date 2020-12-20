@@ -1,7 +1,10 @@
-package com.bolo.downloader.nio.handler;
+package com.bolo.downloader.nio;
 
 import com.alibaba.fastjson.JSON;
 import com.bolo.downloader.factory.DownloaderFactory;
+import com.bolo.downloader.respool.nio.ByteBuffUtils;
+import com.bolo.downloader.respool.nio.PageUtil;
+import com.bolo.downloader.respool.nio.ResponseUtil;
 import com.bolo.downloader.util.*;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;

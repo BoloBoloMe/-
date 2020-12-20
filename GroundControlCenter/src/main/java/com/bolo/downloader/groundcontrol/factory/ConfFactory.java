@@ -19,6 +19,7 @@ public class ConfFactory {
     public static void load(String confPath) {
         assert confPath != null : "文件路径不能为空";
         if (!path.compareAndSet(null, confPath)) return;
+        conf.put("port", "9999");
         conf.put("url", "http://127.0.0.1:9000/df");
         conf.put("dbFileId", "100");
         conf.put("dbFilePath", "/data/");
@@ -29,6 +30,8 @@ public class ConfFactory {
         conf.put("putSpedMax", "1");
         conf.put("writeLoopMax", "1");
         conf.put("rsa", "0");
+        conf.put("staticFilePath", "static/");
+        conf.put("mediaPath", "");
 
         final File confFile = new File(path.get());
         try {

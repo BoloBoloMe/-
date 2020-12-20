@@ -3,6 +3,8 @@ package com.bolo.downloader.util;
 import com.bolo.downloader.factory.ConfFactory;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
+import com.bolo.downloader.respool.nio.ByteBuffUtils;
+import com.bolo.downloader.respool.nio.ResponseUtil;
 import com.bolo.downloader.sync.Record;
 import com.bolo.downloader.sync.SyncState;
 import com.bolo.downloader.sync.Synchronizer;

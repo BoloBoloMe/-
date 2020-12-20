@@ -1,4 +1,4 @@
-package com.bolo.downloader.respool.coder;
+package com.bolo.downloader.respool.coder.ras;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
