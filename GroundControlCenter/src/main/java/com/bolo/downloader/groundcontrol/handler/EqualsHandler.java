@@ -21,6 +21,10 @@ public class EqualsHandler extends AbstractResponseHandler {
         StoneMap map = StoneMapFactory.getObject();
         int lastVer = Integer.parseInt(map.get(StoneMapDict.KEY_LAST_VER));
         log.info("[equals] version=%s", lastVer);
+        if (StoneMapDict.VAL_FILE_STATE_NEW.equals(map.get(StoneMapDict.KEY_FILE_STATE))) {
+            map.put(StoneMapDict.KEY_FILE_STATE, StoneMapDict.VAL_FILE_STATE_DOWNLOAD);
+            map.flushWriteBuff();
+        }
         ClientBootstrap.sleep(180000);
         return post(lastVer, 1, 0);
     }
