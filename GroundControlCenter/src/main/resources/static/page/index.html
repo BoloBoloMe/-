@@ -20,16 +20,18 @@
     </div>
     <form class="layui-form  layui-col-space10" action="">
         <div class="layui-col-md5">
-            <input type="text" name="name" required lay-verify="required" placeholder="请输入文件名" autocomplete="off"
+            <input type="text" name="name" placeholder="请输入文件名" autocomplete="off"
                    class="layui-input">
         </div>
         <div class="layui-col-md2">
-            <button type="button" class="layui-btn" title="搜索" lay-submit lay-filter="btnSearch">
+            <button type="button" class="layui-btn layui-btn-radius layui-btn-primary" title="搜索" lay-submit
+                    lay-filter="btnSearch">
                 <i class="layui-icon layui-icon-search" style="font-size: 30px;"></i>
             </button>
-            <!-- <button type="reset" class="layui-btn layui-btn-primary" title="重置">
-                 <i class="layui-icon layui-icon-close" style="font-size: 30px;"></i>
-             </button>-->
+            <button type="gambleGame" class="layui-btn layui-btn-radius layui-btn-disabled" title="试试手气" lay-submit
+                    lay-filter="btnGamble">
+                <i class="layui-icon layui-icon-gift" style="font-size: 30px;"></i>
+            </button>
         </div>
     </form>
 </div>
@@ -85,8 +87,8 @@
                             var encodeFile = encodeURI(file);
                             data.push({
                                 'fileName': '<a href=/pv?tar=' + encodeFile + ' target="_blank">' + file + '</a>',
-                                'opt': '<a href="javascript:void(0);" onclick=copyLink("http://' + window.location.host + '/pl?tar=' + encodeFile + '")>拷贝源地址</a>&nbsp;&nbsp;' +
-                                    '<a href=/pv?tar=' + encodeFile + ' target="_blank">播放</a>'
+                                'opt': '<a  class="layui-btn layui-btn-xs" href="javascript:void(0);" onclick=copyLink("http://' + window.location.host + '/pl?tar=' + encodeFile + '")>拷贝源地址</a>&nbsp;&nbsp;' +
+                                    '<a class="layui-btn layui-btn-xs" href=/pv?tar=' + encodeFile + ' target="_blank">播放</a>'
                             })
                         }
                     }
@@ -98,13 +100,17 @@
         }
 
 
-        //监听表单提交-添加下载任务
+        //监听表单提交-搜索文件
         form.on('submit(btnSearch)', function (data) {
             var name = encodeURI(data.field.name);
             console.log("查询参数:" + name);
             nameHolder = name;
             loadFileListData();
             return true;
+        });
+
+        form.on('submit(btnGamble)', function (data) {
+            window.location.href = '/gamble';
         });
 
         //  监听文件列表的事件

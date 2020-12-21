@@ -126,6 +126,21 @@ public class HttpPlayer {
         }
     }
 
+    public static String gamble() {
+        Random random = new Random();
+        random.setSeed(random.hashCode());
+        int min = 1, max = fileList.size();
+        int s = random.nextInt(max) % (max - min + 1) + min;
+        Set<String> keys = fileList.keySet();
+        int num = 1;
+        for (String key : keys) {
+            if (num++ == s) {
+                return key;
+            }
+        }
+        return "";
+    }
+
     private static final ChannelProgressiveFutureListener channelProgressiveFutureListener = new ChannelProgressiveFutureListener() {
         @Override
         public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) {

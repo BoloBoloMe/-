@@ -66,6 +66,15 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
                 String name = tar.get(0);
                 params.clear();
                 params.put("p", Arrays.asList(name, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
+            } else if ("/gamble".equals(uri)) {
+                params.clear();
+                String name = HttpPlayer.gamble();
+                if (name == null) {
+                    uri = "/page/index.html";
+                } else {
+                    uri = "/page/play.html";
+                    params.put("p", Arrays.asList(name, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
+                }
             }
             PageUtil.Page page = PageUtil.findPage(uri, params);
             ByteBuf byteBuf = null;
