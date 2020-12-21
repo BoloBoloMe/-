@@ -27,9 +27,9 @@
             <button type="button" class="layui-btn" title="搜索" lay-submit lay-filter="btnSearch">
                 <i class="layui-icon layui-icon-search" style="font-size: 30px;"></i>
             </button>
-           <!-- <button type="reset" class="layui-btn layui-btn-primary" title="重置">
-                <i class="layui-icon layui-icon-close" style="font-size: 30px;"></i>
-            </button>-->
+            <!-- <button type="reset" class="layui-btn layui-btn-primary" title="重置">
+                 <i class="layui-icon layui-icon-close" style="font-size: 30px;"></i>
+             </button>-->
         </div>
     </form>
 </div>
@@ -41,6 +41,11 @@
 <javascript src="/base64.js"></javascript>
 <script>
     var nameHolder = '';
+
+    function copyLink(msg) {
+        alert(msg);
+    }
+
     layui.use(['layer', 'form', 'element', 'table', 'laypage'], function () {
         var $ = layui.$,
             layer = layui.layer,
@@ -60,10 +65,12 @@
                 , icon: 'layui-icon-refresh' //图标类名
             }]
             , cols: [[ //表头
-                {field: 'fileName', title: '文件名', width: 1000}
+                {field: 'fileName', title: '文件名', width: 1000},
+                {field: 'opt', title: '操作', width: 200}
             ]],
             data: []
         });
+
 
         // 异步加载文件列表数据
         function loadFileListData() {
@@ -75,7 +82,12 @@
                     if (res) {
                         for (var x in res) {
                             var file = res[x];
-                            data.push({'fileName': '<a href=/pv?tar=' + encodeURI(file) + ' target="_blank">' + file + '</a>'})
+                            var encodeFile = encodeURI(file);
+                            data.push({
+                                'fileName': file,
+                                'opt': '<a href="javascript:void(0);" onclick=copyLink("http://' + window.location.host + '/pv?tar=' + encodeFile + '")>拷贝源地址</a>&nbsp;' +
+                                '<a href=/pv?tar=' + encodeFile + ' target="_blank">播放</a>'
+                            })
                         }
                     }
                     fileList.reload({
@@ -84,6 +96,7 @@
                 }
             });
         }
+
 
         //监听表单提交-添加下载任务
         form.on('submit(btnSearch)', function (data) {
