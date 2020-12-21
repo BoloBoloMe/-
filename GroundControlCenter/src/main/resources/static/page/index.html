@@ -84,9 +84,9 @@
                             var file = res[x];
                             var encodeFile = encodeURI(file);
                             data.push({
-                                'fileName': file,
-                                'opt': '<a href="javascript:void(0);" onclick=copyLink("http://' + window.location.host + '/pv?tar=' + encodeFile + '")>拷贝源地址</a>&nbsp;' +
-                                '<a href=/pv?tar=' + encodeFile + ' target="_blank">播放</a>'
+                                'fileName': '<a href=/pv?tar=' + encodeFile + ' target="_blank">' + file + '</a>',
+                                'opt': '<a href="javascript:void(0);" onclick=copyLink("http://' + window.location.host + '/pv?tar=' + encodeFile + '")>拷贝源地址</a>&nbsp;&nbsp;' +
+                                    '<a href=/pl?tar=' + encodeFile + ' target="_blank">播放</a>'
                             })
                         }
                     }
