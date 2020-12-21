@@ -50,14 +50,16 @@ public class HttpPlayer {
 
     public static String fileListJson(String name) {
         StringBuilder result = new StringBuilder().append('[');
-        for (String key : fileList.keySet()) {
-            result.append('"');
-            if (name == null) {
-                result.append(key);
-            } else if (key.contains(name)) {
-                result.append(key);
+        if (name == null) {
+            for (Map.Entry<String, File> entry : fileList.entrySet()) {
+                result.append('"').append(entry.getKey()).append('"').append(',');
             }
-            result.append('"').append(',');
+        } else {
+            for (Map.Entry<String, File> entry : fileList.entrySet()) {
+                if (entry.getKey().contains(name)) {
+                    result.append('"').append(entry.getKey()).append('"').append(',');
+                }
+            }
         }
         int lastIndex = result.length() - 1;
         if (result.lastIndexOf(",") == lastIndex) {

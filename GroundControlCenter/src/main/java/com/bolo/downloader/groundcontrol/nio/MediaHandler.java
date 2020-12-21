@@ -48,7 +48,7 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
             HttpPlayer.play(ctx, request, target.get(0));
         } else if ("/fl".equals(uri)) {
             List<String> p = params.get("name");
-            String name = "[]";
+            String name = "";
             if (p != null && p.size() > 0) {
                 name = p.get(0);
             }
@@ -105,6 +105,6 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
         if ((endIndex = uri.indexOf('?')) >= 0) {
             uri = uri.substring(0, endIndex);
         }
-        return uri.equals("/") ? "/static/page/index.html" : uri;
+        return uri.equals("/") ? "/page/index.html" : uri;
     }
 }
