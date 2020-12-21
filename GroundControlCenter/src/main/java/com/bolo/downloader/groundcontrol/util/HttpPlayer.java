@@ -17,7 +17,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.netty.handler.codec.http.HttpResponseStatus.PARTIAL_CONTENT;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class HttpPlayer {
@@ -89,11 +89,14 @@ public class HttpPlayer {
                 end = fileLen - 1;
             }
             transLen = end - start + 1;
-            HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
-            HttpUtil.setContentLength(response, transLen);
+            HttpResponse response = new DefaultHttpResponse(HTTP_1_1, PARTIAL_CONTENT);
             response.headers().set(HttpHeaderNames.CONTENT_TYPE, Files.probeContentType(file.toPath()));
+            // 直接在浏览器播放
             response.headers().set(HttpHeaderNames.CONTENT_DISPOSITION, "inline");
+            // 支持 <video> 进度条必要的响应头
+            response.headers().set(HttpHeaderNames.ACCEPT_RANGES, "bytes");
             response.headers().set(HttpHeaderNames.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + fileLen);
+            HttpUtil.setContentLength(response, transLen);
             setDateAndCacheHeaders(response, file);
             // Write the initial line and the header.
             ctx.write(response);
