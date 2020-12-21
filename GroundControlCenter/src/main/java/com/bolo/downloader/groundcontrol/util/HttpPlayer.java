@@ -24,21 +24,24 @@ public class HttpPlayer {
     private static final MyLogger log = LoggerFactory.getLogger(HttpPlayer.class);
     private static final ConcurrentHashMap<String, File> fileList = new ConcurrentHashMap<>();
     private static final Timer flushTimer = new Timer(true);
+    private static String[] paths = {};
 
     public static void startFlushTask() {
+        if (paths.length == 0) {
+            String mediaPaths = ConfFactory.get("mediaPath");
+            if (null != mediaPaths) {
+                paths = mediaPaths.split(",");
+            }
+        }
         flushTimer.schedule(new TimerTask() {
             @Override
             public void run() {
                 log.info("定期扫描文件目录");
-                String mediaPaths = ConfFactory.get("mediaPath");
-                if (null != mediaPaths) {
-                    String[] paths = mediaPaths.split(",");
-                    File[] dirs = new File[paths.length];
-                    for (int i = 0; i < paths.length; i++) {
-                        dirs[i] = new File(paths[i]);
-                    }
-                    scan(dirs);
+                File[] dirs = new File[paths.length];
+                for (int i = 0; i < paths.length; i++) {
+                    dirs[i] = new File(paths[i]);
                 }
+                scan(dirs);
             }
         }, 0L, 300000L);
     }
