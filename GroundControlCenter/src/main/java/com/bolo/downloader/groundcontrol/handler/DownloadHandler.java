@@ -76,9 +76,9 @@ public class DownloadHandler extends AbstractResponseHandler {
                 log.info("[transfer] 文件数据尚未传送完整,重新请求文件数据.");
                 // 如果请求文件数据时捕获了超时，就等待服务器一段时间再重新发送请求，且下次请求的超时时间设置为1分钟
                 if (catchTimeout) {
-                    log.info("[transfer] 因发生SocketTimeout, 下次请求将延后一分钟发送.");
-                    ClientBootstrap.sleep(60000);
-                    return post(lastVer, 1, fileLen, 90000);
+                    log.info("[transfer] 因发生SocketTimeout, 文件将重新下载.");
+                    if (tar.exists()) tar.delete();
+                    return post(lastVer, 1, 0);
                 } else {
                     return post(lastVer, 1, fileLen);
                 }
