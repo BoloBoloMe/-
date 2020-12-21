@@ -1,18 +1,11 @@
 package com.bolo.downloader.nio;
 
-import com.bolo.downloader.factory.ConfFactory;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-
-import javax.net.ssl.KeyManagerFactory;
-import java.io.*;
-import java.security.KeyStore;
 
 public class HttpServer {
     private EventLoopGroup bothGroup;
@@ -26,7 +19,7 @@ public class HttpServer {
     /**
      * 监听 http/https 请求
      */
-    public void start() throws Exception {
+    public void start() {
         // Configure the server.
         bothGroup = new NioEventLoopGroup(1);
         ServerBootstrap bootstrap = new ServerBootstrap();

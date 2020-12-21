@@ -41,22 +41,19 @@ public class FileDownloadUtil {
         // get params
         List<String> cvs = params.get("cv");
         List<String> els = params.get("el");
-        List<String> sks = params.get("sk");
-        if (cvs == null || cvs.size() == 0 || els == null || els.size() == 0 || sks == null || sks.size() == 0) {
+        if (cvs == null || cvs.size() == 0 || els == null || els.size() == 0) {
             ResponseUtil.sendError(ctx, HttpResponseStatus.PAYMENT_REQUIRED, request);
             return;
         }
         final int clientVer, expectedLen;
-        final long skip;
         try {
             clientVer = Integer.parseInt(cvs.get(0));
             expectedLen = Integer.parseInt(els.get(0));
-            skip = Long.parseLong(sks.get(0));
         } catch (Exception e) {
             ResponseUtil.sendError(ctx, HttpResponseStatus.PAYMENT_REQUIRED, request);
             return;
         }
-        if (clientVer < 0 || expectedLen < -1 || skip < 0) {
+        if (clientVer < 0 || expectedLen < -1) {
             ResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
             return;
         }
@@ -95,41 +92,49 @@ public class FileDownloadUtil {
             }
         } else {
             // 要下载的文件还在，下载当前文件
-            download(ctx, file, record.getMd5(), skip);
+            download(ctx, request, file, record.getMd5());
         }
     }
 
-    private static void download(ChannelHandlerContext ctx, File file, String md5, long skip) throws Exception {
+    private static void download(ChannelHandlerContext ctx, FullHttpRequest request, File file, String md5) throws Exception {
         RandomAccessFile fileAcc = new RandomAccessFile(file, "r");
-        final long fileLen = fileAcc.length();
-        final long transLen = fileLen - skip;
+        final long fileLen = fileAcc.length(), start, end, transLen;
+        // 支持HTTP 1.1 断点续传请求头 range: bytes=0-1
+        String range = request.headers().get(HttpHeaderNames.RANGE);
+        if (null != range && range.matches("bytes=[0-9]+-[1-9]*[0-9]*")) {
+            int index_0 = range.indexOf('=') + 1, index_1 = range.indexOf('-');
+            start = Long.parseLong(range.substring(index_0, index_1));
+            end = '-' == range.charAt(range.length() - 1) ? fileLen - 1 : Long.parseLong(range.substring(index_1 + 1));
+        } else {
+            start = 0;
+            end = fileLen - 1;
+        }
+        transLen = end - start + 1;
         HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
         HttpUtil.setContentLength(response, transLen);
-//        response.headers().set(HttpHeaderNames.CONTENT_TYPE, Files.probeContentType(file.toPath()));
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/octet-stream");
         response.headers().set(HttpHeaderNames.CONTENT_DISPOSITION, "attachment;filename=DownloadFile");
+        response.headers().set(HttpHeaderNames.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + fileLen);
         response.headers().set("st", "2");
         response.headers().set("fn", encodeFileName(file.getName()));
         response.headers().set("md", md5);
-        response.headers().set("fs", fileLen);
-
         setDateAndCacheHeaders(response, file);
         // Write the initial line and the header.
         ctx.write(response);
         // Write the content.
         ChannelFuture sendFileFuture;
         ChannelFuture lastContentFuture;
-        if (skip >= fileAcc.length()) {
+        if (start >= fileAcc.length()) {
             lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
         } else if (ctx.pipeline().get(SslHandler.class) == null) {
             sendFileFuture =
-                    ctx.write(new DefaultFileRegion(fileAcc.getChannel(), skip, transLen), ctx.newProgressivePromise());
+                    ctx.write(new DefaultFileRegion(fileAcc.getChannel(), start, transLen), ctx.newProgressivePromise());
             // Write the end marker.
             lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
             sendFileFuture.addListener(channelProgressiveFutureListener);
         } else {
             sendFileFuture =
-                    ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(fileAcc, skip, transLen, 8192)),
+                    ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(fileAcc, start, transLen, 8192)),
                             ctx.newProgressivePromise());
             // HttpChunkedInput will write the end marker (LastHttpContent) for us.
             lastContentFuture = sendFileFuture;

@@ -52,7 +52,7 @@ abstract public class AbstractResponseHandler implements ResponseHandler<HttpReq
 
 
     public static HttpPost post(int currVer, int expectedLen, long skip) {
-        return post(currVer,expectedLen,skip,30000);
+        return post(currVer, expectedLen, skip, 30000);
     }
 
 
@@ -62,10 +62,10 @@ abstract public class AbstractResponseHandler implements ResponseHandler<HttpReq
         List<NameValuePair> params = new ArrayList<>();
         params.add(new BasicNameValuePair("cv", Integer.toString(currVer)));
         params.add(new BasicNameValuePair("el", Integer.toString(expectedLen)));
-        params.add(new BasicNameValuePair("sk", Long.toString(skip)));
         request.setEntity(new UrlEncodedFormEntity(params, StandardCharsets.UTF_8));
         request.setHeader("content-type", "text/plain; charset=UTF-8");
         request.setHeader("connection", "keep-alive");
+        request.setHeader("range", "bytes=" + skip + "-");
         RequestConfig.Builder configBuilder = RequestConfig.copy(RequestConfig.DEFAULT);
         // 设置请求和传输超时
         configBuilder.setSocketTimeout(timeout).setConnectionRequestTimeout(timeout);
@@ -74,10 +74,10 @@ abstract public class AbstractResponseHandler implements ResponseHandler<HttpReq
     }
 
     static Response analyzeResponse(HttpResponse resp) {
-        Response response = new Response();
         if (resp.getStatusLine().getStatusCode() / 200 != 1) {
             throw new IllegalArgumentException("服务器返回操作失败响应码：" + resp.getStatusLine().getStatusCode());
         }
+        Response response = new Response();
         try {
             // 操作码
             response.setStatus(Integer.parseInt(resp.getLastHeader("st").getValue()));
@@ -90,7 +90,8 @@ abstract public class AbstractResponseHandler implements ResponseHandler<HttpReq
                 // Socket 输入流
                 response.setEntity(resp.getEntity());
                 response.setMd5(resp.getLastHeader("md").getValue());
-                response.setFileSize(Long.parseLong(resp.getLastHeader("fs").getValue()));
+                String contentRange = resp.getLastHeader("content-range").getValue();
+                response.setFileSize(Long.parseLong(contentRange.substring(contentRange.lastIndexOf('/') + 1)));
             } else {
                 response.setVersion(Integer.parseInt(resp.getLastHeader("vs").getValue()));
             }

@@ -10,6 +10,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class PageUtil {
     private static final MyLogger log = LoggerFactory.getLogger(PageUtil.class);
+    private static final ArrayList<String> dynamicPageList = new ArrayList<>();
     private static final ConcurrentHashMap<String, Page> cache = new ConcurrentHashMap<>(32);
     private static final AtomicInteger allHitCount = new AtomicInteger(0);
     private static String basic = null;
@@ -30,6 +32,10 @@ public class PageUtil {
 
     public static void setBasic(String basic) {
         PageUtil.basic = basic;
+    }
+
+    public static void setDynamicPageList(String... pageList) {
+        dynamicPageList.addAll(Arrays.asList(pageList));
     }
 
     public static Page findPage(String uri, Map<String, List<String>> params) {
@@ -65,8 +71,8 @@ public class PageUtil {
 
         if (null == page) {
             return PAGE_NOT_FUND;
-        } else if ((nameInParam && params.size() > 1) || params.size() > 0) {
-            // 有参数,以动态页面进行渲染
+        } else if (dynamicPageList.contains(uUri)) {
+            // 以动态页面进行渲染
             ArrayList<String> paramList = new ArrayList<>();
             if (!nameInParam) {
                 for (Map.Entry<String, List<String>> entry : params.entrySet())

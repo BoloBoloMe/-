@@ -1,6 +1,5 @@
 package com.bolo.downloader.groundcontrol.handler;
 
-import com.bolo.downloader.groundcontrol.ClientBootstrap;
 import com.bolo.downloader.groundcontrol.dict.StoneMapDict;
 import com.bolo.downloader.groundcontrol.factory.ConfFactory;
 import com.bolo.downloader.groundcontrol.factory.StoneMapFactory;

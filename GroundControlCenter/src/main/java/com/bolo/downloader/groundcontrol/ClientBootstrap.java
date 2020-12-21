@@ -74,6 +74,7 @@ public class ClientBootstrap {
         LoggerFactory.setLogFileName(ConfFactory.get("logFileName"));
         LoggerFactory.roll();
         PageUtil.setBasic(ConfFactory.get("staticFilePath"));
+        PageUtil.setDynamicPageList("/page/play.html");
     }
 
 
