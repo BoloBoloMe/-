@@ -28,7 +28,7 @@ public class DownloadHandler extends AbstractResponseHandler {
         log.info("[transfer] 开始文件传送.name=%s", response.getFileNane());
         StoneMap map = StoneMapFactory.getObject();
         int lastVer = Integer.parseInt(map.get(StoneMapDict.KEY_LAST_VER));
-        File tar = new File(ConfFactory.get("filePath"), response.getFileNane());
+        File tar = new File(ConfFactory.get("downloadDir"), response.getFileNane());
         if (!tar.exists()) {
             try {
                 tar.createNewFile();

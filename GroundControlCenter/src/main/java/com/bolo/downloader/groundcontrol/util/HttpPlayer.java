@@ -71,7 +71,7 @@ public class HttpPlayer {
 
     public static void play(ChannelHandlerContext ctx, FullHttpRequest request, String target, long skip) {
         File file = fileList.get(target);
-        if (file == null || file.exists() || file.isHidden()) {
+        if (file == null || !file.exists() || file.isHidden()) {
             ResponseUtil.sendError(ctx, HttpResponseStatus.NOT_FOUND, request);
             return;
         }
@@ -82,7 +82,7 @@ public class HttpPlayer {
             HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
             HttpUtil.setContentLength(response, transLen);
             response.headers().set(HttpHeaderNames.CONTENT_TYPE, Files.probeContentType(file.toPath()));
-            response.headers().set(HttpHeaderNames.CONTENT_DISPOSITION, "attachment;filename=DownloadFile");
+            response.headers().set(HttpHeaderNames.CONTENT_DISPOSITION, "inline");
             setDateAndCacheHeaders(response, file);
             // Write the initial line and the header.
             ctx.write(response);

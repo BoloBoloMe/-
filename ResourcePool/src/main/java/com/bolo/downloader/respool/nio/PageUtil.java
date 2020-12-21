@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,15 +26,18 @@ public class PageUtil {
     private static final Page SERVER_ERROR = new Page(null,
             "<!DOCTYPE html><html><head>\n<meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\"><title>500</title><link rel=\"stylesheet\" href=\"../layui/css/layui.css\"></head><body><div style=\"width:100%; height:400px;position:absolute; left:50%; top:50%; margin-left: -300px; margin-top: -200px;\"><i class=\"layui-icon layui-icon-face-surprised\" style=\"font-size: 200px; color: crimson;\"></i><span style=\"font-size: 50px;\">ERROR: 一袋米要抗几楼</span></div></body></html>".getBytes(Charset.forName("UTF-8")),
             "text/html");
+    private static final Charset charset = Charset.forName("utf-8");
 
     public static void setBasic(String basic) {
         PageUtil.basic = basic;
     }
 
     public static Page findPage(String uri, Map<String, List<String>> params) {
+        boolean nameInParam = false;
         // 统一的uri
         String uUri = uri;
         if (uri.equals("/v") && params.get("p") != null) {
+            nameInParam = true;
             String pageName = params.get("p").get(0);
             uUri = "page" + File.separator + pageName + ".html";
         }
@@ -58,7 +62,23 @@ public class PageUtil {
             allHitCount.incrementAndGet();
             page.hit();
         }
-        return page == null ? PAGE_NOT_FUND : page;
+
+        if (null == page) {
+            return PAGE_NOT_FUND;
+        } else if ((nameInParam && params.size() > 1) || params.size() > 0) {
+            // 有参数,以动态页面进行渲染
+            ArrayList<String> paramList = new ArrayList<>();
+            if (!nameInParam) {
+                for (Map.Entry<String, List<String>> entry : params.entrySet())
+                    paramList.addAll(entry.getValue());
+            } else {
+                for (Map.Entry<String, List<String>> entry : params.entrySet())
+                    if (!"p".equals(entry.getKey())) paramList.addAll(entry.getValue());
+            }
+            return new DynamicPage(uUri, page.getContent(), page.getContentType(), paramList);
+        } else {
+            return page;
+        }
     }
 
     private static String getContentType(String uri) {
@@ -134,6 +154,23 @@ public class PageUtil {
 
         void hit() {
             this.hitCount.incrementAndGet();
+        }
+    }
+
+    private static class DynamicPage extends Page {
+        private String originalHTML;
+        private List<String> paramsList;
+
+        DynamicPage(String uri, byte[] content, String contentType, List<String> paramsList) {
+            super(uri, null, contentType);
+            this.originalHTML = new String(content, charset);
+            this.paramsList = paramsList;
+        }
+
+        @Override
+        public byte[] getContent() {
+            String html = String.format(originalHTML, paramsList.toArray());
+            return html.getBytes(charset);
         }
     }
 }

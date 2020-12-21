@@ -25,7 +25,7 @@ public class ConfFactory {
         conf.put("dbFilePath", "/data/");
         conf.put("logPath", "/log/");
         conf.put("logFileName", "GroundControlCenter.log");
-        conf.put("filePath", "");
+        conf.put("downloadDir", "");
         conf.put("wrireBuffSize", "10");
         conf.put("putSpedMax", "1");
         conf.put("writeLoopMax", "1");

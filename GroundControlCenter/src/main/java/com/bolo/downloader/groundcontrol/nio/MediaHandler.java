@@ -16,8 +16,13 @@ import io.netty.util.ReferenceCountUtil;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private static final MyLogger log = LoggerFactory.getLogger(MediaHandler.class);
@@ -28,7 +33,7 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
             ResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, msg);
             return;
         }
-        final String uri = sanitizeUri(msg.uri());
+        String uri = sanitizeUri(msg.uri());
         if (null == uri) {
             ResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, msg);
             return;
@@ -38,6 +43,7 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
         }
         Map<String, List<String>> params = new QueryStringDecoder(msg.uri()).parameters();
         if ("/pl".equals(uri)) {
+            log.info("/pl param:%s", params);
             List<String> target = params.get("tar");
             if (target == null || target.size() == 0) {
                 ResponseUtil.sendText(ctx, HttpResponseStatus.PAYMENT_REQUIRED, msg, "缺少必要参数！请指定要播放的媒体文件");
@@ -46,7 +52,7 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
             HttpPlayer.play(ctx, msg, target.get(0), 0);
         } else if ("/fl".equals(uri)) {
             List<String> p = params.get("name");
-            String name = null;
+            String name = "[]";
             if (p != null && p.size() > 0) {
                 name = p.get(0);
             }
@@ -54,6 +60,17 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
         } else if ("/ssd".equals(uri)) {
             ClientBootstrap.shutdownGracefully();
         } else {
+            if ("/pv".equals(uri)) {
+                uri = "/page/play.html";
+                List<String> tar = params.get("tar");
+                if (null == tar || tar.size() == 0) {
+                    ResponseUtil.sendText(ctx, HttpResponseStatus.PAYMENT_REQUIRED, msg, "缺少必要参数！请指定要播放的媒体文件");
+                    return;
+                }
+                String name = tar.get(0);
+                params.clear();
+                params.put("p", Arrays.asList(name, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
+            }
             PageUtil.Page page = PageUtil.findPage(uri, params);
             ByteBuf byteBuf = null;
             try {
@@ -92,7 +109,6 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
         if ((endIndex = uri.indexOf('?')) >= 0) {
             uri = uri.substring(0, endIndex);
         }
-        return uri.equals("/") ? "/page/index.html" : uri;
+        return uri.equals("/") ? "/static/page/index.html" : uri;
     }
-
 }
