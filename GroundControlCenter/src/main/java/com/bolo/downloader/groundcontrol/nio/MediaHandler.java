@@ -64,14 +64,15 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
                     return;
                 }
                 String name = tar.get(0);
+                String title = name.length() > 30 ? (name.substring(0, 27) + "...") : name;
                 if (HttpPlayer.isVideo(name)) {
                     uri = "/page/playVideo.html";
                     params = new HashMap<>();
-                    params.put("p", Arrays.asList(name, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
+                    params.put("p", Arrays.asList(name, name, title, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
                 } else if (HttpPlayer.isAudio(name)) {
                     uri = "/page/playAudio.html";
                     params = new HashMap<>();
-                    params.put("p", Arrays.asList(name, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
+                    params.put("p", Arrays.asList(name, name, title, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
                 } else {
                     uri = "/page/index.html";
 

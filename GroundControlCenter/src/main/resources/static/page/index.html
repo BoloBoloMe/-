@@ -43,6 +43,7 @@
 <javascript src="/base64.js"></javascript>
 <script>
     var nameHolder = ''
+    var fileListData = {}
 
     function copyLink(msg) {
         alert(msg)
@@ -95,12 +96,23 @@
                                     '<a class="layui-btn layui-btn-xs" href=/pv?tar=' + encodeFile + ' target="_blank">播放</a>'
                             })
                         }
+                        fileListData = data;
                     }
                     fileList.reload({
                         data: data
                     });
                 }
             });
+        }
+
+        // 打乱列表的排序
+        function randomFileList() {
+            fileListData.sort(function () {
+                return 0.5 - Math.random()
+            })
+            fileList.reload({
+                data: fileListData
+            })
         }
 
 
@@ -116,7 +128,7 @@
         table.on('toolbar(fileTable)', function (obj) {
             switch (obj.event) {
                 case 'RELOAD':
-                    loadFileListData();
+                    randomFileList();
                     break;
             }
         });

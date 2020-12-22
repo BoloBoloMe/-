@@ -5,13 +5,16 @@
     <title>%s</title>
 </head>
 <body>
-<div style="height:1500px;position:absolute; left: 500px; top:150px; margin-left: -300px; margin-top: -200px;">
-    <img src="/audio.jpeg" id="audioImg" style="width: 600px;">
+<div style="height:auto;position:absolute; left: 500px; top:150px; margin-left: -300px; margin-top: -200px;">
+    <div style="height: 50px;width: 600px" title="%s">
+        <h3 style="margin-top: 50px">%s</h3>
+    </div>
+    <img src="/audio.jpeg" id="audioImg" style="width: 600px;top: 100px">
     <div>
         <audio id="audio" src="%s" autoplay controls="controls" preload="metadata" style="width: 600px">
             抱歉您的浏览器不支持音频播放功能
         </audio>
-        <br/>
+        <br>
         <button onclick="play()">播放</button>
         <button onclick="pause()">暂停</button>
         <button onclick="jump(5)">快进5秒</button>
@@ -25,7 +28,6 @@
     </div>
 </div>
 <script>
-    var audioImg = document.getElementById("audioImg");
     var audio = document.getElementById("audio");
     // video对象可以通过ontimeupdate时间来进行监听实时播放进度
     audio.ontimeupdate = function () {
