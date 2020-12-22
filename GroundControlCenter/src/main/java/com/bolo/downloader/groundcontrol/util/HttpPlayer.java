@@ -141,8 +141,8 @@ public class HttpPlayer {
         return "";
     }
 
-    final static private String VIDEO_NAME_PATTERN = ".+(\\.mp4|\\.webm|.ogg)";
-    final static private String AUDIO_NAME_PATTERN = ".+(\\.mp3|\\.flac|)";
+    final static private String VIDEO_NAME_PATTERN = ".+(\\.mp4|\\.webm|.ogg){1}";
+    final static private String AUDIO_NAME_PATTERN = ".+(\\.mp3|\\.flac){1}";
 
     public static boolean isVideo(String name) {
         return Pattern.matches(VIDEO_NAME_PATTERN, name);
