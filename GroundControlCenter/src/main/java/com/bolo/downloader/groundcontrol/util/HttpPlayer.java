@@ -141,6 +141,18 @@ public class HttpPlayer {
         return "";
     }
 
+    final static private String VIDEO_NAME_PATTERN = ".+(\\.mp4|\\.webm|.ogg)";
+    final static private String AUDIO_NAME_PATTERN = ".+(\\.mp3|\\.flac|)";
+
+    public static boolean isVideo(String name) {
+        return Pattern.matches(VIDEO_NAME_PATTERN, name);
+    }
+
+    public static boolean isAudio(String name) {
+        return Pattern.matches(AUDIO_NAME_PATTERN, name);
+    }
+
+
     private static final ChannelProgressiveFutureListener channelProgressiveFutureListener = new ChannelProgressiveFutureListener() {
         @Override
         public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) {
@@ -178,8 +190,6 @@ public class HttpPlayer {
     }
 
 
-    final static private String VIDEO_NAME_PATTERN = ".+(\\.mp4|\\.webm|\\.wmv|\\.avi|\\.dat|\\.asf|\\.mpeg|\\.mpg|\\.rm|\\.rmvb|\\.ram|\\.flv|\\.3gp|\\.mov|\\.divx|\\.dv|\\.vob|\\.mkv|\\.qt|\\.cpk|\\.fli|\\.flc|\\.f4v|\\.m4v|\\.mod|\\.m2t|\\.swf|\\.mts|\\.m2ts|\\.3g2|\\.mpe|\\.ts|\\.div|\\.lavf|\\.dirac){1}";
-
     private static void scan(File[] paths) {
         for (File target : paths) {
             String name = target.getName();
@@ -188,8 +198,13 @@ public class HttpPlayer {
                 if (child != null) {
                     scan(child);
                 }
-            } else if (target.isFile() && !fileList.containsKey(name) && !target.isHidden() && Pattern.matches(VIDEO_NAME_PATTERN, name.toLowerCase())) {
-                fileList.put(name, target);
+            } else if (target.isFile() && !fileList.containsKey(name) && !target.isHidden()) {
+                String lowerCaseName = name.toLowerCase();
+                if (isVideo(lowerCaseName)) {
+                    fileList.put(name, target);
+                } else if (isAudio(lowerCaseName)) {
+                    fileList.put(name, target);
+                }
             }
         }
     }

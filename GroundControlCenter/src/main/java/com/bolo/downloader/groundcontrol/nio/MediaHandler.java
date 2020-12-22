@@ -18,6 +18,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -57,23 +58,39 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
             ClientBootstrap.shutdownGracefully();
         } else {
             if ("/pv".equals(uri)) {
-                uri = "/page/play.html";
                 List<String> tar = params.get("tar");
                 if (null == tar || tar.size() == 0) {
                     ResponseUtil.sendText(ctx, HttpResponseStatus.PAYMENT_REQUIRED, request, "缺少必要参数！请指定要播放的媒体文件");
                     return;
                 }
                 String name = tar.get(0);
-                params.clear();
-                params.put("p", Arrays.asList(name, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
+                if (HttpPlayer.isVideo(name)) {
+                    uri = "/page/playVideo.html";
+                    params = new HashMap<>();
+                    params.put("p", Arrays.asList(name, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
+                } else if (HttpPlayer.isAudio(name)) {
+                    uri = "/page/playAudio.html";
+                    params = new HashMap<>();
+                    params.put("p", Arrays.asList(name, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
+                } else {
+                    uri = "/page/index.html";
+
+                }
             } else if ("/gamble".equals(uri)) {
                 params.clear();
                 String name = HttpPlayer.gamble();
                 if (name == null) {
                     uri = "/page/index.html";
-                } else {
-                    uri = "/page/play.html";
+                } else if (HttpPlayer.isVideo(name)) {
+                    uri = "/page/playVideo.html";
+                    params = new HashMap<>();
                     params.put("p", Arrays.asList(name, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
+                } else if (HttpPlayer.isAudio(name)) {
+                    uri = "/page/playAudio.html";
+                    params = new HashMap<>();
+                    params.put("p", Arrays.asList(name, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
+                } else {
+                    uri = "/page/index.html";
                 }
             }
             PageUtil.Page page = PageUtil.findPage(uri, params);

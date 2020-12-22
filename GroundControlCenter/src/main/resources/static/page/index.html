@@ -28,8 +28,8 @@
                     lay-filter="btnSearch">
                 <i class="layui-icon layui-icon-search" style="font-size: 30px;"></i>
             </button>
-            <button type="gambleGame" class="layui-btn layui-btn-radius layui-btn-disabled" title="试试手气" lay-submit
-                    lay-filter="btnGamble">
+            <button type="gambleGame" class="layui-btn layui-btn-radius layui-btn-danger" title="试试手气"
+                    onclick="gamble()">
                 <i class="layui-icon layui-icon-gift" style="font-size: 30px;"></i>
             </button>
         </div>
@@ -42,10 +42,14 @@
 <script src="/layui/layui.js"></script>
 <javascript src="/base64.js"></javascript>
 <script>
-    var nameHolder = '';
+    var nameHolder = ''
 
     function copyLink(msg) {
-        alert(msg);
+        alert(msg)
+    }
+
+    function gamble() {
+        window.open('/gamble');
     }
 
     layui.use(['layer', 'form', 'element', 'table', 'laypage'], function () {
@@ -103,14 +107,9 @@
         //监听表单提交-搜索文件
         form.on('submit(btnSearch)', function (data) {
             var name = encodeURI(data.field.name);
-            console.log("查询参数:" + name);
             nameHolder = name;
             loadFileListData();
             return true;
-        });
-
-        form.on('submit(btnGamble)', function (data) {
-            window.location.href = '/gamble';
         });
 
         //  监听文件列表的事件
