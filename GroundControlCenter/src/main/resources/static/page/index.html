@@ -97,9 +97,11 @@
                             })
                         }
                         fileListData = data;
+
                     }
+                    randomFileList()
                     fileList.reload({
-                        data: data
+                        data: fileListData
                     });
                 }
             });
