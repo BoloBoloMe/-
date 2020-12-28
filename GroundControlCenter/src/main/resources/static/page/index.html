@@ -5,6 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <title>首页</title>
     <link rel="stylesheet" href="/layui/css/layui.css">
+    <style>
+        .top_a {
+            font-size: small;
+            font-weight: lighter;
+            color: black;
+            margin-left: 10px;
+            text-decoration: underline;
+        }
+
+        .label {
+            font-size: large;
+            color: silver;
+            margin-top: 90px;
+            margin-left: 20px;
+        }
+    </style>
 </head>
 <body>
 <br/>
@@ -20,11 +36,12 @@
     </div>
     <form class="layui-form  layui-col-space10" action="">
         <div class="layui-col-md5">
-            <input type="text" name="name" placeholder="请输入文件名" autocomplete="off"
+            <input id="name" type="text" name="name" placeholder="请输入文件名" autocomplete="off"
                    class="layui-input">
         </div>
         <div class="layui-col-md2">
-            <button type="button" class="layui-btn layui-btn-radius layui-btn-primary" title="搜索" lay-submit
+            <button id="btnSearch" type="button" class="layui-btn layui-btn-radius layui-btn-primary" title="搜索"
+                    lay-submit
                     lay-filter="btnSearch">
                 <i class="layui-icon layui-icon-search" style="font-size: 30px;"></i>
             </button>
@@ -33,13 +50,16 @@
                 <i class="layui-icon layui-icon-gift" style="font-size: 30px;"></i>
             </button>
         </div>
-        <dev class="layui-col-md2"><span>标签:&nbsp;</span><a href="">#视频</a><a href="index.html">#音乐</a></dev>
+        <dev class="layui-col-md2" id="labels">
+            <a class="label" href="">#视频</a>
+            <a class="label" href="index.html">#音乐</a>
+        </dev>
     </form>
 </div>
 <br/>
-<span>最近播放:&nbsp;</span><a href="index.html">三岛由于肌肤</a><a href="index.html">，四岛由于肌肤</a>
+<span style="font-size: x-small;font-weight: lighter;margin-left: 10px">最近播放:&nbsp;</span><span id="lastPlay"></span>
 <br/>
-<span>最新添加:&nbsp;</span><a href="index.html">饭岛爱１１１</a><a href="index.html">，饭岛爱２２２</a>
+<span style="font-size: x-small;font-weight: lighter;margin-left: 10px">最新添加:&nbsp;</span><span id="lastAdd"></span>
 <br/>
 <div class="layui-tab layui-tab-brief" lay-filter="tabBrief">
     <table id="fileList" lay-filter="fileTable"></table>
@@ -62,6 +82,11 @@
 
     function gamble() {
         window.open('/gamble');
+    }
+
+    function searchLabel(label) {
+        document.getElementById('name').value = label.innerText;
+        document.getElementById('btnSearch').click();
     }
 
     layui.use(['layer', 'form', 'element', 'table', 'laypage'], function () {
@@ -104,7 +129,7 @@
                         var labelFlag = nameHolder.indexOf('#');
                         if (labelFlag >= 0) {
                             // 标签查询
-                            var labelCriterion = nameHolder.substr(labelFlag);
+                            var labelCriterion = nameHolder.substr(labelFlag + 1);
                             var labels = file.labels;
                             if (labels) {
                                 for (var y in labels) {
@@ -175,8 +200,29 @@
                     // 第一次加载文件列表
                     loadFileListData();
                     // 加载最近播放列表
+                    var lastPlayHttp = ''
+                    for (var x = responseHolder.lruList.length - 1; x > -1; x--) {
+                        var fileName = responseHolder.lruList[x];
+                        var encodeFileName = encodeURI(fileName);
+                        lastPlayHttp += '<a class="top_a" href=/pv?tar=' + encodeFileName + ' target="_blank">' + fileName + '</a>'
+                    }
+                    document.getElementById("lastPlay").innerHTML = lastPlayHttp
                     // 加载最新文件
+                    var lastAddHttp = ''
+                    for (var x in responseHolder.newFile) {
+                        var fileName = responseHolder.newFile[x];
+                        var encodeFileName = encodeURI(fileName);
+                        lastAddHttp += '<a class="top_a" href=/pv?tar=' + encodeFileName + ' target="_blank">' + fileName + '</a>'
+                    }
+                    document.getElementById("lastAdd").innerHTML = lastAddHttp
+
                     // 加载标签列表
+                    var labelsHttp = ''
+                    for (var x in responseHolder.labels) {
+                        var label = responseHolder.labels[x]
+                        labelsHttp += '<a class="label" href="javascript:void(0);" onclick="searchLabel(this)">#' + label + '</a>'
+                    }
+                    document.getElementById("labels").innerHTML = labelsHttp
                 }
             });
         }
