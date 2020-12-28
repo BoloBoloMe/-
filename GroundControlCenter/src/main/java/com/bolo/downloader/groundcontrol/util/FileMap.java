@@ -137,7 +137,7 @@ public class FileMap {
                     for (String labelEntry : labels) {
                         cutIndex = labelEntry.indexOf("==");
                         String label = labelEntry.substring(0, cutIndex);
-                        labelMap.put(label, labelEntry.substring(cutIndex + 1));
+                        labelMap.put(label, labelEntry.substring(cutIndex + 2));
                         labelJson.append('"').append(label).append("\",");
                     }
                 }

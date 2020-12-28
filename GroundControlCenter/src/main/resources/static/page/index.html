@@ -164,7 +164,7 @@
 
         //监听表单提交-搜索文件
         form.on('submit(btnSearch)', function (data) {
-            nameHolder = encodeURI(data.field.name);
+            nameHolder = data.field.name;
             loadFileListData();
             return true;
         });

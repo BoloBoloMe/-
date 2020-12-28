@@ -32,6 +32,7 @@ public class ConfFactory {
         conf.put("rsa", "0");
         conf.put("staticFilePath", "static/");
         conf.put("mediaPath", "");
+        conf.put("labelMap", "");
 
         final File confFile = new File(path.get());
         try {
