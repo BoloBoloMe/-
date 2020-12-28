@@ -57,9 +57,11 @@
     </form>
 </div>
 <br/>
-<span style="font-size: x-small;font-weight: lighter;margin-left: 10px">最近播放:&nbsp;</span><span id="lastPlay"></span>
-<br/>
 <span style="font-size: x-small;font-weight: lighter;margin-left: 10px">最新添加:&nbsp;</span><span id="lastAdd"></span>
+<br/>
+<span id="lastPlayCase"
+      style="font-size: x-small;font-weight: lighter;margin-left: 10px;">最近播放:&nbsp;</span><span
+        id="lastPlay"></span>
 <br/>
 <div class="layui-tab layui-tab-brief" lay-filter="tabBrief">
     <table id="fileList" lay-filter="fileTable"></table>
@@ -91,10 +93,10 @@
 
     layui.use(['layer', 'form', 'element', 'table', 'laypage'], function () {
         var $ = layui.$,
-            layer = layui.layer,
             form = layui.form,
-            element = layui.element,
             table = layui.table,
+            layer = layui.layer,
+            element = layui.element,
             laypage = layui.laypage;
 
         // 渲染文件列表
@@ -200,13 +202,17 @@
                     // 第一次加载文件列表
                     loadFileListData();
                     // 加载最近播放列表
-                    var lastPlayHttp = ''
-                    for (var x = responseHolder.lruList.length - 1; x > -1; x--) {
-                        var fileName = responseHolder.lruList[x];
-                        var encodeFileName = encodeURI(fileName);
-                        lastPlayHttp += '<a class="top_a" href=/pv?tar=' + encodeFileName + ' target="_blank">' + fileName + '</a>'
+                    if (responseHolder.lruList && responseHolder.lruList.length > 0) {
+                        var lastPlayHttp = ''
+                        for (var x = responseHolder.lruList.length - 1; x > -1; x--) {
+                            var fileName = responseHolder.lruList[x];
+                            var encodeFileName = encodeURI(fileName);
+                            lastPlayHttp += '<a class="top_a" href=/pv?tar=' + encodeFileName + ' target="_blank">' + fileName + '</a>'
+                        }
+                        document.getElementById("lastPlay").innerHTML = lastPlayHttp
+                    } else {
+                        document.getElementById("lastPlayCase").style.display = 'none';
                     }
-                    document.getElementById("lastPlay").innerHTML = lastPlayHttp
                     // 加载最新文件
                     var lastAddHttp = ''
                     for (var x in responseHolder.newFile) {
