@@ -20,6 +20,6 @@ public class StringTest {
         final long transLen = end - start;
         System.out.println(String.format("%d,%d,%d", start, end, transLen));
 
-        System.out.println(FileMap.isVideo("Godspeed You! Black Emperor - Chart #3 _ Steve Reich-jV0-1o09FzE.webm"));
+        System.out.println(FileMap.isAudio("声子虫 - 光的稀微构成.mp3 (2).temp"));
     }
 }

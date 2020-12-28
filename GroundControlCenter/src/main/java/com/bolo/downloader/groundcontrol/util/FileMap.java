@@ -187,7 +187,7 @@ public class FileMap {
                 if (child != null) {
                     scan(child);
                 }
-            } else if (target.isFile() && !nameToPath.containsKey(name) && !target.isHidden()) {
+            } else if (!nameToPath.containsKey(name) && !target.isHidden() && target.isFile() && (isAudio(name) || isVideo(name))) {
                 nameToPath.put(name, target.getAbsolutePath());
             }
         }
@@ -284,7 +284,14 @@ public class FileMap {
 
         @Override
         public int compareTo(FileAttributeHolder other) {
-            return (int) (this.getCreateTime() - other.getCreateTime());
+            long result = this.getCreateTime() - other.getCreateTime();
+            if (result == 0) {
+                return 0;
+            } else if (result < 0) {
+                return -1;
+            } else {
+                return 1;
+            }
         }
     }
 
