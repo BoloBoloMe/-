@@ -1,6 +1,7 @@
 package com.bolo.downloader.groundcontrol.nio;
 
 import com.bolo.downloader.groundcontrol.ClientBootstrap;
+import com.bolo.downloader.groundcontrol.util.FileMap;
 import com.bolo.downloader.groundcontrol.util.HttpPlayer;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
@@ -48,12 +49,7 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
             }
             HttpPlayer.play(ctx, request, target.get(0));
         } else if ("/fl".equals(uri)) {
-            List<String> p = params.get("name");
-            String name = "";
-            if (p != null && p.size() > 0) {
-                name = p.get(0);
-            }
-            ResponseUtil.sendJSON(ctx, HttpResponseStatus.OK, request, HttpPlayer.fileListJson(name));
+            ResponseUtil.sendJSON(ctx, HttpResponseStatus.OK, request, FileMap.fullListJson());
         } else if ("/ssd".equals(uri)) {
             ClientBootstrap.shutdownGracefully();
         } else {
@@ -65,11 +61,11 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
                 }
                 String name = tar.get(0);
                 String title = name.length() > 30 ? (name.substring(0, 27) + "...") : name;
-                if (HttpPlayer.isVideo(name)) {
+                if (FileMap.isVideo(name)) {
                     uri = "/page/playVideo.html";
                     params = new HashMap<>();
                     params.put("p", Arrays.asList(name, name, title, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
-                } else if (HttpPlayer.isAudio(name)) {
+                } else if (FileMap.isAudio(name)) {
                     uri = "/page/playAudio.html";
                     params = new HashMap<>();
                     params.put("p", Arrays.asList(name, name, title, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
@@ -78,15 +74,15 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
                 }
             } else if ("/gamble".equals(uri)) {
                 params.clear();
-                String name = HttpPlayer.gamble();
+                String name = FileMap.gamble();
                 if (name == null) {
                     uri = "/page/index.html";
-                } else if (HttpPlayer.isVideo(name)) {
+                } else if (FileMap.isVideo(name)) {
                     uri = "/page/playVideo.html";
                     String title = name.length() > 30 ? (name.substring(0, 27) + "...") : name;
                     params = new HashMap<>();
                     params.put("p", Arrays.asList(name, name, title, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
-                } else if (HttpPlayer.isAudio(name)) {
+                } else if (FileMap.isAudio(name)) {
                     uri = "/page/playAudio.html";
                     String title = name.length() > 30 ? (name.substring(0, 27) + "...") : name;
                     params = new HashMap<>();

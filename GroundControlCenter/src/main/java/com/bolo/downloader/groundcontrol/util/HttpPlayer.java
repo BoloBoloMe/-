@@ -1,6 +1,5 @@
 package com.bolo.downloader.groundcontrol.util;
 
-import com.bolo.downloader.groundcontrol.factory.ConfFactory;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.respool.nio.ResponseUtil;
@@ -14,67 +13,18 @@ import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.PARTIAL_CONTENT;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class HttpPlayer {
     private static final MyLogger log = LoggerFactory.getLogger(HttpPlayer.class);
-    private static final ConcurrentHashMap<String, File> fileList = new ConcurrentHashMap<>();
-    private static final Timer flushTimer = new Timer(true);
-    private static String[] paths = {};
 
-    public static void startFlushTask() {
-        if (paths.length == 0) {
-            String mediaPaths = ConfFactory.get("mediaPath");
-            if (null != mediaPaths) {
-                paths = mediaPaths.split(",");
-            }
-        }
-        flushTimer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                log.info("定期扫描文件目录");
-                File[] dirs = new File[paths.length];
-                for (int i = 0; i < paths.length; i++) {
-                    dirs[i] = new File(paths[i]);
-                }
-                scan(dirs);
-            }
-        }, 0L, 300000L);
-    }
-
-    public static void shutdownFlushTask() {
-        flushTimer.cancel();
-        flushTimer.purge();
-    }
-
-    public static String fileListJson(String name) {
-        StringBuilder result = new StringBuilder().append('[');
-        if (name == null) {
-            for (Map.Entry<String, File> entry : fileList.entrySet()) {
-                result.append('"').append(entry.getKey()).append('"').append(',');
-            }
-        } else {
-            for (Map.Entry<String, File> entry : fileList.entrySet()) {
-                if (entry.getKey().contains(name)) {
-                    result.append('"').append(entry.getKey()).append('"').append(',');
-                }
-            }
-        }
-        int lastIndex = result.length() - 1;
-        if (result.lastIndexOf(",") == lastIndex) {
-            result.deleteCharAt(lastIndex);
-        }
-        result.append(']');
-        return result.toString();
-    }
 
     public static void play(ChannelHandlerContext ctx, FullHttpRequest request, String target) {
-        File file = fileList.get(target);
-        if (file == null || !file.exists() || file.isHidden()) {
+        String absolutePaths = FileMap.findByFileName(target);
+        File file;
+        if (absolutePaths == null || !(file = new File(absolutePaths)).exists() || file.isHidden()) {
             ResponseUtil.sendError(ctx, HttpResponseStatus.NOT_FOUND, request);
             return;
         }
@@ -126,33 +76,6 @@ public class HttpPlayer {
         }
     }
 
-    public static String gamble() {
-        Random random = new Random();
-        random.setSeed(random.hashCode());
-        int min = 1, max = fileList.size();
-        int s = random.nextInt(max) % (max - min + 1) + min;
-        Set<String> keys = fileList.keySet();
-        int num = 1;
-        for (String key : keys) {
-            if (num++ == s) {
-                return key;
-            }
-        }
-        return "";
-    }
-
-    final static private String VIDEO_NAME_PATTERN = ".+(\\.mp4|\\.webm|.ogg){1}";
-    final static private String AUDIO_NAME_PATTERN = ".+(\\.mp3|\\.flac){1}";
-
-    public static boolean isVideo(String name) {
-        return Pattern.matches(VIDEO_NAME_PATTERN, name);
-    }
-
-    public static boolean isAudio(String name) {
-        return Pattern.matches(AUDIO_NAME_PATTERN, name);
-    }
-
-
     private static final ChannelProgressiveFutureListener channelProgressiveFutureListener = new ChannelProgressiveFutureListener() {
         @Override
         public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) {
@@ -187,25 +110,5 @@ public class HttpPlayer {
         response.headers().set(HttpHeaderNames.CACHE_CONTROL, "private, max-age=" + HTTP_CACHE_SECONDS);
         response.headers().set(
                 HttpHeaderNames.LAST_MODIFIED, dateFormatter.format(new Date(fileToCache.lastModified())));
-    }
-
-
-    private static void scan(File[] paths) {
-        for (File target : paths) {
-            String name = target.getName();
-            if (target.isDirectory()) {
-                File[] child = target.listFiles();
-                if (child != null) {
-                    scan(child);
-                }
-            } else if (target.isFile() && !fileList.containsKey(name) && !target.isHidden()) {
-                String lowerCaseName = name.toLowerCase();
-                if (isVideo(lowerCaseName)) {
-                    fileList.put(name, target);
-                } else if (isAudio(lowerCaseName)) {
-                    fileList.put(name, target);
-                }
-            }
-        }
     }
 }

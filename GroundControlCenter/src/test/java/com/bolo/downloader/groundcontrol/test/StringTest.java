@@ -1,5 +1,6 @@
 package com.bolo.downloader.groundcontrol.test;
 
+import com.bolo.downloader.groundcontrol.util.FileMap;
 import com.bolo.downloader.groundcontrol.util.HttpPlayer;
 
 public class StringTest {
@@ -19,6 +20,6 @@ public class StringTest {
         final long transLen = end - start;
         System.out.println(String.format("%d,%d,%d", start, end, transLen));
 
-        System.out.println(HttpPlayer.isAudio("[东京爱情故事].tokyo.love.story.ep10.1991.dvdrip.x264.ac3.3audios-cmct.mkv"));
+        System.out.println(FileMap.isVideo("Godspeed You! Black Emperor - Chart #3 _ Steve Reich-jV0-1o09FzE.webm"));
     }
 }

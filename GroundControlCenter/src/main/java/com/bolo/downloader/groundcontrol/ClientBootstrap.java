@@ -10,7 +10,6 @@ import com.bolo.downloader.groundcontrol.handler.DownloadHandler;
 import com.bolo.downloader.groundcontrol.handler.EqualsHandler;
 import com.bolo.downloader.groundcontrol.handler.NewFileHandler;
 import com.bolo.downloader.groundcontrol.nio.MediaServer;
-import com.bolo.downloader.groundcontrol.util.HttpPlayer;
 import com.bolo.downloader.respool.db.StoneMap;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
@@ -24,12 +23,18 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
+import java.util.Timer;
 
 public class ClientBootstrap {
     private static final String CONF_FILE_PATH = "conf/GroundControlCenter.conf";
     private static final MyLogger log = LoggerFactory.getLogger(ClientBootstrap.class);
     private static MediaServer server;
     private static CloseableHttpClient client;
+    /**
+     * 全局的定时调度器
+     */
+    public static final Timer overTimer = new Timer(true);
+
 
     public static void main(String[] args) {
         init();
@@ -58,6 +63,7 @@ public class ClientBootstrap {
         try {
             server.shutdown();
             client.close();
+            overTimer.cancel();
             StoneMapFactory.getObject().rewriteDbFile();
         } catch (Exception e) {
             e.printStackTrace();

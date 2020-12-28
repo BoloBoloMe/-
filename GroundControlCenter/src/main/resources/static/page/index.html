@@ -33,8 +33,13 @@
                 <i class="layui-icon layui-icon-gift" style="font-size: 30px;"></i>
             </button>
         </div>
+        <dev class="layui-col-md2"><span>标签:&nbsp;</span><a href="">#视频</a><a href="index.html">#音乐</a></dev>
     </form>
 </div>
+<br/>
+<span>最近播放:&nbsp;</span><a href="index.html">三岛由于肌肤</a><a href="index.html">，四岛由于肌肤</a>
+<br/>
+<span>最新添加:&nbsp;</span><a href="index.html">饭岛爱１１１</a><a href="index.html">，饭岛爱２２２</a>
 <br/>
 <div class="layui-tab layui-tab-brief" lay-filter="tabBrief">
     <table id="fileList" lay-filter="fileTable"></table>
@@ -43,7 +48,13 @@
 <javascript src="/base64.js"></javascript>
 <script>
     var nameHolder = ''
-    var fileListData = {}
+    var fileListHolder = []
+    var responseHolder = {
+        labels: [],
+        fileList: [],
+        newFile: [],
+        lruList: []
+    };
 
     function copyLink(msg) {
         alert(msg)
@@ -79,49 +90,54 @@
         });
 
 
-        // 异步加载文件列表数据
+        // 加载文件列表数据
         function loadFileListData() {
-            $.ajax({
-                type: "GET",
-                url: "/fl?name=" + nameHolder,
-                success: function (res) {
-                    var data = [];
-                    if (res) {
-                        for (var x in res) {
-                            var file = res[x];
-                            var encodeFile = encodeURI(file);
-                            data.push({
-                                'fileName': '<a href=/pv?tar=' + encodeFile + ' target="_blank">' + file + '</a>',
-                                'opt': '<a  class="layui-btn layui-btn-xs" href="javascript:void(0);" onclick=copyLink("http://' + window.location.host + '/pl?tar=' + encodeFile + '")>拷贝源地址</a>&nbsp;&nbsp;' +
-                                    '<a class="layui-btn layui-btn-xs" href=/pv?tar=' + encodeFile + ' target="_blank">播放</a>'
-                            })
-                        }
-                        fileListData = data;
-
+            if (fileListHolder) {
+                var data = [];
+                if ('' === nameHolder) {
+                    for (var x in fileListHolder) {
+                        data = fileListHolder;
                     }
-                    randomFileList()
-                    fileList.reload({
-                        data: fileListData
-                    });
+                } else {
+                    for (var x in fileListHolder) {
+                        var file = fileListHolder[x];
+                        var labelFlag = nameHolder.indexOf('#');
+                        if (labelFlag >= 0) {
+                            // 标签查询
+                            var labelCriterion = nameHolder.substr(labelFlag);
+                            var labels = file.labels;
+                            if (labels) {
+                                for (var y in labels) {
+                                    if (labelCriterion === labels[y]) {
+                                        data.push(file)
+                                        break
+                                    }
+                                }
+                            }
+                        } else {
+                            // 文件名查询
+                            if (file.name.indexOf(nameHolder) >= 0) {
+                                data.push(file)
+                            }
+                        }
+                    }
                 }
-            });
+                randomLoad(data);
+            }
         }
 
         // 打乱列表的排序
-        function randomFileList() {
-            fileListData.sort(function () {
+        function randomLoad(data) {
+            data.sort(function () {
                 return 0.5 - Math.random()
             })
-            fileList.reload({
-                data: fileListData
-            })
+            fileList.reload({data: data})
         }
 
 
         //监听表单提交-搜索文件
         form.on('submit(btnSearch)', function (data) {
-            var name = encodeURI(data.field.name);
-            nameHolder = name;
+            nameHolder = encodeURI(data.field.name);
             loadFileListData();
             return true;
         });
@@ -130,11 +146,42 @@
         table.on('toolbar(fileTable)', function (obj) {
             switch (obj.event) {
                 case 'RELOAD':
-                    randomFileList();
+                    randomLoad(fileListHolder);
                     break;
             }
         });
-        loadFileListData();
+
+        function requestData() {
+            $.ajax({
+                type: "GET",
+                url: "/fl?name=" + nameHolder,
+                success: function (res) {
+                    // 缓存响应数据
+                    responseHolder = res
+                    var fileList = responseHolder.fileList;
+                    // 缓存文件列表数据
+                    for (var x in fileList) {
+                        var file = fileList[x];
+                        var fileName = file.name
+                        var encodeFileName = encodeURI(fileName);
+                        fileListHolder.push({
+                            'fileName': '<a href=/pv?tar=' + encodeFileName + ' target="_blank">' + fileName + '</a>',
+                            'labels': file.labels,
+                            'opt': '<a  class="layui-btn layui-btn-xs" href="javascript:void(0);" onclick=copyLink("http://' + window.location.host + '/pl?tar=' + encodeFileName + '")>拷贝源地址</a>&nbsp;&nbsp;' +
+                                '<a class="layui-btn layui-btn-xs" href=/pv?tar=' + encodeFileName + ' target="_blank">播放</a>'
+                        })
+                    }
+
+                    // 第一次加载文件列表
+                    loadFileListData();
+                    // 加载最近播放列表
+                    // 加载最新文件
+                    // 加载标签列表
+                }
+            });
+        }
+
+        requestData();
     });
 </script>
 </body>
