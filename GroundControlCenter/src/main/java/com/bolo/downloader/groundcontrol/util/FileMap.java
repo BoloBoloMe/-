@@ -121,9 +121,7 @@ public class FileMap {
     volatile private static long lastFlushTime = 0;
 
     public static void flush() {
-        if (lastFlushTime - (lastFlushTime = ClientBootstrap.getSystemTime()) < -180000L) {
-            return;
-        }
+        if (ClientBootstrap.getSystemTime() - lastFlushTime < 180000L) return;
         if (paths.length == 0) {
             String mediaPaths = ConfFactory.get("mediaPath");
             if (null != mediaPaths) {
@@ -151,6 +149,7 @@ public class FileMap {
                 labelListJson = labelJson.toString();
             }
         }
+        lastFlushTime = ClientBootstrap.getSystemTime();
         ClientBootstrap.uniteAsynExecutor.submit(() -> {
             log.info("扫描文件目录");
             // 更新文件列表
