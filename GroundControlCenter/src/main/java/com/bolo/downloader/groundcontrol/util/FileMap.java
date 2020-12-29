@@ -118,9 +118,9 @@ public class FileMap {
         return path;
     }
 
-    private static long lastFlushTime = 0;
+    volatile private static long lastFlushTime = 0;
 
-    synchronized private static void flush() {
+    public static void flush() {
         if (lastFlushTime - (lastFlushTime = ClientBootstrap.getSystemTime()) < -180000L) {
             return;
         }

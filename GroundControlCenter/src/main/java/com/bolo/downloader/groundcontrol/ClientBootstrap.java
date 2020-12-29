@@ -10,6 +10,7 @@ import com.bolo.downloader.groundcontrol.handler.DownloadHandler;
 import com.bolo.downloader.groundcontrol.handler.EqualsHandler;
 import com.bolo.downloader.groundcontrol.handler.NewFileHandler;
 import com.bolo.downloader.groundcontrol.nio.MediaServer;
+import com.bolo.downloader.groundcontrol.util.FileMap;
 import com.bolo.downloader.respool.db.StoneMap;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
@@ -31,7 +32,7 @@ public class ClientBootstrap {
     private static final MyLogger log = LoggerFactory.getLogger(ClientBootstrap.class);
     private static MediaServer server;
     private static CloseableHttpClient client;
-    private static volatile long SYSTEM_TIME_MILLISECOND = 0;
+    private static volatile long SYSTEM_TIME_MILLISECOND = System.currentTimeMillis();
 
     /**
      * 全局的定时调度器
@@ -97,6 +98,7 @@ public class ClientBootstrap {
         PageUtil.setBasic(ConfFactory.get("staticFilePath"));
         PageUtil.setDynamicPageList("/page/playVideo.html");
         PageUtil.setDynamicPageList("/page/playAudio.html");
+        FileMap.flush();
     }
 
     private static void increaseSystemTime() {
