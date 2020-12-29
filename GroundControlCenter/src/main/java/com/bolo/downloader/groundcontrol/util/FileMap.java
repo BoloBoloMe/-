@@ -94,6 +94,7 @@ public class FileMap {
      * }
      */
     public static String fullListJson() {
+        flush();
         return "{\"labels\":" + labelListJson + ',' +
                 "\"fileList\":" + fullFilesJson + ',' +
                 "\"newFile\":" + newFileList + ',' +
@@ -117,7 +118,12 @@ public class FileMap {
         return path;
     }
 
-    public static void startFlushTask() {
+    private static long lastFlushTime = 0;
+
+    synchronized private static void flush() {
+        if (lastFlushTime - (lastFlushTime = ClientBootstrap.getSystemTime()) < -180000L) {
+            return;
+        }
         if (paths.length == 0) {
             String mediaPaths = ConfFactory.get("mediaPath");
             if (null != mediaPaths) {
@@ -145,37 +151,34 @@ public class FileMap {
                 labelListJson = labelJson.toString();
             }
         }
-        ClientBootstrap.overTimer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                log.info("定期扫描文件目录");
-                // 更新文件列表
-                nameToPath.clear();
-                scan(paths);
-                // 更新文件列表JSON
-                StringBuilder json = new StringBuilder().append('[');
-                for (Map.Entry<String, String> nameAndPath : nameToPath.entrySet()) {
-                    json.append("{\"name\":\"").append(nameAndPath.getKey()).append('"');
-                    // 添加文件标签
-                    json.append(",\"labels\":[");
-                    String lowerCaseName = nameAndPath.getKey().toLowerCase();
-                    if (isVideo(lowerCaseName)) {
-                        json.append("\"video\",");
-                    } else if (isAudio(lowerCaseName)) {
-                        json.append("\"music\",");
-                    }
-                    List<String> labels = getLabel(nameAndPath.getValue());
-                    if (labels != null) for (String label : labels) json.append('"').append(label).append("\",");
-                    json.deleteCharAt(json.length() - 1);
-                    json.append(']');
-                    json.append("},");
+        ClientBootstrap.uniteAsynExecutor.submit(() -> {
+            log.info("扫描文件目录");
+            // 更新文件列表
+            nameToPath.clear();
+            scan(paths);
+            // 更新文件列表JSON
+            StringBuilder json = new StringBuilder().append('[');
+            for (Map.Entry<String, String> nameAndPath : nameToPath.entrySet()) {
+                json.append("{\"name\":\"").append(nameAndPath.getKey()).append('"');
+                // 添加文件标签
+                json.append(",\"labels\":[");
+                String lowerCaseName = nameAndPath.getKey().toLowerCase();
+                if (isVideo(lowerCaseName)) {
+                    json.append("\"video\",");
+                } else if (isAudio(lowerCaseName)) {
+                    json.append("\"music\",");
                 }
-                json.deleteCharAt(json.length() - 1).append(']');
-                // 更新最新文件列表
-                updateNewFileList();
-                fullFilesJson = json.toString();
+                List<String> labels = getLabel(nameAndPath.getValue());
+                if (labels != null) for (String label : labels) json.append('"').append(label).append("\",");
+                json.deleteCharAt(json.length() - 1);
+                json.append(']');
+                json.append("},");
             }
-        }, 0L, 300000L);
+            json.deleteCharAt(json.length() - 1).append(']');
+            // 更新最新文件列表
+            updateNewFileList();
+            fullFilesJson = json.toString();
+        });
     }
 
 

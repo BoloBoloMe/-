@@ -23,17 +23,20 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
-import java.util.Timer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ClientBootstrap {
     private static final String CONF_FILE_PATH = "conf/GroundControlCenter.conf";
     private static final MyLogger log = LoggerFactory.getLogger(ClientBootstrap.class);
     private static MediaServer server;
     private static CloseableHttpClient client;
+    private static volatile long SYSTEM_TIME_MILLISECOND = 0;
+
     /**
      * 全局的定时调度器
      */
-    public static final Timer overTimer = new Timer(true);
+    public static final ExecutorService uniteAsynExecutor = Executors.newSingleThreadExecutor();
 
 
     public static void main(String[] args) {
@@ -48,6 +51,7 @@ public class ClientBootstrap {
         while (!Thread.interrupted()) {
             try {
                 request = client.execute(request, handlers);
+                increaseSystemTime();
                 continue;
             } catch (HttpHostConnectException e) {
                 log.error("服务器无法访问！", e);
@@ -63,17 +67,28 @@ public class ClientBootstrap {
         try {
             server.shutdown();
             client.close();
-            overTimer.cancel();
+            uniteAsynExecutor.shutdownNow();
             StoneMapFactory.getObject().rewriteDbFile();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    public static void sleep(long time) {
+        try {
+            Thread.sleep(time);
+        } catch (InterruptedException e) {
+        }
+    }
+
+    public static long getSystemTime() {
+        return SYSTEM_TIME_MILLISECOND;
+    }
+
+
     private static void init() {
         RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
         String name = runtime.getName();
-        System.out.println("当前进程： " + name);
         log.info("当前进程： " + name);
         ConfFactory.load(CONF_FILE_PATH);
         LoggerFactory.setLogPath(ConfFactory.get("logPath"));
@@ -84,6 +99,9 @@ public class ClientBootstrap {
         PageUtil.setDynamicPageList("/page/playAudio.html");
     }
 
+    private static void increaseSystemTime() {
+        ++SYSTEM_TIME_MILLISECOND;
+    }
 
     /**
      * 根据StoneMap中的信息构建请求对象
@@ -118,12 +136,5 @@ public class ClientBootstrap {
         }
         log.info("根据StoneMap构建请求: version=%d,expectedValue=%d,skip=%d", lastVer, expectedValue, skip);
         return AbstractResponseHandler.post(lastVer, expectedValue, skip);
-    }
-
-    public static void sleep(long time) {
-        try {
-            Thread.sleep(time);
-        } catch (InterruptedException e) {
-        }
     }
 }
