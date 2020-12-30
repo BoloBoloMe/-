@@ -1,4 +1,4 @@
-package com.bolo.downloader.respool.db;
+package com.bolo.downloader.respool.db.buff;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -9,15 +9,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 环形链表写缓冲
+ * 线程安全
  */
-public class CycleWriteBuff<K, V> {
+public class SynchronizedCycleWriteBuff implements CycleWriteBuff {
     private static final String LINE_SEPARATOR = System.lineSeparator();
     private int size;
     private final int PUT_SPEEDY_MAX;
     private final int WRITE_LOOP_MAX;
-    private Note<K, V> entry;
-    private final AtomicReference<Note<K, V>> wirteNote = new AtomicReference<>();
-    private final AtomicReference<Note<K, V>> readNote = new AtomicReference<>();
+    private Note entry;
+    private final AtomicReference<Note> wirteNote = new AtomicReference<>();
+    private final AtomicReference<Note> readNote = new AtomicReference<>();
     private final AtomicInteger idlingWrite = new AtomicInteger(0);
     private final AtomicInteger allWrite = new AtomicInteger(0);
     private final AtomicInteger idlingPut = new AtomicInteger(0);
@@ -30,13 +31,13 @@ public class CycleWriteBuff<K, V> {
     private volatile int checkpoint = 0;
 
 
-    public CycleWriteBuff(int size, int putSpeedyMax, int writeLoopMax) {
+    public SynchronizedCycleWriteBuff(int size, int putSpeedyMax, int writeLoopMax) {
         this.size = size;
         this.PUT_SPEEDY_MAX = putSpeedyMax;
         this.WRITE_LOOP_MAX = writeLoopMax;
-        Note<K, V> curr = entry = new Note<>();
+        Note curr = entry = new Note();
         while (size-- >= 1) {
-            curr.next = new Note<>();
+            curr.next = new Note();
             curr = curr.next;
             if (size == 0) {
                 curr.next = entry;
@@ -55,8 +56,8 @@ public class CycleWriteBuff<K, V> {
         this.serial.set(serial);
     }
 
-    public void put(K key, V value) {
-        Note<K, V> curr = wirteNote.get();
+    public void put(String key, String value) {
+        Note curr = wirteNote.get();
         for (int i = 1; ; i++) {
             allPut.incrementAndGet();
             if (curr.readable) {
@@ -93,7 +94,7 @@ public class CycleWriteBuff<K, V> {
      * @throws IOException
      */
     public void write(Writer writer) throws IOException {
-        Note<K, V> curr = readNote.get();
+        Note curr = readNote.get();
         for (int i = 0; i / size <= WRITE_LOOP_MAX; i++) {
             allWrite.incrementAndGet();
             boolean idling = true;
@@ -118,7 +119,7 @@ public class CycleWriteBuff<K, V> {
         writer.flush();
     }
 
-    static void newRow(String key, String value, int serial, Writer writer) throws IOException {
+    private static void newRow(String key, String value, int serial, Writer writer) throws IOException {
         int keyLen = key.length();
         // serial
         writer.append((char) (serial % 65535)).append((char) (serial / 65535))
@@ -131,11 +132,11 @@ public class CycleWriteBuff<K, V> {
     /**
      * 写入恢复行
      */
-    void recoverRow(String key, String value, Writer writer) throws IOException {
+    public void recoverRow(String key, String value, Writer writer) throws IOException {
         newRow(key, value, 0, writer);
     }
 
-    int checkpoint() {
+    public int checkpoint() {
         int checkpoint = serial.get();
         serial.set(0);
         return checkpoint;
@@ -149,7 +150,7 @@ public class CycleWriteBuff<K, V> {
         DecimalFormat df = new DecimalFormat("0.00000");
         double[] tem = new double[size];
         int optCount = 0;
-        Note<K, V> curr = entry;
+        Note curr = entry;
         for (int i = 0; i < size; i++) {
             int currNodeCount = curr.count;
             tem[i] = currNodeCount;
@@ -173,11 +174,11 @@ public class CycleWriteBuff<K, V> {
         return result.toString();
     }
 
-    private static class Note<K, V> {
-        private Note<K, V> next;
+    private static class Note {
+        private Note next;
         private boolean readable = false;
-        private K key;
-        private V value;
+        private String key;
+        private String value;
         private Integer serial;
         private int count = 0;
     }

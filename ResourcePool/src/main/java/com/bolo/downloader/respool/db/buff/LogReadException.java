@@ -1,4 +1,4 @@
-package com.bolo.downloader.respool.db;
+package com.bolo.downloader.respool.db.buff;
 
 /**
  * 日志文件写操作出现异常

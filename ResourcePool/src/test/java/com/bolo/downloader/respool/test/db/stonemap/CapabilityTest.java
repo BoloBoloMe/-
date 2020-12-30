@@ -2,6 +2,7 @@ package com.bolo.downloader.respool.test.db.stonemap;
 
 
 import com.bolo.downloader.respool.db.StoneMap;
+import com.bolo.downloader.respool.db.buff.SynchronizedCycleWriteBuff;
 
 import java.util.Map;
 import java.util.Random;
@@ -22,7 +23,7 @@ public class CapabilityTest {
 
 
     public static void main(String[] args) {
-        Map<String, String> map = new StoneMap("D:\\MyResource\\Desktop\\data\\", 3, 1000);
+        Map<String, String> map = new StoneMap("D:\\MyResource\\Desktop\\data\\", 3, new SynchronizedCycleWriteBuff(1000, 1, 2));
         ((StoneMap) map).loadDbFile();
         // 工作线程:使用 map
         for (int i = 0; i < workThreadNum; i++) {

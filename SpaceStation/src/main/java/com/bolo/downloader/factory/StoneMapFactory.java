@@ -1,6 +1,7 @@
 package com.bolo.downloader.factory;
 
 import com.bolo.downloader.respool.db.StoneMap;
+import com.bolo.downloader.respool.db.buff.SynchronizedCycleWriteBuff;
 
 public class StoneMapFactory {
     private static StoneMap stoneMap = null;
@@ -12,10 +13,10 @@ public class StoneMapFactory {
     private static synchronized StoneMap createSingleton() {
         if (null != stoneMap) return stoneMap;
         stoneMap = new StoneMap(ConfFactory.get("dbFilePath"),
-                Integer.valueOf(ConfFactory.get("dbFileId")),
-                Integer.valueOf(ConfFactory.get("wrireBuffSize")),
-                Integer.valueOf(ConfFactory.get("putSpedMax")),
-                Integer.valueOf(ConfFactory.get("writeLoopMax")));
+                Integer.parseInt(ConfFactory.get("dbFileId")),
+                new SynchronizedCycleWriteBuff(Integer.parseInt(ConfFactory.get("wrireBuffSize")),
+                        Integer.parseInt(ConfFactory.get("putSpedMax")),
+                        Integer.parseInt(ConfFactory.get("writeLoopMax"))));
         stoneMap.loadDbFile();
         return stoneMap;
     }

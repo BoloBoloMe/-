@@ -1,10 +1,11 @@
 package com.bolo.downloader.respool.test.db.stonemap;
 
 import com.bolo.downloader.respool.db.StoneMap;
+import com.bolo.downloader.respool.db.buff.SynchronizedCycleWriteBuff;
 
 public class AvailableTest {
     public static void main(String[] args) {
-        StoneMap stoneMap = new StoneMap("D:\\MyResource\\Desktop\\data\\", 1, 16);
+        StoneMap stoneMap = new StoneMap("D:\\MyResource\\Desktop\\data\\", 1, new SynchronizedCycleWriteBuff(16, 1, 3));
         stoneMap.put("k_0", "v");
         stoneMap.put("k_1", "v");
         stoneMap.put("k_2", "v");

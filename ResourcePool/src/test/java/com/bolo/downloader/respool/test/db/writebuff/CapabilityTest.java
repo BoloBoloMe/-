@@ -1,7 +1,7 @@
 package com.bolo.downloader.respool.test.db.writebuff;
 
 
-import com.bolo.downloader.respool.db.CycleWriteBuff;
+import com.bolo.downloader.respool.db.buff.ConcurrentCycleWriteBuff;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -16,11 +16,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class CapabilityTest {
     private static int workThreadNum = 300;
-    private static int dataCount = 10000;
+    private static int dataCount = 100;
     private static int dataCountSum = workThreadNum * dataCount;
     private static CyclicBarrier cyclicBarrier = new CyclicBarrier(workThreadNum + 1);
     private static ExecutorService workers = Executors.newCachedThreadPool();
-    private static CycleWriteBuff<String, String> writeBuff = new CycleWriteBuff<>(1000, 100, 10);
+    private static ConcurrentCycleWriteBuff writeBuff = new ConcurrentCycleWriteBuff(1000, 100, 10);
 
     public static void main(String[] args) throws BrokenBarrierException, InterruptedException, IOException {
         final AtomicInteger threadNum = new AtomicInteger(0);

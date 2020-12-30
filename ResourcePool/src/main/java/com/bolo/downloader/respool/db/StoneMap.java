@@ -1,5 +1,9 @@
 package com.bolo.downloader.respool.db;
 
+import com.bolo.downloader.respool.db.buff.CycleWriteBuff;
+import com.bolo.downloader.respool.db.buff.LogReadException;
+import com.bolo.downloader.respool.db.buff.LogWriteException;
+
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,7 +23,7 @@ public class StoneMap implements Map<String, String> {
     /**
      * 写缓冲
      */
-    private final CycleWriteBuff<String, String> writeBuff;
+    private final CycleWriteBuff writeBuff;
 
     /**
      * DELETE FLAG
@@ -116,19 +120,13 @@ public class StoneMap implements Map<String, String> {
     }
 
 
-    public StoneMap(String dbFilePath, int dbFileId, int wrireBuffSize) {
+    public StoneMap(String dbFilePath, int dbFileId, CycleWriteBuff writeBuff) {
         this.dbFileName = String.format("stonemap.%d.db", dbFileId);
         this.dbFilePath = dbFilePath;
-        writeBuff = new CycleWriteBuff<>(wrireBuffSize, 500, 1000);
+        this.writeBuff = writeBuff;
         this.dbFile = new File(dbFilePath, dbFileName);
     }
 
-    public StoneMap(String dbFilePath, int dbFileId, int wrireBuffSize, int putSpedMax, int writeLoopMax) {
-        this.dbFileName = String.format("stonemap.%d.db", dbFileId);
-        this.dbFilePath = dbFilePath;
-        writeBuff = new CycleWriteBuff<>(wrireBuffSize, putSpedMax, writeLoopMax);
-        this.dbFile = new File(dbFilePath, dbFileName);
-    }
 
     /**
      * 加载数据文件
