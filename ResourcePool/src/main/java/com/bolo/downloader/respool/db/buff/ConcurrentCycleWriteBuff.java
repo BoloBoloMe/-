@@ -6,7 +6,6 @@ import java.text.DecimalFormat;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.*;
 
 /**
@@ -22,7 +21,7 @@ public class ConcurrentCycleWriteBuff implements CycleWriteBuff {
     private final AtomicReference<Note> readNode = new AtomicReference<>();
     private final AtomicInteger idlingOpt = new AtomicInteger(0);
     private final AtomicInteger totalOpt = new AtomicInteger(0);
-    private final CountDownLatch latch = new CountDownLatch(1);
+    private final ReuseCountDownLatch latch = new ReuseCountDownLatch(1);
     /**
      * 流水号
      */
