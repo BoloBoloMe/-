@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.*;
 
 /**
  * 环形链表写缓冲
+ * 相比SynchronizedCycleWriteBuff要有更高的并发性能
  */
 public class ConcurrentCycleWriteBuff implements CycleWriteBuff {
     private static final String LINE_SEPARATOR = System.lineSeparator();
