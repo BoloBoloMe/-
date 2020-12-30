@@ -1,7 +1,7 @@
 package com.bolo.downloader.groundcontrol.factory;
 
 import com.bolo.downloader.respool.db.StoneMap;
-import com.bolo.downloader.respool.db.buff.SimpleCycleWriteBuff;
+import com.bolo.downloader.respool.db.buff.SimpleWriteBuff;
 
 public class StoneMapFactory {
     private static StoneMap stoneMap = null;
@@ -17,7 +17,7 @@ public class StoneMapFactory {
         if (null != stoneMap) return stoneMap;
         stoneMap = new StoneMap(ConfFactory.get("dbFilePath"),
                 Integer.parseInt(ConfFactory.get("dbFileId")),
-                new SimpleCycleWriteBuff());
+                new SimpleWriteBuff());
         stoneMap.loadDbFile();
         return stoneMap;
     }

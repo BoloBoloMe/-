@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 环形链表写缓冲
  * 线程不安全
  */
-public class SimpleCycleWriteBuff implements CycleWriteBuff {
+public class SimpleWriteBuff implements CycleWriteBuff {
     private static final String LINE_SEPARATOR = System.lineSeparator();
     private static final ArrayList<Entry> buffPool = new ArrayList<>();
     /**
