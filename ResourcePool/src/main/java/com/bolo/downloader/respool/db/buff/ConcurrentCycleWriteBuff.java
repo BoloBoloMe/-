@@ -231,11 +231,8 @@ public class ConcurrentCycleWriteBuff implements CycleWriteBuff {
      * 随机休眠一小会儿
      */
     private void awaitLatch() {
-        final String threadName = Thread.currentThread().getName();
         try {
-            System.out.println(threadName + "进入等待");
             latch.await();
-            System.out.println(threadName + "重新启动");
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
