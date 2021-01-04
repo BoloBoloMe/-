@@ -2,6 +2,7 @@ package com.bolo.downloader.respool.test.db.stonemap;
 
 
 import com.bolo.downloader.respool.db.StoneMap;
+import com.bolo.downloader.respool.db.buff.SimpleWriteBuff;
 import com.bolo.downloader.respool.db.buff.SynchronizedCycleWriteBuff;
 
 import java.util.Map;
@@ -23,7 +24,7 @@ public class CapabilityTest {
 
 
     public static void main(String[] args) {
-        Map<String, String> map = new StoneMap("D:\\MyResource\\Desktop\\data\\", 3, new SynchronizedCycleWriteBuff(1000, 1, 2));
+        Map<String, String> map = new StoneMap("/home/bolo/program/VideoDownloader/GroundControlCenter/data/", 3, new SimpleWriteBuff());
         ((StoneMap) map).loadDbFile();
         // 工作线程:使用 map
         for (int i = 0; i < workThreadNum; i++) {
@@ -41,17 +42,16 @@ public class CapabilityTest {
         // StoneMap 专用同步线程：异步刷新数据文件
         scheduler.scheduleWithFixedDelay(() -> {
             StoneMap stoneMap = (StoneMap) map;
-//            if (stoneMap.modify() > 100) {
-//                stoneMap.rewriteDbFile();
-//                rewrite.incrementAndGet();
-//                System.out.println("已执行 " + rewrite.get() + " 次重写数据文件");
-//            } else {
-            stoneMap.flushWriteBuff();
-            flush.incrementAndGet();
-            System.out.println("已执行 " + flush.get() + " 次刷新日志文件缓冲");
-//            }
+            if (stoneMap.modify() > 100) {
+                stoneMap.rewriteDbFile();
+                rewrite.incrementAndGet();
+                System.out.println("已执行 " + rewrite.get() + " 次重写数据文件");
+            } else {
+                stoneMap.flushWriteBuff();
+                flush.incrementAndGet();
+            }
             System.out.println("map 状态：" + map.toString());
-        }, 1, 1, TimeUnit.SECONDS);
+        }, 100, 100, TimeUnit.MILLISECONDS);
 
         // 主线程:记录测试数据
         try {

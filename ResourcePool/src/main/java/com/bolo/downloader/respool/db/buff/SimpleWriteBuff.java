@@ -2,8 +2,7 @@ package com.bolo.downloader.respool.db.buff;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 环形链表写缓冲
@@ -11,11 +10,11 @@ import java.util.Iterator;
  */
 public class SimpleWriteBuff implements CycleWriteBuff {
     private static final String LINE_SEPARATOR = System.lineSeparator();
-    private static final ArrayList<Entry> buffPool = new ArrayList<>();
+    private static final StringBuffer buffer = new StringBuffer();
     /**
      * 流水号
      */
-    private volatile int serial = 0;
+    private final AtomicInteger serial = new AtomicInteger(1);
 
 
     /**
@@ -24,15 +23,16 @@ public class SimpleWriteBuff implements CycleWriteBuff {
      * @param serial
      */
     public void resetSerialInit(int serial) {
-        this.serial = serial;
+        this.serial.set(serial);
     }
 
     public void put(String key, String value) {
-        Entry entry = new Entry();
-        entry.serial = ++serial;
-        entry.key = key;
-        entry.value = value;
-        buffPool.add(entry);
+        // serial
+        buffer.append((char) (serial.incrementAndGet() % 65535)).append((char) (serial.get() / 65535))
+                // key length
+                .append((char) (key.length() % 65535)).append((char) (key.length() / 65535))
+                // key & value
+                .append(key).append(value).append(LINE_SEPARATOR);
     }
 
 
@@ -47,35 +47,27 @@ public class SimpleWriteBuff implements CycleWriteBuff {
      * @throws IOException
      */
     public void write(Writer writer) throws IOException {
-        Iterator<Entry> iterator = buffPool.iterator();
-        while (iterator.hasNext()) {
-            Entry entry = iterator.next();
-            newRow(entry.key, entry.value, entry.serial, writer);
-            iterator.remove();
-        }
+        writer.write(buffer.toString());
+        buffer.delete(0, buffer.length());
         writer.flush();
-    }
-
-    private static void newRow(String key, String value, int serial, Writer writer) throws IOException {
-        int keyLen = key.length();
-        // serial
-        writer.append((char) (serial % 65535)).append((char) (serial / 65535))
-                // key length
-                .append((char) (keyLen % 65535)).append((char) (keyLen / 65535))
-                // key & value
-                .append(key).append(value).append(LINE_SEPARATOR);
     }
 
     /**
      * 写入恢复行
      */
     public void recoverRow(String key, String value, Writer writer) throws IOException {
-        newRow(key, value, 0, writer);
+        int keyLen = key.length();
+        // serial
+        writer.append((char) 0).append((char) 0)
+                // key length
+                .append((char) (keyLen % 65535)).append((char) (keyLen / 65535))
+                // key & value
+                .append(key).append(value).append(LINE_SEPARATOR);
     }
 
     public int checkpoint() {
-        int checkpoint = serial;
-        serial = 0;
+        int checkpoint = serial.get();
+        serial.set(0);
         return checkpoint;
     }
 
@@ -85,11 +77,5 @@ public class SimpleWriteBuff implements CycleWriteBuff {
      */
     public String usageReport(boolean brief) {
         return "";
-    }
-
-    private static class Entry {
-        private String key;
-        private String value;
-        private Integer serial;
     }
 }

@@ -1,6 +1,5 @@
 package com.bolo.downloader.groundcontrol;
 
-
 import com.bolo.downloader.groundcontrol.dict.StoneMapDict;
 import com.bolo.downloader.groundcontrol.factory.ConfFactory;
 import com.bolo.downloader.groundcontrol.factory.HttpClientFactory;
@@ -24,8 +23,8 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class ClientBootstrap {
     private static final String CONF_FILE_PATH = "conf/GroundControlCenter.conf";
@@ -33,12 +32,6 @@ public class ClientBootstrap {
     private static MediaServer server;
     private static CloseableHttpClient client;
     private static volatile long SYSTEM_TIME_MILLISECOND = System.currentTimeMillis();
-
-    /**
-     * 全局的定时调度器
-     */
-    public static final ExecutorService uniteAsynExecutor = Executors.newSingleThreadExecutor();
-
 
     public static void main(String[] args) {
         init();
@@ -49,14 +42,17 @@ public class ClientBootstrap {
         log.info("客户端启动成功.");
         log.info("服务器地址: %s", ConfFactory.get("url"));
         HttpUriRequest request = createRequestFromStone();
+        boolean catchConnectException = false;
         while (!Thread.interrupted()) {
+            increaseSystemTime();
             try {
+                runTask();
+                if (catchConnectException) sleep(10000);
                 request = client.execute(request, handlers);
-                increaseSystemTime();
                 continue;
             } catch (HttpHostConnectException e) {
                 log.error("服务器无法访问！", e);
-                sleep(10000);
+                catchConnectException = true;
             } catch (IOException e) {
                 log.error("捕获异常！", e);
             }
@@ -68,7 +64,6 @@ public class ClientBootstrap {
         try {
             server.shutdown();
             client.close();
-            uniteAsynExecutor.shutdownNow();
             StoneMapFactory.getObject().rewriteDbFile();
         } catch (Exception e) {
             e.printStackTrace();
@@ -102,7 +97,7 @@ public class ClientBootstrap {
     }
 
     private static void increaseSystemTime() {
-        ++SYSTEM_TIME_MILLISECOND;
+        SYSTEM_TIME_MILLISECOND = System.currentTimeMillis();
     }
 
     /**
@@ -139,4 +134,26 @@ public class ClientBootstrap {
         log.info("根据StoneMap构建请求: version=%d,expectedValue=%d,skip=%d", lastVer, expectedValue, skip);
         return AbstractResponseHandler.post(lastVer, expectedValue, skip);
     }
+
+    /**
+     * 全局的异步任务队列
+     */
+    private static final LinkedBlockingQueue<Runnable> taskDeque = new LinkedBlockingQueue<>();
+
+    public static void submitTask(Runnable runnable) {
+        taskDeque.add(runnable);
+    }
+
+    private static void runTask() {
+        try {
+            while (!Thread.interrupted()) {
+                Runnable task = taskDeque.poll(100, TimeUnit.MILLISECONDS);
+                if (null == task) break;
+                task.run();
+            }
+        } catch (InterruptedException e) {
+
+        }
+    }
+
 }

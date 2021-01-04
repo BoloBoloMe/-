@@ -150,7 +150,7 @@ public class FileMap {
             }
         }
         lastFlushTime = ClientBootstrap.getSystemTime();
-        ClientBootstrap.uniteAsynExecutor.submit(() -> {
+        ClientBootstrap.submitTask(() -> {
             log.info("扫描文件目录");
             // 更新文件列表
             nameToPath.clear();
