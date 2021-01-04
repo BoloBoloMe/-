@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 环形链表写缓冲
@@ -16,7 +15,7 @@ public class SimpleWriteBuff implements CycleWriteBuff {
     /**
      * 流水号
      */
-    private final AtomicInteger serial = new AtomicInteger(0);
+    private volatile int serial = 0;
 
 
     /**
@@ -25,12 +24,12 @@ public class SimpleWriteBuff implements CycleWriteBuff {
      * @param serial
      */
     public void resetSerialInit(int serial) {
-        this.serial.set(serial);
+        this.serial = serial;
     }
 
     public void put(String key, String value) {
         Entry entry = new Entry();
-        entry.serial = serial.incrementAndGet();
+        entry.serial = ++serial;
         entry.key = key;
         entry.value = value;
         buffPool.add(entry);
@@ -75,8 +74,8 @@ public class SimpleWriteBuff implements CycleWriteBuff {
     }
 
     public int checkpoint() {
-        int checkpoint = serial.get();
-        serial.set(0);
+        int checkpoint = serial;
+        serial = 0;
         return checkpoint;
     }
 
