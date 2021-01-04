@@ -3,6 +3,7 @@ package com.bolo.downloader.groundcontrol.handler;
 import com.bolo.downloader.groundcontrol.dict.StoneMapDict;
 import com.bolo.downloader.groundcontrol.factory.ConfFactory;
 import com.bolo.downloader.groundcontrol.factory.StoneMapFactory;
+import com.bolo.downloader.groundcontrol.util.FileMap;
 import com.bolo.downloader.respool.coder.MD5Util;
 import com.bolo.downloader.respool.db.StoneMap;
 import com.bolo.downloader.respool.log.LoggerFactory;
@@ -65,6 +66,7 @@ public class DownloadHandler extends AbstractResponseHandler {
                     log.info("[transfer] 文件完整性校验通过,传输已完成. name=%s", response.getFileNane());
                     map.put(StoneMapDict.KEY_FILE_STATE, StoneMapDict.VAL_FILE_STATE_DOWNLOAD);
                     map.flushWriteBuff();
+                    FileMap.flush();
                     return post(lastVer, -1, 0);
                 } else {
                     log.error("[transfer] 文件数据不正确，删除文件并重新下载！name=" + response.getFileNane());
