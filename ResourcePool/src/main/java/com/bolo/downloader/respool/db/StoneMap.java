@@ -192,7 +192,6 @@ public class StoneMap implements Map<String, String> {
      * 数据文件重写：扫描当前缓冲池，写入数据文件，缩减占用空间
      */
     synchronized public void rewriteDbFile() {
-        final int checkpoint = writeBuff.checkpoint();
         modCounter.set(0);
         // create new db file
         Map<String, String> bufferPoolSnap = new HashMap<>(bufferPool);
@@ -237,7 +236,6 @@ public class StoneMap implements Map<String, String> {
         return "StoneMap{" +
                 "size=" + bufferPool.size() +
                 "dbFile=" + dbFile +
-                "writeBuffUsageReport=" + writeBuff.usageReport(true) +
                 '}';
     }
 }

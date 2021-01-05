@@ -64,18 +64,4 @@ public class SimpleWriteBuff implements CycleWriteBuff {
                 // key & value
                 .append(key).append(value).append(LINE_SEPARATOR);
     }
-
-    public int checkpoint() {
-        int checkpoint = serial.get();
-        serial.set(0);
-        return checkpoint;
-    }
-
-
-    /**
-     * buffer usage report
-     */
-    public String usageReport(boolean brief) {
-        return "";
-    }
 }

@@ -16,11 +16,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class CapabilityTest {
     private static int workThreadNum = 300;
-    private static int dataCount = 100;
+    private static int dataCount = 10000;
     private static int dataCountSum = workThreadNum * dataCount;
     private static CyclicBarrier cyclicBarrier = new CyclicBarrier(workThreadNum + 1);
     private static ExecutorService workers = Executors.newCachedThreadPool();
-    private static SynchronizedCycleWriteBuff writeBuff = new SynchronizedCycleWriteBuff(1000, 100, 10);
+    private static SynchronizedCycleWriteBuff writeBuff = new SynchronizedCycleWriteBuff(1000);
 
     public static void main(String[] args) throws BrokenBarrierException, InterruptedException, IOException {
         final AtomicInteger threadNum = new AtomicInteger(0);
@@ -68,7 +68,6 @@ public class CapabilityTest {
         cyclicBarrier.await();
         long endTime = System.currentTimeMillis();
         System.out.println("工作线程运行完毕，运行时间:" + (endTime - startTime) / 1000 + "秒");
-        System.out.println("缓冲链表节点使用率：" + writeBuff.usageReport(false));
         System.out.println("程序执行完毕");
     }
 }

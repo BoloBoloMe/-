@@ -2,7 +2,6 @@ package com.bolo.downloader.respool.test.db.stonemap;
 
 
 import com.bolo.downloader.respool.db.StoneMap;
-import com.bolo.downloader.respool.db.buff.SimpleWriteBuff;
 import com.bolo.downloader.respool.db.buff.SynchronizedCycleWriteBuff;
 
 import java.util.Map;
@@ -24,7 +23,7 @@ public class CapabilityTest {
 
 
     public static void main(String[] args) {
-        Map<String, String> map = new StoneMap("/home/bolo/program/VideoDownloader/GroundControlCenter/data/", 3, new SimpleWriteBuff());
+        Map<String, String> map = new StoneMap("/home/bolo/program/VideoDownloader/GroundControlCenter/data/", 3, new SynchronizedCycleWriteBuff(1000));
         ((StoneMap) map).loadDbFile();
         // 工作线程:使用 map
         for (int i = 0; i < workThreadNum; i++) {
@@ -51,7 +50,7 @@ public class CapabilityTest {
                 flush.incrementAndGet();
             }
             System.out.println("map 状态：" + map.toString());
-        }, 100, 100, TimeUnit.MILLISECONDS);
+        }, 50, 50, TimeUnit.MILLISECONDS);
 
         // 主线程:记录测试数据
         try {

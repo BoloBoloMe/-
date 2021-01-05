@@ -35,11 +35,4 @@ public interface CycleWriteBuff {
      * 写入恢复行
      */
     void recoverRow(String key, String value, Writer writer) throws IOException;
-
-    int checkpoint();
-
-    /**
-     * buffer usage report
-     */
-    String usageReport(boolean brief);
 }

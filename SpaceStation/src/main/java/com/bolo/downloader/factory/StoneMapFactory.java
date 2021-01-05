@@ -14,9 +14,7 @@ public class StoneMapFactory {
         if (null != stoneMap) return stoneMap;
         stoneMap = new StoneMap(ConfFactory.get("dbFilePath"),
                 Integer.parseInt(ConfFactory.get("dbFileId")),
-                new SynchronizedCycleWriteBuff(Integer.parseInt(ConfFactory.get("wrireBuffSize")),
-                        Integer.parseInt(ConfFactory.get("putSpedMax")),
-                        Integer.parseInt(ConfFactory.get("writeLoopMax"))));
+                new SynchronizedCycleWriteBuff(Integer.parseInt(ConfFactory.get("writeBuffSize"))));
         stoneMap.loadDbFile();
         return stoneMap;
     }

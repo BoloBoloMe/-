@@ -8,10 +8,7 @@ import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;

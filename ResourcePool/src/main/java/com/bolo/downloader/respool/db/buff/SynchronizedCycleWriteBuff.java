@@ -2,8 +2,6 @@ package com.bolo.downloader.respool.db.buff;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.text.DecimalFormat;
-import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -13,28 +11,17 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class SynchronizedCycleWriteBuff implements CycleWriteBuff {
     private static final String LINE_SEPARATOR = System.lineSeparator();
-    private int size;
-    private final int PUT_SPEEDY_MAX;
-    private final int WRITE_LOOP_MAX;
-    private Note entry;
-    private final AtomicReference<Note> wirteNote = new AtomicReference<>();
+    private final int size;
+    private final Note entry;
+    private final AtomicReference<Note> writeNote = new AtomicReference<>();
     private final AtomicReference<Note> readNote = new AtomicReference<>();
-    private final AtomicInteger idlingWrite = new AtomicInteger(0);
-    private final AtomicInteger allWrite = new AtomicInteger(0);
-    private final AtomicInteger idlingPut = new AtomicInteger(0);
-    private final AtomicInteger allPut = new AtomicInteger(0);
     /**
      * 流水号
      */
     private final AtomicInteger serial = new AtomicInteger(0);
 
-    private volatile int checkpoint = 0;
-
-
-    public SynchronizedCycleWriteBuff(int size, int putSpeedyMax, int writeLoopMax) {
+    public SynchronizedCycleWriteBuff(int size) {
         this.size = size;
-        this.PUT_SPEEDY_MAX = putSpeedyMax;
-        this.WRITE_LOOP_MAX = writeLoopMax;
         Note curr = entry = new Note();
         while (size-- >= 1) {
             curr.next = new Note();
@@ -43,7 +30,7 @@ public class SynchronizedCycleWriteBuff implements CycleWriteBuff {
                 curr.next = entry;
             }
         }
-        wirteNote.set(entry);
+        writeNote.set(entry);
         readNote.set(entry);
     }
 
@@ -57,13 +44,18 @@ public class SynchronizedCycleWriteBuff implements CycleWriteBuff {
     }
 
     public void put(String key, String value) {
-        Note curr = wirteNote.get();
-        for (int i = 1; ; i++) {
-            allPut.incrementAndGet();
+        Note curr = writeNote.get();
+        for (int i = 0; ; i++) {
             if (curr.readable) {
-                idlingPut.incrementAndGet();
                 curr = curr.next;
-                if (i / size > PUT_SPEEDY_MAX) sleep();
+                if (i >= size) {
+                    synchronized (entry) {
+                        try {
+                            entry.wait();
+                        } catch (InterruptedException e) {
+                        }
+                    }
+                }
             } else {
                 synchronized (curr) {
                     if (!curr.readable) {
@@ -72,10 +64,8 @@ public class SynchronizedCycleWriteBuff implements CycleWriteBuff {
                         curr.serial = serial.incrementAndGet();
                         curr.readable = true;
                         curr.count += 1;
-                        wirteNote.compareAndSet(wirteNote.get(), curr);
+                        writeNote.compareAndSet(writeNote.get(), curr);
                         break;
-                    } else {
-                        idlingPut.incrementAndGet();
                     }
                 }
             }
@@ -95,14 +85,11 @@ public class SynchronizedCycleWriteBuff implements CycleWriteBuff {
      */
     public void write(Writer writer) throws IOException {
         Note curr = readNote.get();
-        for (int i = 0; i / size <= WRITE_LOOP_MAX; i++) {
-            allWrite.incrementAndGet();
-            boolean idling = true;
+        for (int i = 0; i < size; i++) {
             if (curr.readable) {
                 synchronized (curr) {
                     if (curr.readable) {
-                        idling = false;
-                        newRow(curr.key.toString(), curr.value.toString(), curr.serial, writer);
+                        newRow(curr.key, curr.value, curr.serial, writer);
                         // reset this note
                         curr.readable = false;
                         curr.key = null;
@@ -113,10 +100,12 @@ public class SynchronizedCycleWriteBuff implements CycleWriteBuff {
                     }
                 }
             }
-            if (idling) idlingWrite.incrementAndGet();
             curr = curr.next;
         }
         writer.flush();
+        synchronized (entry) {
+            entry.notifyAll();
+        }
     }
 
     private static void newRow(String key, String value, int serial, Writer writer) throws IOException {
@@ -136,44 +125,6 @@ public class SynchronizedCycleWriteBuff implements CycleWriteBuff {
         newRow(key, value, 0, writer);
     }
 
-    public int checkpoint() {
-        int checkpoint = serial.get();
-        serial.set(0);
-        return checkpoint;
-    }
-
-
-    /**
-     * buffer usage report
-     */
-    public String usageReport(boolean brief) {
-        DecimalFormat df = new DecimalFormat("0.00000");
-        double[] tem = new double[size];
-        int optCount = 0;
-        Note curr = entry;
-        for (int i = 0; i < size; i++) {
-            int currNodeCount = curr.count;
-            tem[i] = currNodeCount;
-            optCount += currNodeCount;
-            curr = curr.next;
-        }
-        StringBuilder result = new StringBuilder();
-        result.append("{idlingPut=").append(df.format((double) idlingPut.get() / allPut.get())).append(",idlingWrite=").append(df.format((double) idlingWrite.get() / allWrite.get()));
-        if (brief) {
-            double hitRateSum = 0.000000;
-            for (int i = 0; i < size; i++) hitRateSum += tem[i] / optCount;
-            result.append(",avgHitRate=").append(df.format(hitRateSum / size));
-            result.append('}');
-        } else {
-            result.append(",hitRate=[");
-            for (int i = 0; i < size; i++) {
-                result.append(df.format(tem[i] / optCount));
-                if (i < size - 1) result.append("]}");
-            }
-        }
-        return result.toString();
-    }
-
     private static class Note {
         private Note next;
         private boolean readable = false;
@@ -183,29 +134,4 @@ public class SynchronizedCycleWriteBuff implements CycleWriteBuff {
         private int count = 0;
     }
 
-
-    private static final Long[] sleeps = new Long[127];
-
-    static {
-        Set<Long> sleepSet = new HashSet<>();
-        int max = 1000;
-        int min = 500;
-        Random random = new Random();
-        while (sleepSet.size() < 127) {
-            long s = random.nextInt(max) % (max - min + 1) + min;
-            sleepSet.add(s);
-        }
-        sleepSet.toArray(sleeps);
-    }
-
-    /**
-     * 随机休眠一小会儿
-     */
-    private void sleep() {
-        try {
-            Thread.sleep(sleeps[(int) (Thread.currentThread().getId() % 127)]);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
 }
