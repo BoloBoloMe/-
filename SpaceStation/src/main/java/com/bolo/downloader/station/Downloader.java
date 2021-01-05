@@ -11,13 +11,14 @@ import java.util.concurrent.Executors;
  */
 public class Downloader {
     final private TaskList taskList = new TaskList();
-    final static private ExecutorService taskRunner = Executors.newFixedThreadPool(1);
+    final private ExecutorService taskRunner;
     private String videoPath;
     private String youtubeDLPath;
 
-    public Downloader(String videoPath, String youtubeDLPath) {
+    public Downloader(String videoPath, String youtubeDLPath, int concurrenceTaskNum) {
         this.videoPath = videoPath;
         this.youtubeDLPath = youtubeDLPath;
+        this.taskRunner = Executors.newFixedThreadPool(concurrenceTaskNum);
     }
 
     /**

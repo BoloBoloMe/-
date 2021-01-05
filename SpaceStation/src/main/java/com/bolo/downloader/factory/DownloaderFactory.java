@@ -11,6 +11,7 @@ public class DownloaderFactory {
 
     private static synchronized Downloader createSingleton() {
         if (null != downloader) return downloader;
-        return downloader = new Downloader(ConfFactory.get("videoPath"), ConfFactory.get("youtubeDLPath"));
+        return downloader = new Downloader(ConfFactory.get("videoPath"), ConfFactory.get("youtubeDLPath"),
+                Integer.parseInt(ConfFactory.get("concurrenceTaskNum")));
     }
 }

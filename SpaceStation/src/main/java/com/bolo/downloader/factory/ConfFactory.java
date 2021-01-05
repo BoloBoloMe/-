@@ -22,6 +22,7 @@ public class ConfFactory {
         assert confPath != null : "文件路径不能为空";
         if (!path.compareAndSet(null, confPath)) return;
         conf.put("port", "9000");
+        conf.put("concurrenceTaskNum", "5");
         conf.put("videoPath", "");
         conf.put("dbFilePath", "data/");
         conf.put("writeBuffSize", "8");
