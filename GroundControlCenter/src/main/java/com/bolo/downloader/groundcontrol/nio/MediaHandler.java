@@ -15,13 +15,9 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.util.ReferenceCountUtil;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private static final MyLogger log = LoggerFactory.getLogger(MediaHandler.class);
@@ -32,7 +28,8 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
             ResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
             return;
         }
-        String uri = sanitizeUri(request.uri());
+        String deUri = URLDecoder.decode(request.uri(), "utf8");
+        String uri = sanitizeUri(deUri);
         if (null == uri) {
             ResponseUtil.sendError(ctx, HttpResponseStatus.BAD_REQUEST, request);
             return;
@@ -40,7 +37,7 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
         if (!HttpMethod.GET.equals(request.method())) {
             ResponseUtil.sendText(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED, request, "请以GET方式访问");
         }
-        Map<String, List<String>> params = new QueryStringDecoder(request.uri()).parameters();
+        Map<String, List<String>> params = getParamFromUri(deUri);
         if ("/pl".equals(uri)) {
             List<String> target = params.get("tar");
             if (target == null || target.size() == 0) {
@@ -63,14 +60,15 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
                 String title = name.length() > 30 ? (name.substring(0, 27) + "...") : name;
                 if (FileMap.isVideo(name)) {
                     uri = "/page/playVideo.html";
-                    params = new HashMap<>();
+                    params.clear();
                     params.put("p", Arrays.asList(name, name, title, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
                 } else if (FileMap.isAudio(name)) {
                     uri = "/page/playAudio.html";
                     params = new HashMap<>();
                     params.put("p", Arrays.asList(name, name, title, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
                 } else {
-                    uri = "/page/index.html";
+                    ResponseUtil.sendError(ctx, HttpResponseStatus.NOT_FOUND, request);
+                    return;
                 }
             } else if ("/gamble".equals(uri)) {
                 params.clear();
@@ -80,15 +78,14 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
                 } else if (FileMap.isVideo(name)) {
                     uri = "/page/playVideo.html";
                     String title = name.length() > 30 ? (name.substring(0, 27) + "...") : name;
-                    params = new HashMap<>();
                     params.put("p", Arrays.asList(name, name, title, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
                 } else if (FileMap.isAudio(name)) {
                     uri = "/page/playAudio.html";
                     String title = name.length() > 30 ? (name.substring(0, 27) + "...") : name;
-                    params = new HashMap<>();
                     params.put("p", Arrays.asList(name, name, title, "/pl?tar=" + URLEncoder.encode(name, "utf8")));
                 } else {
-                    uri = "/page/index.html";
+                    ResponseUtil.sendError(ctx, HttpResponseStatus.NOT_FOUND, request);
+                    return;
                 }
             }
             PageUtil.Page page = PageUtil.findPage(uri, params);
@@ -113,9 +110,7 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
         ctx.close();
     }
 
-    private String sanitizeUri(String uri) throws UnsupportedEncodingException {
-        // Decode the path.
-        uri = URLDecoder.decode(uri, "UTF-8");
+    private static String sanitizeUri(String uri) {
         if (uri.isEmpty() || uri.charAt(0) != '/') {
             return null;
         }
@@ -125,10 +120,26 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
             return null;
         }
         // cut param
-        int endIndex;
-        if ((endIndex = uri.indexOf('?')) >= 0) {
+        int endIndex = uri.indexOf('?');
+        if (endIndex >= 0) {
             uri = uri.substring(0, endIndex);
         }
         return uri.equals("/") ? "/page/index.html" : uri;
+    }
+
+    private static Map<String, List<String>> getParamFromUri(String uri) {
+        LinkedHashMap<String, List<String>> param = new LinkedHashMap<>();
+        int beginIndex = uri.indexOf('?');
+        if (beginIndex < 0) {
+            return param;
+        }
+        String[] entryList = uri.substring(beginIndex + 1).split("&");
+        for (String entry : entryList) {
+            String[] entryArr = entry.split("=");
+            if (entryArr.length != 2) continue;
+            List<String> list = param.computeIfAbsent(entryArr[0], k -> new LinkedList<>());
+            list.add(entryArr[1]);
+        }
+        return param;
     }
 }
