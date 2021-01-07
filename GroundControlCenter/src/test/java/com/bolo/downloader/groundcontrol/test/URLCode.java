@@ -1,6 +1,8 @@
 package com.bolo.downloader.groundcontrol.test;
 
 
+import com.bolo.downloader.respool.coder.ParamCoder;
+
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 
@@ -9,5 +11,11 @@ public class URLCode {
         System.out.println(URLEncoder.encode("Foot fetish-ph583080d6d33f3.mp4", "utf8"));
         String deUri = URLDecoder.decode("/pv?tar=Pain%20Slut%20for%20SadistFaction%20#2%20%20(tinyurl.com_KokoManyVids)-ph58a0e52fd8779.mp4&tar=Pain%20Slut%20for%20SadistFaction%20#2%20%20(tinyurl.com_KokoManyVids)-ph58a0e52fd8779.mp4&ppp=中文", "utf-8");
         System.out.println(deUri);
+
+        String url = "/pv?tar=Pain%20Slut%20for%20SadistFaction%20#2%20%20(tinyurl.com_KokoManyVids)-ph58a0e52fd8779.mp4&tar=Pain%20Slut%20for%20SadistFaction%20#2%20%20(tinyurl.com_KokoManyVids)-ph58a0e52fd8779.mp4&ppp=中文";
+        String enUrl = ParamCoder.encode(url);
+        System.out.println(enUrl);
+        String deUrl = ParamCoder.decode(enUrl);
+        System.out.println(deUrl);
     }
 }
