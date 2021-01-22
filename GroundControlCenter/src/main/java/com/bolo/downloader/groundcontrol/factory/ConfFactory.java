@@ -29,6 +29,8 @@ public class ConfFactory {
         conf.put("staticFilePath", "static/");
         conf.put("mediaPath", "");
         conf.put("labelMap", "");
+        conf.put("notValidatedDir", "");
+        conf.put("downloadRetryTimes", "5");
 
         final File confFile = new File(path.get());
         try {

@@ -4,6 +4,7 @@ import com.bolo.downloader.groundcontrol.dict.StoneMapDict;
 import com.bolo.downloader.groundcontrol.factory.ConfFactory;
 import com.bolo.downloader.groundcontrol.factory.StoneMapFactory;
 import com.bolo.downloader.groundcontrol.util.FileMap;
+import com.bolo.downloader.groundcontrol.util.FileUtils;
 import com.bolo.downloader.respool.coder.MD5Util;
 import com.bolo.downloader.respool.db.StoneMap;
 import com.bolo.downloader.respool.log.LoggerFactory;
@@ -13,10 +14,11 @@ import org.apache.http.client.methods.HttpRequestBase;
 import java.io.*;
 import java.net.SocketTimeoutException;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DownloadHandler extends AbstractResponseHandler {
     private MyLogger log = LoggerFactory.getLogger(DownloadHandler.class);
-    private final int bufferSize = 8192;
 
     @Override
     boolean interested(int responseStatus) {
@@ -39,6 +41,7 @@ public class DownloadHandler extends AbstractResponseHandler {
         }
         // 下载文件
         boolean catchTimeout = false;
+        int bufferSize = 8192;
         try (BufferedInputStream inputStream = new BufferedInputStream(response.getEntity().getContent(), bufferSize);
              BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(tar, true), bufferSize)) {
             byte[] buff = new byte[bufferSize];
@@ -64,14 +67,25 @@ public class DownloadHandler extends AbstractResponseHandler {
                 log.info("[transfer] 接收的数据已达文件大小,开始校验数据的完整性");
                 if (checkMD5(tar, response.getMd5())) {
                     log.info("[transfer] 文件完整性校验通过,传输已完成. name=%s", response.getFileNane());
+                    tryCleanNotValidatedRecord(tar);
                     map.put(StoneMapDict.KEY_FILE_STATE, StoneMapDict.VAL_FILE_STATE_DOWNLOAD);
                     map.flushWriteBuff();
                     FileMap.flush();
                     return post(lastVer, -1, 0);
                 } else {
-                    log.error("[transfer] 文件数据不正确，删除文件并重新下载！name=" + response.getFileNane());
-                    if (tar.exists()) tar.delete();
-                    return post(lastVer, 1, 0);
+                    int checkFailTimes = addNotValidatedRecord(tar);
+                    log.error("[transfer] 文件数据不正确！重试次数:" + checkFailTimes);
+                    if (checkFailTimes < downloadRetryTimes) {
+                        log.error("[transfer] 删除文件并重新下载！name=" + response.getFileNane());
+                        if (tar.exists()) tar.delete();
+                        return post(lastVer, 1, 0);
+                    } else {
+                        log.error("[transfer] 文件已达最大重试次数！文件转移至\"未校验文件目录\":" + notValidatedDir);
+                        FileUtils.move(tar, notValidatedDir);
+                        map.put(StoneMapDict.KEY_LAST_VER, (++lastVer) + "");
+                        log.info("跳过文件[" + tar.getName() + "] 尝试下载下一个文件:");
+                        return post(lastVer, 1, 0);
+                    }
                 }
             } else {
                 log.info("[transfer] 文件数据尚未传送完整,重新请求文件数据.");
@@ -81,7 +95,7 @@ public class DownloadHandler extends AbstractResponseHandler {
                     if (tar.exists()) tar.delete();
                     return post(lastVer, 1, 0);
                 } else {
-                    return post(lastVer, 1, fileLen);
+                    return post(lastVer, 0, fileLen);
                 }
             }
         } catch (Exception e) {
@@ -95,4 +109,36 @@ public class DownloadHandler extends AbstractResponseHandler {
         String tarMD5 = MD5Util.md5HashCode32(target);
         return md5.equals(tarMD5);
     }
+
+    /**
+     * 校验失败的文件记录(缓存)
+     */
+    private Map<File, Integer> notValidatedFile = new HashMap<>();
+    /**
+     * 最大下载重试次数
+     */
+    private int downloadRetryTimes = -1;
+
+    /**
+     * 未通过校验的文件目录
+     */
+    private String notValidatedDir = "";
+
+    private void tryCleanNotValidatedRecord(File tar) {
+        notValidatedFile.remove(tar);
+    }
+
+    private int addNotValidatedRecord(File tar) {
+        if (downloadRetryTimes == -1) downloadRetryTimes = Integer.parseInt(ConfFactory.get("downloadRetryTimes"));
+        if ("".equals(notValidatedDir)) notValidatedDir = ConfFactory.get("notValidatedDir");
+        Integer count = notValidatedFile.get(tar);
+        if (count == null) {
+            count = 1;
+        } else {
+            count++;
+        }
+        notValidatedFile.put(tar, count);
+        return count;
+    }
+
 }

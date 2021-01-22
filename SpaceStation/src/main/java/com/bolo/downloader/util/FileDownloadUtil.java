@@ -77,7 +77,19 @@ public class FileDownloadUtil {
             Synchronizer.flush();
             return;
         }
-        // expectedLen > -1, 下载文件
+        // expectedLen == 0, 请求新文件
+        if (expectedLen == 0) {
+            // 请求下一个需要同步的文件
+            Record nextRecord = getNextRecord(clientVer);
+            // 如果客户端版本号之后的所有版本都找不到文件,返回 equalsResponse
+            if (nextRecord == null) {
+                ResponseUtil.sendAndCleanupConnection(ctx, request, equalsResponse, false);
+            } else {
+                ResponseUtil.sendAndCleanupConnection(ctx, request, createNextFileResp(nextRecord, "1"), false);
+            }
+            return;
+        }
+        // expectedLen > 0, 下载文件
         File file;
         Record record = Synchronizer.getRecord(null, clientVer, null, null, null);
         if (record == null || SyncState.LOSE.equals(record.getState()) ||
