@@ -4,6 +4,7 @@ import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 
 import java.io.*;
+import java.nio.file.Files;
 
 public class FileUtils {
     private static final MyLogger log = LoggerFactory.getLogger(FileUtils.class);
@@ -14,13 +15,13 @@ public class FileUtils {
         File target = new File(targetDir, src.getName());
         log.info("移动文件: [" + src.getAbsolutePath() + "] 至 [" + target.getAbsolutePath() + "]");
         if (target.exists()) target.delete();
-        try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(src));
-             BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(target))) {
-            out.write(in.read());
-            out.flush();
+        try {
+            target.createNewFile();
+            Files.copy(src.toPath(), target.toPath());
             log.info("文件已移动至:" + target.getAbsolutePath());
-        } catch (Exception e) {
-            log.error("移动文件异常！", e);
+            src.delete();
+        } catch (IOException e) {
+            log.error("移动文件发生异常！", e);
         }
     }
 }
