@@ -1,6 +1,7 @@
 package com.bolo.downloader.station;
 
 import com.bolo.downloader.sync.Synchronizer;
+import com.bolo.downloader.util.FixedCachedThreadPool;
 
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -18,7 +19,7 @@ public class Downloader {
     public Downloader(String videoPath, String youtubeDLPath, int concurrenceTaskNum) {
         this.videoPath = videoPath;
         this.youtubeDLPath = youtubeDLPath;
-        this.taskRunner = Executors.newFixedThreadPool(concurrenceTaskNum);
+        this.taskRunner = FixedCachedThreadPool.newFixedCachedThreadPool(concurrenceTaskNum);
     }
 
     /**
