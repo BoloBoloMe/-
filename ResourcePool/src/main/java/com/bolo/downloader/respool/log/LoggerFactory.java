@@ -1,5 +1,6 @@
 package com.bolo.downloader.respool.log;
 
+import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -16,9 +17,13 @@ public class LoggerFactory {
 
     private static Logger newLogger() {
         try {
-            String currFileName = new SimpleDateFormat("YYYY-MM-dd_HHmmss").format(new Date()) + '_' + logFileName;
+            File pathFile = new File(logPath);
+            if (!pathFile.exists() && !pathFile.mkdirs()) throw new Error("日志目录创建失败！");
+            String currFileName = logPath + new SimpleDateFormat("YYYY-MM-dd_HHmmss").format(new Date()) + '_' + logFileName;
+            File logFile = new File(currFileName);
+            if (!logFile.exists() && !logFile.createNewFile()) throw new Error("日志文件创建失败！");
             Logger log = Logger.getLogger(currFileName);
-            FileHandler handler = new FileHandler(logPath + currFileName);
+            FileHandler handler = new FileHandler(currFileName);
             handler.setFormatter(new LogFormatter());
             handler.setEncoding("utf-8");
             log.addHandler(handler);

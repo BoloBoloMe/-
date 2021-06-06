@@ -147,7 +147,7 @@ public class Synchronizer {
      */
     private static void scanDisc() {
         final String videoPath = ConfFactory.get("videoPath");
-        String[] fileArr = new File(videoPath).list((dir, name) -> Pattern.matches(VIDEO_NAME_PATTERN, name.toLowerCase()));
+        String[] fileArr = Optional.ofNullable(new File(videoPath).list((dir, name) -> Pattern.matches(VIDEO_NAME_PATTERN, name.toLowerCase()))).orElse(new String[0]);
         StoneMap map = map();
         // 扫描是否有新增的文件
         for (String fileName : fileArr) {

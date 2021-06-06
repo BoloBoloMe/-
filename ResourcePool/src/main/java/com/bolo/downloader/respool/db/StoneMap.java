@@ -134,7 +134,9 @@ public class StoneMap implements Map<String, String> {
     synchronized public void loadDbFile() {
         if (!dbFile.exists()) {
             try {
-                dbFile.createNewFile();
+                File pathFile = new File(dbFilePath);
+                if(!pathFile.exists() && !pathFile.mkdirs()) throw new Error("数据文件目录创建失败！");
+                if(!dbFile.exists() && !dbFile.createNewFile()) throw new Error("数据文件创建失败！");
             } catch (IOException e) {
                 throw new LogReadException(e);
             }
