@@ -7,3 +7,6 @@ target
 /GroundControlCenter/dependency-reduced-pom.xml
 /SpaceStation/dependency-reduced-pom.xml
 *.db
+conf/
+data/
+log/

@@ -137,12 +137,15 @@ public class FileMap {
                 String labelConf = ConfFactory.get("labelMap");
                 if (labelConf != null) {
                     String[] labels = labelConf.split(",");
-                    int cutIndex;
-                    for (String labelEntry : labels) {
-                        cutIndex = labelEntry.indexOf("==");
-                        String label = labelEntry.substring(0, cutIndex);
-                        labelMap.put(label, labelEntry.substring(cutIndex + 2));
-                        labelJson.append('"').append(label).append("\",");
+                    if (labels.length > 0) {
+                        int cutIndex;
+                        for (String labelEntry : labels) {
+                            if("".equals(labelEntry)) continue;
+                            cutIndex = labelEntry.indexOf("==");
+                            String label = labelEntry.substring(0, cutIndex);
+                            labelMap.put(label, labelEntry.substring(cutIndex + 2));
+                            labelJson.append('"').append(label).append("\",");
+                        }
                     }
                 }
                 labelJson.deleteCharAt(labelJson.length() - 1).append(']');
