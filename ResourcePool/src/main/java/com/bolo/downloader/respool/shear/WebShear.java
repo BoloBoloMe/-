@@ -6,6 +6,7 @@ import com.bolo.downloader.respool.log.MyLogger;
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -15,14 +16,21 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class WebShear {
     private static final MyLogger log = LoggerFactory.getLogger(WebShear.class);
-    private static final String ITEM_TYPE_TEXT = "text";
-    private static final String ITEM_TYPE_CACHE_FILE = "cacheFile";
-    private static final String ITEM_TYPE_LOCAL_FILE = "localFile";
+    public static final String ITEM_TYPE_TEXT = "text";
+    public static final String ITEM_TYPE_CACHE_FILE = "cacheFile";
+    public static final String ITEM_TYPE_LOCAL_FILE = "localFile";
     private static final LinkedList<ShearItem> list = new LinkedList<>();
     private static final ReadWriteLock lock = new ReentrantReadWriteLock();
     private static final Lock readLock = lock.readLock();
     private static final Lock writeLock = lock.writeLock();
 
+
+    public static Optional<ShearItem> findById(long id) {
+        for (ShearItem item : list) {
+            if (id == item.getId()) return Optional.of(item);
+        }
+        return Optional.empty();
+    }
 
     /**
      * 添加共享的文本

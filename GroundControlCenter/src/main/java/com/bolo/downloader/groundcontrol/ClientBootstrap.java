@@ -14,6 +14,7 @@ import com.bolo.downloader.respool.db.StoneMap;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.respool.nio.PageUtil;
+import com.bolo.downloader.respool.utils.TimeUtils;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -34,6 +35,8 @@ public class ClientBootstrap {
     private static volatile long SYSTEM_TIME_MILLISECOND = System.currentTimeMillis();
 
     public static void main(String[] args) {
+        // time starts to flow
+        TimeUtils.start();
         init();
         client = HttpClientFactory.http();
         server = new MediaServer(Integer.parseInt(ConfFactory.get("port")));
