@@ -10,3 +10,4 @@ target
 conf/
 data/
 log/
+GroundControlCenter/src/main/resources/static/layui
