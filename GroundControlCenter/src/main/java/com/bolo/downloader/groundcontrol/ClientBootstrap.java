@@ -39,16 +39,17 @@ public class ClientBootstrap {
         server = new MediaServer(Integer.parseInt(ConfFactory.get("port")));
         server.start();
         ResponseHandler<HttpRequestBase> handlers = new EqualsHandler().join(new NewFileHandler()).join(new DownloadHandler());
-        log.info("客户端启动成功.");
-        log.info("服务器地址: %s", ConfFactory.get("url"));
+        log.info("Space Station 服务器地址: %s", ConfFactory.get("url"));
         HttpUriRequest request = createRequestFromStone();
         boolean catchConnectException = false;
         while (!Thread.interrupted()) {
             increaseSystemTime();
             try {
                 runTask();
-                if (catchConnectException) sleep(10000);
-                request = client.execute(request, handlers);
+                if (Boolean.TRUE.toString().equals(ConfFactory.get("openSyncTask"))) {
+                    if (catchConnectException) sleep(10000);
+                    request = client.execute(request, handlers);
+                }
                 continue;
             } catch (HttpHostConnectException e) {
                 log.error("服务器无法访问！", e);

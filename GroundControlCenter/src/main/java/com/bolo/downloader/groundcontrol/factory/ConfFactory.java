@@ -31,6 +31,7 @@ public class ConfFactory {
         conf.put("labelMap", "");
         conf.put("notValidatedDir", "");
         conf.put("downloadRetryTimes", "5");
+        conf.put("openSyncTask", Boolean.TRUE.toString());
 
         final File confFile = new File(path.get());
         try {
