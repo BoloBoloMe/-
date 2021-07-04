@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -20,221 +21,236 @@
             margin-top: 90px;
             margin-left: 20px;
         }
+        td .layui-table-cell {
+            height: 120px;
+            line-height: 120px;
+        }
+
     </style>
 </head>
+
 <body>
-<br/>
-<div class="layui-row layui-col-space10">
-    <div class="layui-col-md1" align="right">
-        <i class="layui-icon layui-icon-light layui-anim layui-anim-rotate layui-anim-loop"
-           style="font-size: 30px;"></i>
-        <i class="layui-icon layui-icon-rate-half layui-anim layui-anim-rotate layui-anim-loop"
-           style="font-size: 30px;"></i>
-        <i class="layui-icon layui-icon-snowflake layui-anim layui-anim-rotate layui-anim-loop"
-           style="font-size: 30px;"></i>
-        <i class="layui-icon layui-icon-time layui-anim layui-anim-rotate layui-anim-loop" style="font-size: 30px;"></i>
-    </div>
-    <form class="layui-form  layui-col-space10" action="">
-        <div class="layui-col-md5">
-            <input id="name" type="text" name="name" placeholder="请输入文件名" autocomplete="off"
-                   class="layui-input">
+    <br/>
+    <div class="layui-row layui-col-space10">
+        <div class="layui-col-md1" align="right">
+            <i class="layui-icon layui-icon-light layui-anim layui-anim-rotate layui-anim-loop" style="font-size: 30px;"></i>
+            <i class="layui-icon layui-icon-rate-half layui-anim layui-anim-rotate layui-anim-loop" style="font-size: 30px;"></i>
+            <i class="layui-icon layui-icon-snowflake layui-anim layui-anim-rotate layui-anim-loop" style="font-size: 30px;"></i>
+            <i class="layui-icon layui-icon-time layui-anim layui-anim-rotate layui-anim-loop" style="font-size: 30px;"></i>
         </div>
-        <div class="layui-col-md2">
-            <button id="btnSearch" type="button" class="layui-btn layui-btn-radius layui-btn-primary" title="搜索"
-                    lay-submit
-                    lay-filter="btnSearch">
+        <form class="layui-form  layui-col-space10" action="">
+            <div class="layui-col-md5">
+                <input id="name" type="text" name="name" placeholder="请输入文件名" autocomplete="off" class="layui-input">
+            </div>
+            <div class="layui-col-md2">
+                <button id="btnSearch" type="button" class="layui-btn layui-btn-radius layui-btn-primary" title="搜索" lay-submit lay-filter="btnSearch">
                 <i class="layui-icon layui-icon-search" style="font-size: 30px;"></i>
             </button>
-            <button type="gambleGame" class="layui-btn layui-btn-radius layui-btn-danger" title="试试手气"
-                    onclick="gamble()">
+                <button type="gambleGame" class="layui-btn layui-btn-radius layui-btn-danger" title="试试手气" onclick="gamble()">
                 <i class="layui-icon layui-icon-gift" style="font-size: 30px;"></i>
             </button>
-        </div>
-        <dev class="layui-col-md2" id="labels">
-            <a class="label" href="">#视频</a>
-            <a class="label" href="index.html">#音乐</a>
-        </dev>
-    </form>
-</div>
-<br/>
-<span style="font-size: x-small;font-weight: lighter;margin-left: 10px">最新添加:&nbsp;</span><span id="lastAdd"></span>
-<br/>
-<span id="lastPlayCase"
-      style="font-size: x-small;font-weight: lighter;margin-left: 10px;">最近播放:&nbsp;</span><span
-        id="lastPlay"></span>
-<br/>
-<div class="layui-tab layui-tab-brief" lay-filter="tabBrief">
-    <table id="fileList" lay-filter="fileTable"></table>
-</div>
-<script src="/layui/layui.js"></script>
-<javascript src="/base64.js"></javascript>
-<script>
-    var nameHolder = ''
-    var fileListHolder = []
-    var responseHolder = {
-        labels: [],
-        fileList: [],
-        newFile: [],
-        lruList: []
-    };
+            </div>
+            <dev class="layui-col-md2" id="labels">
+                <a class="label" href="">#视频</a>
+                <a class="label" href="index.html">#音乐</a>
+            </dev>
+        </form>
+    </div>
+    <br/>
+    <span style="font-size: x-small;font-weight: lighter;margin-left: 10px">最新添加:&nbsp;</span><span id="lastAdd"></span>
+    <br/>
+    <span id="lastPlayCase" style="font-size: x-small;font-weight: lighter;margin-left: 10px;">最近播放:&nbsp;</span><span id="lastPlay"></span>
+    <br/>
+    <div class="layui-tab layui-tab-brief" lay-filter="tabBrief">
+        <table id="fileList" lay-filter="fileTable"></table>
+    </div>
+    <script src="/layui/layui.js"></script>
+    <javascript src="/base64.js"></javascript>
+    <script>
+        var nameHolder = ''
+        var fileListHolder = []
+        var responseHolder = {
+            labels: [],
+            fileList: [],
+            newFile: [],
+            lruList: []
+        };
 
-    function copyLink(msg) {
-        alert(msg)
-    }
+        function copyLink(msg) {
+            alert(msg)
+        }
 
-    function gamble() {
-        window.open('/gamble');
-    }
+        function goPlay(url) {
+            window.open(url,'_blank');
+        }
 
-    function searchLabel(label) {
-        document.getElementById('name').value = label.innerText;
-        document.getElementById('btnSearch').click();
-    }
+        function gamble() {
+            window.open('/gamble');
+        }
 
-    layui.use(['layer', 'form', 'element', 'table', 'laypage'], function () {
-        var $ = layui.$,
-            form = layui.form,
-            table = layui.table,
-            layer = layui.layer,
-            element = layui.element,
-            laypage = layui.laypage;
+        function searchLabel(label) {
+            document.getElementById('name').value = label.innerText;
+            document.getElementById('btnSearch').click();
+        }
 
-        // 渲染文件列表
-        var fileList = table.render({
-            elem: '#fileList'
-            , page: true
-            , toolbar: true
-            , defaultToolbar: [{
-                title: '刷新' //标题
-                , layEvent: 'RELOAD' //事件名，用于 toolbar 事件中使用
-                , icon: 'layui-icon-refresh' //图标类名
-            }]
-            , cols: [[ //表头
-                {field: 'fileName', title: '文件名', sort: true, width: 1000},
-                {field: 'opt', title: '操作', width: 200}
-            ]],
-            data: []
-        });
+        layui.use(['layer', 'form', 'element', 'table', 'laypage'], function() {
+            var $ = layui.$,
+                form = layui.form,
+                table = layui.table,
+                layer = layui.layer,
+                element = layui.element,
+                laypage = layui.laypage;
+
+            // 渲染文件列表
+            var fileList = table.render({
+                elem: '#fileList',
+                page: true,
+                toolbar: true,
+                defaultToolbar: [{
+                    title: '刷新' //标题
+                        ,
+                    layEvent: 'RELOAD' //事件名，用于 toolbar 事件中使用
+                        ,
+                    icon: 'layui-icon-refresh' //图标类名
+                }],
+                cols: [
+                    [ //表头
+                        {
+                            field: 'fileName',
+                            title: '文件名',
+                            sort: true,
+                            width: 1000
+                        }, {
+                            field: 'opt',
+                            title: '操作',
+                            width: 200
+                        }
+                    ]
+                ],
+                data: []
+            });
 
 
-        // 加载文件列表数据
-        function loadFileListData() {
-            if (fileListHolder) {
-                var data = [];
-                if ('' === nameHolder) {
-                    for (var x in fileListHolder) {
+            // 加载文件列表数据
+            function loadFileListData() {
+                if (fileListHolder) {
+                    var data = [];
+                    if ('' === nameHolder) {
                         data = fileListHolder;
-                    }
-                } else {
-                    for (var x in fileListHolder) {
-                        var file = fileListHolder[x];
-                        var labelFlag = nameHolder.indexOf('#');
-                        if (labelFlag >= 0) {
-                            // 标签查询
-                            var labelCriterion = nameHolder.substr(labelFlag + 1);
-                            var labels = file.labels;
-                            if (labels) {
-                                for (var y in labels) {
-                                    if (labelCriterion === labels[y]) {
-                                        data.push(file)
-                                        break
+                    } else {
+                        for (var x in fileListHolder) {
+                            var file = fileListHolder[x];
+                            var labelFlag = nameHolder.indexOf('#');
+                            if (labelFlag >= 0) {
+                                // 标签查询
+                                var labelCriterion = nameHolder.substr(labelFlag + 1);
+                                var labels = file.labels;
+                                if (labels) {
+                                    for (var y in labels) {
+                                        if (labelCriterion === labels[y]) {
+                                            data.push(file)
+                                            break
+                                        }
                                     }
                                 }
-                            }
-                        } else {
-                            // 文件名查询
-                            if (file.fileName.indexOf(nameHolder) >= 0) {
-                                data.push(file)
+                            } else {
+                                // 文件名查询
+                                if (file.fileName.indexOf(nameHolder) >= 0) {
+                                    data.push(file)
+                                }
                             }
                         }
                     }
+                    randomLoad(data);
                 }
-                randomLoad(data);
             }
-        }
 
-        // 打乱列表的排序
-        function randomLoad(data) {
-            data.sort(function () {
-                return 0.5 - Math.random()
-            })
-            fileList.reload({data: data})
-        }
-
-
-        //监听表单提交-搜索文件
-        form.on('submit(btnSearch)', function (data) {
-            nameHolder = data.field.name;
-            loadFileListData();
-            return true;
-        });
-
-        //  监听文件列表的事件
-        table.on('toolbar(fileTable)', function (obj) {
-            switch (obj.event) {
-                case 'RELOAD':
-                    randomLoad(fileListHolder);
-                    break;
+            // 打乱列表的排序
+            function randomLoad(data) {
+                data.sort(function() {
+                    return 0.5 - Math.random()
+                })
+                fileList.reload({
+                    data: data
+                })
             }
-        });
 
-        function requestData() {
-            $.ajax({
-                type: "GET",
-                url: "/fl?name=" + nameHolder,
-                success: function (res) {
-                    // 缓存响应数据
-                    responseHolder = res
-                    var fileList = responseHolder.fileList;
-                    // 缓存文件列表数据
-                    for (var x in fileList) {
-                        var file = fileList[x];
-                        var fileName = file.name
-                        var encodeFileName = encodeURI(fileName);
-                        fileListHolder.push({
-                            'fileName': '<a href=/pv?tar=' + encodeFileName + ' target="_blank">' + fileName + '</a>',
-                            'labels': file.labels,
-                            'opt': '<a  class="layui-btn layui-btn-xs" href="javascript:void(0);" onclick=copyLink("http://' + window.location.host + '/pl?tar=' + encodeFileName + '")>拷贝源地址</a>&nbsp;&nbsp;' +
-                                '<a class="layui-btn layui-btn-xs" href=/pv?tar=' + encodeFileName + ' target="_blank">播放</a>'
-                        })
-                    }
 
-                    // 第一次加载文件列表
-                    loadFileListData();
-                    // 加载最近播放列表
-                    if (responseHolder.lruList && responseHolder.lruList.length > 0) {
-                        var lastPlayHttp = ''
-                        for (var x = responseHolder.lruList.length - 1; x > -1; x--) {
-                            var fileName = responseHolder.lruList[x];
-                            var encodeFileName = encodeURI(fileName);
-                            lastPlayHttp += '<a class="top_a" href=/pv?tar=' + encodeFileName + ' target="_blank">' + fileName + '</a>'
-                        }
-                        document.getElementById("lastPlay").innerHTML = lastPlayHttp
-                    } else {
-                        document.getElementById("lastPlayCase").style.display = 'none';
-                    }
-                    // 加载最新文件
-                    var lastAddHttp = ''
-                    for (var x in responseHolder.newFile) {
-                        var fileName = responseHolder.newFile[x];
-                        var encodeFileName = encodeURI(fileName);
-                        lastAddHttp += '<a class="top_a" href=/pv?tar=' + encodeFileName + ' target="_blank">' + fileName + '</a>'
-                    }
-                    document.getElementById("lastAdd").innerHTML = lastAddHttp
+            //监听表单提交-搜索文件
+            form.on('submit(btnSearch)', function(data) {
+                nameHolder = data.field.name;
+                loadFileListData();
+                return true;
+            });
 
-                    // 加载标签列表
-                    var labelsHttp = ''
-                    for (var x in responseHolder.labels) {
-                        var label = responseHolder.labels[x]
-                        labelsHttp += '<a class="label" href="javascript:void(0);" onclick="searchLabel(this)">#' + label + '</a>'
-                    }
-                    document.getElementById("labels").innerHTML = labelsHttp
+            //  监听文件列表的事件
+            table.on('toolbar(fileTable)', function(obj) {
+                switch (obj.event) {
+                    case 'RELOAD':
+                        randomLoad(fileListHolder);
+                        break;
                 }
             });
-        }
 
-        requestData();
-    });
-</script>
+            function requestData() {
+                $.ajax({
+                    type: "GET",
+                    url: "/fl?name=" + nameHolder,
+                    success: function(res) {
+                        // 缓存响应数据
+                        responseHolder = res
+                        var fileList = responseHolder.fileList;
+                        // 缓存文件列表数据
+                        for (var x in fileList) {
+                            var file = fileList[x];
+                            var fileName = file.name
+                            var encodeFileName = encodeURI(fileName);
+                            fileListHolder.push({
+                                // 'fileName': '<a href=/pv?tar=' + encodeFileName + ' target="_blank">' + fileName + '</a>',
+                                'fileName': '<video src="/pl?tar=' + encodeFileName + '" width="200px"  onclick=goPlay("http://' + window.location.host + '/pv?tar=' + encodeFileName + '")></video> &nbsp;<a href=/pv?tar=' + encodeFileName + ' target="_blank">' + fileName + '</a>',
+                                'labels': file.labels,
+                                'opt': '<a  class="layui-btn layui-btn-xs" href="javascript:void(0);" onclick=copyLink("http://' + window.location.host + '/pl?tar=' + encodeFileName + '")>拷贝源地址</a>&nbsp;&nbsp;' +
+                                    '<a class="layui-btn layui-btn-xs" href=/pv?tar=' + encodeFileName + ' target="_blank">播放</a>'
+                            })
+                        }
+
+                        // 第一次加载文件列表
+                        loadFileListData();
+                        // 加载最近播放列表
+                        if (responseHolder.lruList && responseHolder.lruList.length > 0) {
+                            var lastPlayHttp = ''
+                            for (var x = responseHolder.lruList.length - 1; x > -1; x--) {
+                                var fileName = responseHolder.lruList[x];
+                                var encodeFileName = encodeURI(fileName);
+                                lastPlayHttp += '<a class="top_a" href=/pv?tar=' + encodeFileName + ' target="_blank">' + fileName + '</a>'
+                            }
+                            document.getElementById("lastPlay").innerHTML = lastPlayHttp
+                        } else {
+                            document.getElementById("lastPlayCase").style.display = 'none';
+                        }
+                        // 加载最新文件
+                        var lastAddHttp = ''
+                        for (var x in responseHolder.newFile) {
+                            var fileName = responseHolder.newFile[x];
+                            var encodeFileName = encodeURI(fileName);
+                            lastAddHttp += '<a class="top_a" href=/pv?tar=' + encodeFileName + ' target="_blank">' + fileName + '</a>'
+                        }
+                        document.getElementById("lastAdd").innerHTML = lastAddHttp
+
+                        // 加载标签列表
+                        var labelsHttp = ''
+                        for (var x in responseHolder.labels) {
+                            var label = responseHolder.labels[x]
+                            labelsHttp += '<a class="label" href="javascript:void(0);" onclick="searchLabel(this)">#' + label + '</a>'
+                        }
+                        document.getElementById("labels").innerHTML = labelsHttp
+                    }
+                });
+            }
+
+            requestData();
+        });
+    </script>
 </body>
+
 </html>
