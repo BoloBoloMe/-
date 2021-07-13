@@ -32,6 +32,8 @@ public class ConfFactory {
         conf.put("notValidatedDir", "");
         conf.put("downloadRetryTimes", "5");
         conf.put("openSyncTask", Boolean.TRUE.toString());
+        conf.put("mediaBossThreadCount", "1");
+        conf.put("mediaWorkThreadCount", "1");
 
         final File confFile = new File(path.get());
         try {

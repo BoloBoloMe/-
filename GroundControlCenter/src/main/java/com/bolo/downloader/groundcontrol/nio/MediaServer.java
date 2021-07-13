@@ -1,5 +1,6 @@
 package com.bolo.downloader.groundcontrol.nio;
 
+import com.bolo.downloader.groundcontrol.factory.ConfFactory;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import io.netty.bootstrap.ServerBootstrap;
@@ -8,7 +9,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 public class MediaServer {
-    private EventLoopGroup bothGroup;
+    private EventLoopGroup bossGroup;
+    private EventLoopGroup workGroup;
     private final int port;
     private MyLogger log = LoggerFactory.getLogger(MediaServer.class);
 
@@ -21,9 +23,12 @@ public class MediaServer {
      */
     public void start() {
         // Configure the server.
-        bothGroup = new NioEventLoopGroup(1);
+        int bossThreadCount = Integer.parseInt(ConfFactory.get("mediaBossThreadCount"));
+        int workThreadCount = Integer.parseInt(ConfFactory.get("mediaWorkThreadCount"));
+        bossGroup = new NioEventLoopGroup(bossThreadCount);
+        workGroup = new NioEventLoopGroup(workThreadCount);
         ServerBootstrap bootstrap = new ServerBootstrap();
-        bootstrap.group(bothGroup)
+        bootstrap.group(bossGroup, workGroup)
                 .channel(NioServerSocketChannel.class)
                 .childHandler(new MediaServerInitializer());
         bootstrap.bind(port);
@@ -31,6 +36,6 @@ public class MediaServer {
     }
 
     public void shutdown() {
-        bothGroup.shutdownGracefully();
+        bossGroup.shutdownGracefully();
     }
 }
