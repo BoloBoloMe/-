@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>%s</title>
+</head>
+<body>
+<div style="height:auto;position:absolute; left: 500px; top:150px; margin-left: -300px; margin-top: -200px;">
+    <div style="height: 50px;width: 600px" title="%s">
+        <h3 style="margin-top: 50px">%s</h3>
+    </div>
+    <img src="/audio.jpeg" id="audioImg" style="width: 600px;top: 100px">
+    <div>
+        <audio id="audio" src="%s" autoplay controls="controls" preload="metadata" style="width: 600px">
+            抱歉您的浏览器不支持音频播放功能
+        </audio>
+        <br>
+        <button onclick="play()">播放</button>
+        <button onclick="pause()">暂停</button>
+        <button onclick="jump(5)">快进5秒</button>
+        <button onclick="jump(-5)">快退5秒</button>
+        <button onclick="mute(this)">静音</button>
+        <button onclick="speed(2)">2倍速</button>
+        <button onclick="speed(0.5)">0.5倍速</button>
+        <button onclick="speed(1)">正常播放</button>
+        <button onclick="volume(1)">增加音量</button>
+        <button onclick="volume(-1)">降低音量</button>
+    </div>
+</div>
+<script>
+    var audio = document.getElementById("audio");
+    // video对象可以通过ontimeupdate时间来进行监听实时播放进度
+    audio.ontimeupdate = function () {
+        console.log(audio.currentTime);
+        console.log(audio.duration)
+    }
+
+    //播放
+    function play() {
+        audio.play();
+    }
+
+    //暂停
+    function pause() {
+        audio.pause();
+    }
+
+    /**
+     * 调整速度
+     * @param limit 速度调整程度 1=1倍速，0.5=0.5倍速，2=2倍速
+     */
+    function speed(limit) {
+        audio.playbackRate = limit;
+    }
+
+    /**
+     * 快进快退
+     * @param limit 快退秒数.>0快进,<0快退
+     */
+    function jump(limit) {
+        audio.currentTime += limit;
+    }
+
+
+    //静音
+    function mute(obj) {
+        if (audio.muted) {
+            obj.innerHTML = "静音";
+            audio.muted = false;
+        } else {
+            obj.innerHTML = "声音";
+            audio.muted = true;
+        }
+    }
+
+
+    /**
+     * 调节音量
+     * @param limit 音量的调节程度,<0调低音量，>0调高音量;
+     */
+    function volume(limit) {
+        // 增大10倍，0<=volume<=10
+        var volume = audio.volume * 10;
+        var result = volume + limit;
+        if (result < 0) {
+            audio.volume = 0;
+        } else if (result > 10) {
+            audio.volume = 1;
+        } else {
+            audio.volume = result / 10;
+        }
+    }
+
+</script>
+</body>
+</html>

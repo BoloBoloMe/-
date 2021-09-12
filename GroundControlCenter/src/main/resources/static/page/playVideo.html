@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>%s</title>
+</head>
+<body>
+<div>
+    <h3 title="%s">%s</h3>
+    <video id="video" src="%s" autoplay controls="controls" preload="metadata" loop="loop">抱歉您的浏览器不支持视频播放功能</video>
+</div>
+<div>
+    <button onclick="jump(3)">快进</button>
+    <button onclick="jump(-3)">快退</button>
+    <button onclick="mute(this)">静音</button>
+    <button id="but_speed" onclick="speed()">x1</button>
+    <button id="but_loop" onclick="loop()">循环</button>
+    <button onclick="download()">下载</button>
+
+</div>
+<script>
+    const butSpeed = document.getElementById("but_speed");
+    const butLoop = document.getElementById("but_loop");
+    const video = document.getElementById("video");
+    video.width = document.body.clientWidth - 300;
+    // video对象可以通过ontimeupdate时间来进行监听实时播放进度
+    video.ontimeupdate = function () {
+        console.log(video.currentTime);
+        console.log(video.duration)
+    }
+
+    /**
+     * 调整速度
+     * 速度调整程度 1=1倍速，0.5=0.5倍速，2=2倍速
+     */
+    function speed() {
+        let speed = video.playbackRate;
+        speed *= 2
+        if (speed > 4) {
+            speed = 0.5
+        }
+        butSpeed.innerHTML = 'x' + speed;
+        video.playbackRate = speed;
+    }
+
+
+    function loop() {
+        let flag = butLoop.innerHTML;
+        if (flag && flag.indexOf("顺序") >= 0) {
+            butLoop.innerHTML = "循环";
+            video.loop = "loop";
+        } else {
+            butLoop.innerHTML = "顺序";
+            video.removeAttribute("loop");
+        }
+    }
+
+    /**
+     * 快进快退
+     * @param limit 快退秒数.>0快进,<0快退
+     */
+    function jump(limit) {
+        video.currentTime += limit;
+    }
+
+
+    //静音
+    function mute(obj) {
+        if (video.muted) {
+            obj.innerHTML = "静音";
+            video.muted = false;
+        } else {
+            obj.innerHTML = "声音";
+            video.muted = true;
+        }
+    }
+
+    function download() {
+        debugger
+        window.open(video.src.replace('/pl', '/dl'), '_blank');
+    }
+
+    //播放
+    function play() {
+        video.play();
+    }
+
+    //暂停
+    function pause() {
+        video.pause();
+    }
+
+
+    /**
+     * 调节音量
+     * @param limit 音量的调节程度,<0调低音量，>0调高音量;
+     */
+    function volume(limit) {
+        // 增大10倍，0<=volume<=10
+        var volume = video.volume * 10;
+        var result = volume + limit;
+        if (result < 0) {
+            video.volume = 0;
+        } else if (result > 10) {
+            video.volume = 1;
+        } else {
+            video.volume = result / 10;
+        }
+    }
+
+</script>
+</body>
+</html>

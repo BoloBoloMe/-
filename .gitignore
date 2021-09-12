@@ -3,3 +3,6 @@ VideoDownloader.iml
 target
 *.log
 *.class
+*.iml
+/GroundControlCenter/dependency-reduced-pom.xml
+/SpaceStation/dependency-reduced-pom.xml
