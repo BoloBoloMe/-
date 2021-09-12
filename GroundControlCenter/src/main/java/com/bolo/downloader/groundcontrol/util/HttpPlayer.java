@@ -14,14 +14,16 @@ import java.nio.file.Files;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+import static io.netty.handler.codec.http.HttpResponseStatus.OK;
 import static io.netty.handler.codec.http.HttpResponseStatus.PARTIAL_CONTENT;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class HttpPlayer {
     private static final MyLogger log = LoggerFactory.getLogger(HttpPlayer.class);
+    public static final String PATTERN_DOWLOND = "attachment;filename=";
+    public static final String PATTERN_PLAY = "inline";
 
-
-    public static void play(ChannelHandlerContext ctx, FullHttpRequest request, String target) {
+    public static void play(ChannelHandlerContext ctx, FullHttpRequest request, String target, String pattern) {
         String absolutePaths = FileMap.findByFileName(target);
         File file;
         if (absolutePaths == null || !(file = new File(absolutePaths)).exists() || file.isHidden()) {
@@ -32,20 +34,20 @@ public class HttpPlayer {
             RandomAccessFile fileAcc = new RandomAccessFile(file, "r");
             // 支持HTTP 1.1 断点续传请求头 reange:bytes=0-1
             String range = request.headers().get(HttpHeaderNames.RANGE);
-            final long start, end, transLen, fileLen = fileAcc.length();
+            final long start, end, transLen, fileLen = fileAcc.length(), lastIndex = fileLen - 1;
             if (null != range && range.matches("bytes=[0-9]+-[1-9]*[0-9]*")) {
                 int index_0 = range.indexOf('=') + 1, index_1 = range.indexOf('-');
                 start = Long.parseLong(range.substring(index_0, index_1));
                 end = '-' == range.charAt(range.length() - 1) ? fileLen - 1 : Long.parseLong(range.substring(index_1 + 1));
             } else {
                 start = 0;
-                end = fileLen - 1;
+                end = lastIndex;
             }
             transLen = end - start + 1;
-            HttpResponse response = new DefaultHttpResponse(HTTP_1_1, PARTIAL_CONTENT);
+            HttpResponse response = new DefaultHttpResponse(HTTP_1_1, lastIndex == end ? OK : PARTIAL_CONTENT);
             response.headers().set(HttpHeaderNames.CONTENT_TYPE, Files.probeContentType(file.toPath()));
             // 直接在浏览器播放
-            response.headers().set(HttpHeaderNames.CONTENT_DISPOSITION, "inline");
+            response.headers().set(HttpHeaderNames.CONTENT_DISPOSITION, pattern.equals(PATTERN_DOWLOND) ? pattern + "\"" + file.getName() + "\"" : pattern);
             // 支持 <video> 进度条必要的响应头
             response.headers().set(HttpHeaderNames.ACCEPT_RANGES, "bytes");
             response.headers().set(HttpHeaderNames.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + fileLen);

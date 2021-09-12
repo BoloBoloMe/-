@@ -7,22 +7,21 @@
 <body>
 <div>
     <h3 title="%s">%s</h3>
-    <video id="video" src="%s" autoplay controls="controls" preload="metadata">抱歉您的浏览器不支持视频播放功能</video>
+    <video id="video" src="%s" autoplay controls="controls" preload="metadata" loop="loop">抱歉您的浏览器不支持视频播放功能</video>
 </div>
 <div>
-    <button onclick="playVideo()">播放</button>
-    <button onclick="pause()">暂停</button>
-    <button onclick="jump(5)">快进5秒</button>
-    <button onclick="jump(-5)">快退5秒</button>
+    <button onclick="jump(3)">快进</button>
+    <button onclick="jump(-3)">快退</button>
     <button onclick="mute(this)">静音</button>
-    <button onclick="speed(2)">2倍速</button>
-    <button onclick="speed(0.5)">0.5倍速</button>
-    <button onclick="speed(1)">正常播放</button>
-    <button onclick="volume(1)">增加音量</button>
-    <button onclick="volume(-1)">降低音量</button>
+    <button id="but_speed" onclick="speed()">x1</button>
+    <button id="but_loop" onclick="loop()">循环</button>
+    <button onclick="download()">下载</button>
+
 </div>
 <script>
-    var video = document.getElementById("video");
+    const butSpeed = document.getElementById("but_speed");
+    const butLoop = document.getElementById("but_loop");
+    const video = document.getElementById("video");
     video.width = document.body.clientWidth - 300;
     // video对象可以通过ontimeupdate时间来进行监听实时播放进度
     video.ontimeupdate = function () {
@@ -30,22 +29,30 @@
         console.log(video.duration)
     }
 
-    //播放
-    function play() {
-        video.play();
-    }
-
-    //暂停
-    function pause() {
-        video.pause();
-    }
-
     /**
      * 调整速度
-     * @param limit 速度调整程度 1=1倍速，0.5=0.5倍速，2=2倍速
+     * 速度调整程度 1=1倍速，0.5=0.5倍速，2=2倍速
      */
-    function speed(limit) {
-        video.playbackRate = limit;
+    function speed() {
+        let speed = video.playbackRate;
+        speed *= 2
+        if (speed > 4) {
+            speed = 0.5
+        }
+        butSpeed.innerHTML = 'x' + speed;
+        video.playbackRate = speed;
+    }
+
+
+    function loop() {
+        let flag = butLoop.innerHTML;
+        if (flag && flag.indexOf("顺序") >= 0) {
+            butLoop.innerHTML = "循环";
+            video.loop = "loop";
+        } else {
+            butLoop.innerHTML = "顺序";
+            video.removeAttribute("loop");
+        }
     }
 
     /**
@@ -66,6 +73,21 @@
             obj.innerHTML = "声音";
             video.muted = true;
         }
+    }
+
+    function download() {
+        debugger
+        window.open(video.src.replace('/pl', '/dl'), '_blank');
+    }
+
+    //播放
+    function play() {
+        video.play();
+    }
+
+    //暂停
+    function pause() {
+        video.pause();
     }
 
 

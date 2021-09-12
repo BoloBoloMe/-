@@ -44,7 +44,15 @@ public class MediaHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
                 ResponseUtil.sendText(ctx, HttpResponseStatus.PAYMENT_REQUIRED, request, "缺少必要参数！请指定要播放的媒体文件");
                 return;
             }
-            HttpPlayer.play(ctx, request, target.get(0));
+            HttpPlayer.play(ctx, request, target.get(0), HttpPlayer.PATTERN_PLAY);
+        } else if ("/dl".equals(uri)) {
+            // 下载文件
+            List<String> target = params.get("tar");
+            if (target == null || target.size() == 0) {
+                ResponseUtil.sendText(ctx, HttpResponseStatus.PAYMENT_REQUIRED, request, "缺少必要参数！请指定要播放的媒体文件");
+                return;
+            }
+            HttpPlayer.play(ctx, request, target.get(0), HttpPlayer.PATTERN_DOWLOND);
         } else if ("/fl".equals(uri)) {
             ResponseUtil.sendJSON(ctx, HttpResponseStatus.OK, request, FileMap.fullListJson());
         } else if ("/ssd".equals(uri)) {

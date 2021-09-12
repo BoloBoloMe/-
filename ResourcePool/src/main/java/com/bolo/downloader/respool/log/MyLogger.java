@@ -20,7 +20,6 @@ public class MyLogger extends SuperLogger {
         if (snapshot == null) return;
         String convertMsg = String.format(msg, objs);
         snapshot.log(Level.INFO, String.format("%s : %s", clazz.getName(), convertMsg), clazz);
-
     }
 
 
