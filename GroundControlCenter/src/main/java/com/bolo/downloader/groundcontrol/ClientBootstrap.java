@@ -13,7 +13,7 @@ import com.bolo.downloader.groundcontrol.util.FileMap;
 import com.bolo.downloader.respool.db.StoneMap;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
-import com.bolo.downloader.respool.nio.PageUtil;
+import com.bolo.downloader.respool.nio.utils.PageUtil;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.methods.HttpUriRequest;

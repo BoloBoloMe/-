@@ -32,7 +32,7 @@ public class MediaServer {
                 .channel(NioServerSocketChannel.class)
                 .childHandler(new MediaServerInitializer());
         bootstrap.bind(port);
-        String startLog = "服务启动成功,地址：http://127.0.0.1:" + port;
+        String startLog = "服务启动成功,地址：http://0.0.0.0:" + port;
         log.info(startLog);
         System.out.println(startLog);
     }

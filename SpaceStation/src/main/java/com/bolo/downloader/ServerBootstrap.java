@@ -6,7 +6,7 @@ import com.bolo.downloader.factory.DownloaderFactory;
 import com.bolo.downloader.nio.HttpServer;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
-import com.bolo.downloader.respool.nio.PageUtil;
+import com.bolo.downloader.respool.nio.utils.PageUtil;
 import com.bolo.downloader.sync.Synchronizer;
 
 public class ServerBootstrap {

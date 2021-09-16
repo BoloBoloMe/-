@@ -1,4 +1,4 @@
-package com.bolo.downloader.respool.nio;
+package com.bolo.downloader.respool.nio.utils;
 
 
 import com.bolo.downloader.respool.log.LoggerFactory;

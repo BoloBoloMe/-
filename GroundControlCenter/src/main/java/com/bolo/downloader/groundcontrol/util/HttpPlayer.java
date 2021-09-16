@@ -2,7 +2,7 @@ package com.bolo.downloader.groundcontrol.util;
 
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
-import com.bolo.downloader.respool.nio.ResponseUtil;
+import com.bolo.downloader.respool.nio.utils.ResponseUtil;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.ssl.SslHandler;
