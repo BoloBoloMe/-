@@ -1,60 +1,42 @@
 package com.bolo.downloader.respool.nio.http;
 
+import com.bolo.downloader.respool.nio.http.scan.MethodMapperScanner;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.http.HttpMethod;
-import java.lang.reflect.Method;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * http 请求分发控制器，用于支持 @Controller, @RequestMapping 等注解
  */
 @ChannelHandler.Sharable
 public class HttpDistributeHandler extends ChannelInboundHandlerAdapter {
-    private ConcurrentHashMap<String, HttpRequestHandler> httpRequestHandlerSet = new ConcurrentHashMap<>();
+    private HttpDistributeHandler() {
+    }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
         ctx.fireChannelRead(msg);
     }
 
+    public static Builder newBuilder() {
+        return new Builder();
+    }
 
-    private static class HttpRequestHandler {
-        final private String path;
-        final private HttpMethod httpMethod;
-        final private Method targetMethod;
-        final private Object targetInstance;
-        private final Class<?> targetClass;
+    public static class Builder {
+        private MethodMapperScanner scanner;
 
-
-        public HttpRequestHandler(String path, HttpMethod httpMethod, Method targetMethod, Object targetInstance, Class<?> targetClass) {
-            this.path = path;
-            this.httpMethod = httpMethod;
-            this.targetMethod = targetMethod;
-            this.targetInstance = targetInstance;
-            this.targetClass = targetClass;
+        private Builder() {
         }
 
-        public String getPath() {
-            return path;
+        public Builder setScanner(MethodMapperScanner scanner) {
+            this.scanner = scanner;
+            return this;
         }
 
-        public HttpMethod getHttpMethod() {
-            return httpMethod;
-        }
-
-        public Method getTargetMethod() {
-            return targetMethod;
-        }
-
-        public Object getTargetInstance() {
-            return targetInstance;
-        }
-
-        public Class<?> getTargetClass() {
-            return targetClass;
+        public HttpDistributeHandler build() {
+            scanner.scan();
+            scanner = null;
+            return new HttpDistributeHandler();
         }
     }
 
