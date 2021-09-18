@@ -3,6 +3,7 @@ package com.bolo.downloader.respool.nio.http.invoke;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.respool.nio.http.HttpDistributeHandler;
+import com.bolo.downloader.respool.nio.http.RequestContextHolder;
 import com.bolo.downloader.respool.nio.http.scan.MethodMapper;
 import com.bolo.downloader.respool.nio.http.scan.MethodMapperContainer;
 import io.netty.channel.ChannelHandlerContext;
@@ -22,7 +23,7 @@ import java.util.*;
  */
 public class BaseMethodInvoker implements MethodInvoker {
     private static final MyLogger log = LoggerFactory.getLogger(HttpDistributeHandler.class);
-    private static final ThreadLocal<Map<String, List<String>>> parametersHolder = new ThreadLocal<>();
+
 
     @Override
     public ResponseEntity invoke(ChannelHandlerContext ctx, FullHttpRequest request) {
@@ -47,13 +48,13 @@ public class BaseMethodInvoker implements MethodInvoker {
         try {
             Map<String, List<String>> parameterMap = getParameters(ctx, request, uri, requestMethod);
             Object[] parameterList = alignParameters(ctx, request, parameterMap, method);
-            parametersHolder.set(parameterMap);
+            RequestContextHolder.setParameters(parameterMap);
             Object result = method.invoke(instance, parameterList);
             return interpretResponseEntity(result);
         } catch (Exception e) {
             log.error("http request handler invoke failed. method=" + method.getName() + ",parameters={}." + Collections.emptyList(), e);
         } finally {
-            parametersHolder.remove();
+            RequestContextHolder.remove();
         }
         return new ResponseEntity(HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }
@@ -68,7 +69,9 @@ public class BaseMethodInvoker implements MethodInvoker {
             String[] entryList = uri.substring(beginIndex + 1).split("&");
             for (String entry : entryList) {
                 String[] entryArr = entry.split("=");
-                if (entryArr.length != 2) continue;
+                if (entryArr.length != 2) {
+                    continue;
+                }
                 List<String> list = params.computeIfAbsent(entryArr[0], k -> new LinkedList<>());
                 list.add(entryArr[1]);
             }
