@@ -108,6 +108,17 @@ public class GeneralMethodInvoker implements MethodInvoker {
 
 
     private Object[] alignParameters(ChannelHandlerContext ctx, FullHttpRequest request, Map<String, List<String>> parameters, Method method) {
-        return new Object[]{};
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        Object[] parameter = new Object[parameterTypes.length];
+        for (int index = 0; index < parameterTypes.length; index++) {
+            Class<?> pClass = parameterTypes[index];
+            if (pClass.isInstance(ctx)) {
+                parameter[index] = ctx;
+            }
+            if (pClass.isInstance(request)) {
+                parameter[index] = request;
+            }
+        }
+        return parameter;
     }
 }
