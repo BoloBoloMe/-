@@ -8,6 +8,7 @@ import com.bolo.downloader.respool.nio.http.scan.MethodMapper;
 import com.bolo.downloader.respool.nio.http.scan.MethodMapperContainer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.multipart.DefaultHttpDataFactory;
@@ -21,42 +22,51 @@ import java.util.*;
 /**
  * 方法调用的共用处理过程
  */
-public class BaseMethodInvoker implements MethodInvoker {
+public class GeneralMethodInvoker implements MethodInvoker {
     private static final MyLogger log = LoggerFactory.getLogger(HttpDistributeHandler.class);
+    private final ResultInterpreter interpreter;
+
+    public GeneralMethodInvoker(ResultInterpreter interpreter) {
+        this.interpreter = interpreter;
+    }
 
 
     @Override
-    public ResponseEntity invoke(ChannelHandlerContext ctx, FullHttpRequest request) {
+    public FullHttpResponse invoke(ChannelHandlerContext ctx, FullHttpRequest request) {
+        Object responseEntity = doInvoke(ctx, request);
+        return interpreter.interpret(responseEntity);
+    }
+
+    private Object doInvoke(ChannelHandlerContext ctx, FullHttpRequest request) {
         if (!request.decoderResult().isSuccess()) {
-            return new ResponseEntity(HttpResponseStatus.BAD_REQUEST);
+            return new ResponseEntity<>(HttpResponseStatus.BAD_REQUEST);
         }
         final String uri = request.uri();
         final HttpMethod requestMethod = request.method();
         if (Objects.isNull(uri) || Objects.isNull(requestMethod)) {
-            return new ResponseEntity(HttpResponseStatus.BAD_REQUEST, "invalid request");
+            return new ResponseEntity<>(HttpResponseStatus.BAD_REQUEST, "invalid request");
         }
         final MethodMapper methodMapper = MethodMapperContainer.get(uri);
         if (Objects.isNull(methodMapper)) {
-            return new ResponseEntity(HttpResponseStatus.NOT_FOUND, "invalid path: " + uri);
+            return new ResponseEntity<>(HttpResponseStatus.NOT_FOUND, "invalid path: " + uri);
         }
         final Object instance = methodMapper.getTargetInstance();
         final Method method = methodMapper.getTargetMethod();
         Optional<HttpMethod> allowedMethod = methodMapper.getIfExist(requestMethod);
         if (!allowedMethod.isPresent()) {
-            return new ResponseEntity(HttpResponseStatus.METHOD_NOT_ALLOWED, "allowed method " + methodMapper.getAllowedMethods());
+            return new ResponseEntity<>(HttpResponseStatus.METHOD_NOT_ALLOWED, "allowed method " + methodMapper.getAllowedMethods());
         }
         try {
             Map<String, List<String>> parameterMap = getParameters(ctx, request, uri, requestMethod);
             Object[] parameterList = alignParameters(ctx, request, parameterMap, method);
             RequestContextHolder.setParameters(parameterMap);
-            Object result = method.invoke(instance, parameterList);
-            return interpretResponseEntity(result);
+            return method.invoke(instance, parameterList);
         } catch (Exception e) {
             log.error("http request handler invoke failed. method=" + method.getName() + ",parameters={}." + Collections.emptyList(), e);
         } finally {
             RequestContextHolder.remove();
         }
-        return new ResponseEntity(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+        return new ResponseEntity<>(HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }
 
     private Map<String, List<String>> getParameters(ChannelHandlerContext ctx, FullHttpRequest request, String uri, HttpMethod requestMethod) {
@@ -94,10 +104,6 @@ public class BaseMethodInvoker implements MethodInvoker {
             }
         }
         return params;
-    }
-
-    ResponseEntity interpretResponseEntity(Object result) {
-        return new ResponseEntity(HttpResponseStatus.NOT_IMPLEMENTED);
     }
 
 

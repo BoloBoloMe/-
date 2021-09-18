@@ -1,35 +1,49 @@
 package com.bolo.downloader.respool.nio.http.invoke;
 
-import com.sun.istack.internal.NotNull;
+
 import io.netty.handler.codec.http.HttpResponseStatus;
 
-public class ResponseEntity {
-    private HttpResponseStatus status;
-    private byte[] data;
-    private final static byte[] emptyData = {};
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+
+public class ResponseEntity<D> {
+    /**
+     * 响应状态
+     */
+    private final HttpResponseStatus status;
+
+    /**
+     * 响应头
+     */
+    private final Map<CharSequence, Object> headers;
+
+    /**
+     * 响应数据
+     */
+    private final D body;
 
 
-    public ResponseEntity(@NotNull HttpResponseStatus status) {
-        this(status, (byte[]) null);
+    public ResponseEntity(HttpResponseStatus status) {
+        this(status, null);
     }
 
-    public ResponseEntity(@NotNull HttpResponseStatus status, String data) {
+    public ResponseEntity(HttpResponseStatus status, D data) {
         this.status = status;
-        this.data = data.getBytes();
+        this.body = data;
+        this.headers = new LinkedHashMap<>();
     }
 
-    public ResponseEntity(@NotNull HttpResponseStatus status, byte[] data) {
-        this.status = status;
-        this.data = data == null ? emptyData : data;
-    }
 
-    @NotNull
     public HttpResponseStatus getStatus() {
         return status;
     }
 
-    @NotNull
-    public byte[] getData() {
-        return data;
+    public Map<CharSequence, Object> getHeaders() {
+        return headers;
+    }
+
+    public Optional<D> getBody() {
+        return Optional.ofNullable(body);
     }
 }
