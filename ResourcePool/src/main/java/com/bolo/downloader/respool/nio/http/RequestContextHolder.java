@@ -159,7 +159,7 @@ public class RequestContextHolder {
 
 
     /* 获取参数的公共方法 start */
-    private static <T> T getValue(String name, Function<String, T> parse, T def) {
+    public static <T> T getValue(String name, Function<String, T> parse, T def) {
         List<String> valueList = getParameters().get(name);
         if (Objects.isNull(valueList) || valueList.isEmpty()) {
             return def;
@@ -168,11 +168,11 @@ public class RequestContextHolder {
         return Objects.isNull(value) ? def : parse.apply(value);
     }
 
-    private static <T> T getValue(String name, Function<String, T> parse) {
+    public static <T> T getValue(String name, Function<String, T> parse) {
         return getValue(name, parse, null);
     }
 
-    private static <T> Optional<List<T>> getValues(String name, Function<String, T> parse) {
+    public static <T> Optional<List<T>> getValues(String name, Function<String, T> parse) {
         return Optional.ofNullable(getParameters().get(name))
                 .map(list -> list.stream().map(parse).collect(Collectors.toList()));
     }

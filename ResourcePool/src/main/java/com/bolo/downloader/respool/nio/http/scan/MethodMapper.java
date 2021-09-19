@@ -10,15 +10,15 @@ public class MethodMapper {
     final private String path;
     final private HttpMethod[] allowedMethods;
     final private Method targetMethod;
-    final private Object targetInstance;
+    final private TargetInstanceFactory targetInstanceFactory;
     private final Class<?> targetClass;
 
 
-    public MethodMapper(String path, HttpMethod[] allowedMethods, Method targetMethod, Object targetInstance, Class<?> targetClass) {
+    public MethodMapper(String path, HttpMethod[] allowedMethods, Method targetMethod, TargetInstanceFactory targetInstanceFactory, Class<?> targetClass) {
         this.path = path;
         this.allowedMethods = allowedMethods;
         this.targetMethod = targetMethod;
-        this.targetInstance = targetInstance;
+        this.targetInstanceFactory = targetInstanceFactory;
         this.targetClass = targetClass;
     }
 
@@ -40,7 +40,7 @@ public class MethodMapper {
     }
 
     public Object getTargetInstance() {
-        return targetInstance;
+        return targetInstanceFactory.getInstance();
     }
 
     public Class<?> getTargetClass() {

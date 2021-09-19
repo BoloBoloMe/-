@@ -17,7 +17,9 @@ import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.netty.handler.codec.http.multipart.MemoryAttribute;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.*;
+import java.util.function.Function;
 
 /**
  * 方法调用的共用处理过程
@@ -58,8 +60,8 @@ public class GeneralMethodInvoker implements MethodInvoker {
         }
         try {
             Map<String, List<String>> parameterMap = getParameters(ctx, request, uri, requestMethod);
-            Object[] parameterList = alignParameters(ctx, request, parameterMap, method);
             RequestContextHolder.setParameters(parameterMap);
+            Object[] parameterList = alignParameters(ctx, request, method);
             return method.invoke(instance, parameterList);
         } catch (Exception e) {
             log.error("http request handler invoke failed. method=" + method.getName() + ",parameters={}." + Collections.emptyList(), e);
@@ -106,19 +108,66 @@ public class GeneralMethodInvoker implements MethodInvoker {
         return params;
     }
 
-
-    private Object[] alignParameters(ChannelHandlerContext ctx, FullHttpRequest request, Map<String, List<String>> parameters, Method method) {
-        Class<?>[] parameterTypes = method.getParameterTypes();
-        Object[] parameter = new Object[parameterTypes.length];
-        for (int index = 0; index < parameterTypes.length; index++) {
-            Class<?> pClass = parameterTypes[index];
+    /**
+     * 方法入参对齐——尝试初始化入参列表
+     *
+     */
+    private Object[] alignParameters(ChannelHandlerContext ctx, FullHttpRequest request, Method method) {
+        // 使用jdk8新增的方法获取参数名和参数类型, 请在编译时添加参数：-parameters
+        Parameter[] parameterDefineList = method.getParameters();
+        int paramListLength = parameterDefineList.length;
+        Object[] parameter = new Object[paramListLength];
+        for (int index = 0; index < paramListLength; index++) {
+            Parameter parameterDefine = parameterDefineList[index];
+            Class<?> pClass = parameterDefineList[index].getType();
             if (pClass.isInstance(ctx)) {
                 parameter[index] = ctx;
+                continue;
             }
             if (pClass.isInstance(request)) {
                 parameter[index] = request;
+                continue;
+            }
+            String pName = parameterDefine.getName();
+            if (Objects.nonNull(pName) && !pName.isEmpty()) {
+                if (pClass.isArray()) {
+                    Optional<? extends List<?>> valuesOpt = RequestContextHolder.getValues(pName, getParse(pClass));
+                    final int i = index;
+                    valuesOpt.ifPresent(values -> parameter[i] = values.toArray());
+                } else if (pClass.isAssignableFrom(Collection.class)) {
+                    Optional<? extends List<?>> valuesOpt = RequestContextHolder.getValues(pName, getParse(pClass));
+                    final int i = index;
+                    valuesOpt.ifPresent(values -> parameter[i] = values);
+                } else {
+                    parameter[index] = RequestContextHolder.getValue(pName, getParse(pClass));
+                }
             }
         }
         return parameter;
+    }
+
+    private Function<String, ?> getParse(Class<?> pClass) {
+        if (Integer.class.equals(pClass)) {
+            return Integer::parseInt;
+        }
+        if (Long.class.equals(pClass)) {
+            return Long::parseLong;
+        }
+        if (Byte.class.equals(pClass)) {
+            return Byte::parseByte;
+        }
+        if (Character.class.equals(pClass)) {
+            return s -> Objects.nonNull(s) && !s.isEmpty() ? null : s.charAt(0);
+        }
+        if (Short.class.equals(pClass)) {
+            return Short::parseShort;
+        }
+        if (Float.class.equals(pClass)) {
+            return Float::parseFloat;
+        }
+        if (Double.class.equals(pClass)) {
+            return Double::parseDouble;
+        }
+        return s -> null;
     }
 }

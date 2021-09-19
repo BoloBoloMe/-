@@ -30,6 +30,10 @@
                     <source>1.8</source>
                     <target>1.8</target>
                     <encoding>UTF-8</encoding>
+                    <compilerArgs>
+                        <!-- jdk8 反射获取方法参数名的编译参数 -->
+                        <arg>-parameters</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <!-- Maven Shade Plugin -->
