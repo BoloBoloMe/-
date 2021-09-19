@@ -110,7 +110,6 @@ public class GeneralMethodInvoker implements MethodInvoker {
 
     /**
      * 方法入参对齐——尝试初始化入参列表
-     *
      */
     private Object[] alignParameters(ChannelHandlerContext ctx, FullHttpRequest request, Method method) {
         // 使用jdk8新增的方法获取参数名和参数类型, 请在编译时添加参数：-parameters
@@ -147,6 +146,9 @@ public class GeneralMethodInvoker implements MethodInvoker {
     }
 
     private Function<String, ?> getParse(Class<?> pClass) {
+        if (String.class.equals(pClass)) {
+            return s -> s;
+        }
         if (Integer.class.equals(pClass)) {
             return Integer::parseInt;
         }
