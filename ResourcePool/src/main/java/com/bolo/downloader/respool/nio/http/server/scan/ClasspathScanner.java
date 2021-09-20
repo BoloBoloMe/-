@@ -18,6 +18,7 @@ import java.net.URLDecoder;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -46,7 +47,8 @@ public class ClasspathScanner implements MethodMapperScanner {
                     Method[] methods = targetClass.getDeclaredMethods();
                     for (Method method : methods) {
                         getAnnotateFromMethod(method, RequestMapping.class).ifPresent(mapping -> {
-                            List<String> paths = Arrays.asList(mapping.value());
+                            List<String> paths = Stream.concat(Stream.of(mapping.value()), Stream.of(mapping.path()))
+                                    .distinct().filter(Objects::nonNull).collect(Collectors.toList());
                             HttpMethod[] httpMethods = Stream.of(mapping.method()).map(RequestMethod::getHttpMethod).toArray(HttpMethod[]::new);
                             MethodMapper methodMapper = new MethodMapper(paths, httpMethods, method,
                                     buildTargetInstanceFactory(scope, targetClass), targetClass);
@@ -64,7 +66,7 @@ public class ClasspathScanner implements MethodMapperScanner {
         if (Scope.SCOPE_PROTOTYPE.equals(scope)) {
             return new PrototypeInstanceFactory(targetClass);
         } else if (Scope.SCOPE_SINGLETON.endsWith(scope)) {
-            return new PrototypeInstanceFactory(targetClass);
+            return new SingletonInstanceFactory(targetClass);
         }
         return new SingletonInstanceFactory(targetClass);
     }

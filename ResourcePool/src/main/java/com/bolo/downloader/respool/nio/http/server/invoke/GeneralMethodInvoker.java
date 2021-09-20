@@ -48,7 +48,7 @@ public class GeneralMethodInvoker implements MethodInvoker {
         if (Objects.isNull(uri) || Objects.isNull(requestMethod)) {
             return new ResponseEntity<>(HttpResponseStatus.BAD_REQUEST, "invalid request");
         }
-        final MethodMapper methodMapper = MethodMapperContainer.get(uri);
+        final MethodMapper methodMapper = MethodMapperContainer.get(uri.substring(0, uri.indexOf('?')));
         if (Objects.isNull(methodMapper)) {
             return new ResponseEntity<>(HttpResponseStatus.NOT_FOUND, "invalid path: " + uri);
         }

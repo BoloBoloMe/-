@@ -30,7 +30,7 @@ public class GeneralResultInterpreter implements ResultInterpreter {
     }
 
     private ByteBuf getContentFromBody(ResponseEntity<?> responseEntity) {
-        if (responseEntity.getBody().isPresent()) {
+        if (!responseEntity.getBody().isPresent()) {
             return ByteBuffUtils.empty();
         }
         final Object body = responseEntity.getBody().get();

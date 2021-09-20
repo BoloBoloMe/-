@@ -22,7 +22,7 @@ public class SingletonInstanceFactory implements TargetInstanceFactory {
             return Optional.of(instance);
         }
         synchronized (this) {
-            if (Objects.nonNull(instance)) {
+            if (Objects.isNull(instance)) {
                 try {
                     instance = targetClass.newInstance();
                 } catch (InstantiationException | IllegalAccessException e) {
