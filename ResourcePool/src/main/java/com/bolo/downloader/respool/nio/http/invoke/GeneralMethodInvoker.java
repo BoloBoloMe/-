@@ -52,11 +52,19 @@ public class GeneralMethodInvoker implements MethodInvoker {
         if (Objects.isNull(methodMapper)) {
             return new ResponseEntity<>(HttpResponseStatus.NOT_FOUND, "invalid path: " + uri);
         }
-        final Object instance = methodMapper.getTargetInstance();
         final Method method = methodMapper.getTargetMethod();
         Optional<HttpMethod> allowedMethod = methodMapper.getIfExist(requestMethod);
         if (!allowedMethod.isPresent()) {
             return new ResponseEntity<>(HttpResponseStatus.METHOD_NOT_ALLOWED, "allowed method " + methodMapper.getAllowedMethods());
+        }
+        Optional<Object> targetOpt = methodMapper.getTargetInstance();
+        final Object instance;
+        if (targetOpt.isPresent()) {
+            instance = targetOpt.get();
+        } else {
+            log.error("the mapper is missing an instance, remove the problematic mapper :" + methodMapper);
+            MethodMapperContainer.remove(methodMapper);
+            return new ResponseEntity<>(HttpResponseStatus.INTERNAL_SERVER_ERROR);
         }
         try {
             Map<String, List<String>> parameterMap = getParameters(ctx, request, uri, requestMethod);

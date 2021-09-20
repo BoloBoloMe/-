@@ -12,4 +12,12 @@ public class MethodMapperContainer {
     public static MethodMapper get(String path) {
         return mapperTable.get(path);
     }
+
+    public static void remove(MethodMapper mapper) {
+        for (String path : mapper.getPath()) {
+            if (mapperTable.get(path) == mapper) {
+                mapperTable.remove(path);
+            }
+        }
+    }
 }

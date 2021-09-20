@@ -4,17 +4,18 @@ import io.netty.handler.codec.http.HttpMethod;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 public class MethodMapper {
-    final private String path;
+    final private List<String> path;
     final private HttpMethod[] allowedMethods;
     final private Method targetMethod;
     final private TargetInstanceFactory targetInstanceFactory;
     private final Class<?> targetClass;
 
 
-    public MethodMapper(String path, HttpMethod[] allowedMethods, Method targetMethod, TargetInstanceFactory targetInstanceFactory, Class<?> targetClass) {
+    public MethodMapper(List<String> path, HttpMethod[] allowedMethods, Method targetMethod, TargetInstanceFactory targetInstanceFactory, Class<?> targetClass) {
         this.path = path;
         this.allowedMethods = allowedMethods;
         this.targetMethod = targetMethod;
@@ -22,8 +23,8 @@ public class MethodMapper {
         this.targetClass = targetClass;
     }
 
-    public String getPath() {
-        return path;
+    public String[] getPath() {
+        return path.toArray(new String[0]);
     }
 
     public Optional<HttpMethod> getIfExist(HttpMethod httpMethod) {
@@ -39,7 +40,7 @@ public class MethodMapper {
         return targetMethod;
     }
 
-    public Object getTargetInstance() {
+    public Optional<Object> getTargetInstance() {
         return targetInstanceFactory.getInstance();
     }
 
