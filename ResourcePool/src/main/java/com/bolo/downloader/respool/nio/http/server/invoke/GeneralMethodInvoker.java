@@ -35,8 +35,8 @@ public class GeneralMethodInvoker implements MethodInvoker {
 
     @Override
     public FullHttpResponse invoke(ChannelHandlerContext ctx, FullHttpRequest request) {
-        Object responseEntity = doInvoke(ctx, request);
-        return interpreter.interpret(responseEntity);
+        Object result = doInvoke(ctx, request);
+        return interpreter.interpret(result);
     }
 
     private Object doInvoke(ChannelHandlerContext ctx, FullHttpRequest request) {

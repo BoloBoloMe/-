@@ -9,7 +9,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/***
+ * 方法执行结果解释器，将结果转成 FullHttpResponse
+ */
 public class GeneralResultInterpreter implements ResultInterpreter {
+    private static final Set<Class<?>> toStringThanGetBytesTypes =
+            Stream.of(Short.class, Integer.class, Long.class, Character.class, Float.class, Double.class, Boolean.class)
+                    .collect(Collectors.toSet());
+
     @Override
     public FullHttpResponse interpret(Object result) {
         if (result instanceof ResponseEntity) {
@@ -17,14 +24,10 @@ public class GeneralResultInterpreter implements ResultInterpreter {
             DefaultFullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, responseEntity.getStatus(), getContentFromBody(responseEntity));
             HttpHeaders responseHeaders = response.headers();
             responseEntity.getHeaders().forEach(responseHeaders::set);
+            return response;
         }
         return new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
     }
-
-
-    private static final Set<Class<?>> toStringThanGetBytesTypes =
-            Stream.of(Short.class, Integer.class, Long.class, Character.class, Float.class, Double.class, Boolean.class)
-                    .collect(Collectors.toSet());
 
     private ByteBuf getContentFromBody(ResponseEntity<?> responseEntity) {
         if (responseEntity.getBody().isPresent()) {
