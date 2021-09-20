@@ -9,7 +9,9 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 @Controller
 public class TestController {
 
-    @RequestMapping(path = "echo", method = {RequestMethod.GET, RequestMethod.POST})
+    @RequestMapping(path = "/echo",
+            method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.DELETE, RequestMethod.PATCH,
+                    RequestMethod.HEAD, RequestMethod.PATCH, RequestMethod.OPTIONS, RequestMethod.PUT})
     public ResponseEntity<String> echo(String message) {
         System.out.println("echo receive:" + message);
         System.out.println("echo response:" + message);

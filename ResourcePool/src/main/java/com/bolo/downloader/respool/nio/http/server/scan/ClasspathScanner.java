@@ -49,7 +49,7 @@ public class ClasspathScanner implements MethodMapperScanner {
                         getAnnotateFromMethod(method, RequestMapping.class).ifPresent(mapping -> {
                             List<String> paths = Stream.concat(Stream.of(mapping.value()), Stream.of(mapping.path()))
                                     .distinct().filter(Objects::nonNull).collect(Collectors.toList());
-                            HttpMethod[] httpMethods = Stream.of(mapping.method()).map(RequestMethod::getHttpMethod).toArray(HttpMethod[]::new);
+                            List<HttpMethod> httpMethods = Stream.of(mapping.method()).map(RequestMethod::getHttpMethod).collect(Collectors.toList());
                             MethodMapper methodMapper = new MethodMapper(paths, httpMethods, method,
                                     buildTargetInstanceFactory(scope, targetClass), targetClass);
                             paths.forEach(path -> MethodMapperContainer.put(path, methodMapper));

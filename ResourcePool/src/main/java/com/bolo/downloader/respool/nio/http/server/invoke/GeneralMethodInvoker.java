@@ -18,6 +18,7 @@ import io.netty.handler.codec.http.multipart.MemoryAttribute;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.net.URLDecoder;
 import java.util.*;
 import java.util.function.Function;
 
@@ -43,12 +44,13 @@ public class GeneralMethodInvoker implements MethodInvoker {
         if (!request.decoderResult().isSuccess()) {
             return new ResponseEntity<>(HttpResponseStatus.BAD_REQUEST);
         }
-        final String uri = request.uri();
-        final HttpMethod requestMethod = request.method();
+        String uri = request.uri();
+        HttpMethod requestMethod = request.method();
         if (Objects.isNull(uri) || Objects.isNull(requestMethod)) {
             return new ResponseEntity<>(HttpResponseStatus.BAD_REQUEST, "invalid request");
         }
-        final MethodMapper methodMapper = MethodMapperContainer.get(uri.substring(0, uri.indexOf('?')));
+        uri = URLDecoder.decode(request.uri());
+        final MethodMapper methodMapper = MethodMapperContainer.get(getPureUri(uri));
         if (Objects.isNull(methodMapper)) {
             return new ResponseEntity<>(HttpResponseStatus.NOT_FOUND, "invalid path: " + uri);
         }
@@ -77,6 +79,14 @@ public class GeneralMethodInvoker implements MethodInvoker {
             RequestContextHolder.remove();
         }
         return new ResponseEntity<>(HttpResponseStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    private String getPureUri(String uri) {
+        int endIndex = uri.indexOf('?');
+        if (endIndex < 0) {
+            return uri;
+        }
+        return uri.substring(0, endIndex);
     }
 
     private Map<String, List<String>> getParameters(ChannelHandlerContext ctx, FullHttpRequest request, String uri, HttpMethod requestMethod) {
