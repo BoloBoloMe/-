@@ -1,8 +1,8 @@
-package com.bolo.downloader.respool.nio.http;
+package com.bolo.downloader.respool.nio.http.server;
 
-import com.bolo.downloader.respool.nio.http.invoke.GeneralMethodInvoker;
-import com.bolo.downloader.respool.nio.http.invoke.GeneralResultInterpreter;
-import com.bolo.downloader.respool.nio.http.scan.MethodMapperScanner;
+import com.bolo.downloader.respool.nio.http.server.invoke.GeneralMethodInvoker;
+import com.bolo.downloader.respool.nio.http.server.invoke.GeneralResultInterpreter;
+import com.bolo.downloader.respool.nio.http.server.scan.MethodMapperScanner;
 import com.bolo.downloader.respool.nio.utils.ResponseUtil;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;

@@ -1,4 +1,4 @@
-package com.bolo.downloader.respool.nio.http.annotate;
+package com.bolo.downloader.respool.nio.http.server.annotate;
 
 import io.netty.handler.codec.http.HttpMethod;
 

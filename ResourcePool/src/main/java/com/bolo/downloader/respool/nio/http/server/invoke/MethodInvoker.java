@@ -1,4 +1,4 @@
-package com.bolo.downloader.respool.nio.http.invoke;
+package com.bolo.downloader.respool.nio.http.server.invoke;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;

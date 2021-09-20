@@ -1,11 +1,11 @@
-package com.bolo.downloader.respool.nio.http.invoke;
+package com.bolo.downloader.respool.nio.http.server.invoke;
 
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
-import com.bolo.downloader.respool.nio.http.HttpDistributeHandler;
-import com.bolo.downloader.respool.nio.http.RequestContextHolder;
-import com.bolo.downloader.respool.nio.http.scan.MethodMapper;
-import com.bolo.downloader.respool.nio.http.scan.MethodMapperContainer;
+import com.bolo.downloader.respool.nio.http.server.HttpDistributeHandler;
+import com.bolo.downloader.respool.nio.http.server.RequestContextHolder;
+import com.bolo.downloader.respool.nio.http.server.scan.MethodMapper;
+import com.bolo.downloader.respool.nio.http.server.scan.MethodMapperContainer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;

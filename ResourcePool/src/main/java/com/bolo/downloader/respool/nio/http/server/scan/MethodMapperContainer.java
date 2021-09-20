@@ -1,4 +1,4 @@
-package com.bolo.downloader.respool.nio.http.scan;
+package com.bolo.downloader.respool.nio.http.server.scan;
 
 import java.util.concurrent.ConcurrentHashMap;
 

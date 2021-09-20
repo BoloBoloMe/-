@@ -1,4 +1,4 @@
-package com.bolo.downloader.respool.nio.http.scan;
+package com.bolo.downloader.respool.nio.http.server.scan;
 
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
