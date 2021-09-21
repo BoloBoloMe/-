@@ -172,6 +172,10 @@ public class RequestContextHolder {
         return getValue(name, parse, null);
     }
 
+    public static Optional<List<String>> getValues(String name) {
+        return getValues(name, s -> s);
+    }
+
     public static <T> Optional<List<T>> getValues(String name, Function<String, T> parse) {
         return Optional.ofNullable(getParameters().get(name))
                 .map(list -> list.stream().map(parse).collect(Collectors.toList()));

@@ -212,6 +212,15 @@ public class GeneralMethodInvoker implements MethodInvoker {
         return s -> null;
     }
 
+    /**
+     * 获取集合元素类型的简单实现
+     * <p>
+     * 目前只支持获取在使用才确定泛型参数的情形，如 List<String> -> got Class<String> ;
+     * 对于子类在实现或继承集合类或接口时就确定好泛型的情形，是获取不到元素类型的。如:
+     * public static class MyList extends ArrayList<String> {
+     * }
+     * 不是因为做不到而是因为如果要支持这种情形意味着要遍历子类的所有父类或接口，并且还要判断这些父类或接口是否是集合类的子类，如果是，再获取这些子类的泛型类型。比较复杂所以先不支持
+     */
     private Optional<Class<?>> getElementClassFromCollection(Class<?> collectionClass, Type collectionType) {
         Class<?> eClass = null;
         if (collectionType instanceof ParameterizedType) {
