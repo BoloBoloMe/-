@@ -12,9 +12,10 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import java.util.*;
 
 @Controller
+//@RequestMapping("")
 public class TestController {
 
-    @RequestMapping(path = "/echo",
+    @RequestMapping(path = "echo/",
             method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.DELETE, RequestMethod.PATCH,
                     RequestMethod.HEAD, RequestMethod.PATCH, RequestMethod.OPTIONS, RequestMethod.PUT})
     public ResponseEntity<String> echo(FullHttpRequest request, ChannelHandlerContext context) {

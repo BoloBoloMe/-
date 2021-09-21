@@ -8,7 +8,7 @@ import com.bolo.downloader.groundcontrol.handler.AbstractResponseHandler;
 import com.bolo.downloader.groundcontrol.handler.DownloadHandler;
 import com.bolo.downloader.groundcontrol.handler.EqualsHandler;
 import com.bolo.downloader.groundcontrol.handler.NewFileHandler;
-import com.bolo.downloader.groundcontrol.nio.MediaServer;
+import com.bolo.downloader.groundcontrol.server.NetServer;
 import com.bolo.downloader.groundcontrol.util.FileMap;
 import com.bolo.downloader.respool.db.StoneMap;
 import com.bolo.downloader.respool.log.LoggerFactory;
@@ -29,14 +29,14 @@ import java.util.concurrent.TimeUnit;
 public class ClientBootstrap {
     private static final String CONF_FILE_PATH = "conf/GroundControlCenter.conf";
     private static final MyLogger log = LoggerFactory.getLogger(ClientBootstrap.class);
-    private static MediaServer server;
+    private static NetServer server;
     private static CloseableHttpClient client;
     private static volatile long SYSTEM_TIME_MILLISECOND = System.currentTimeMillis();
 
     public static void main(String[] args) {
         init();
         client = HttpClientFactory.http();
-        server = new MediaServer(Integer.parseInt(ConfFactory.get("port")));
+        server = new NetServer(Integer.parseInt(ConfFactory.get("port")));
         server.start();
         ResponseHandler<HttpRequestBase> handlers = new EqualsHandler().join(new NewFileHandler()).join(new DownloadHandler());
         log.info("Space Station 服务器地址: %s", ConfFactory.get("url"));

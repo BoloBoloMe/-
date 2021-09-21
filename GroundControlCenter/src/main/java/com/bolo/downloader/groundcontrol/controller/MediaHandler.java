@@ -1,4 +1,4 @@
-package com.bolo.downloader.groundcontrol.nio;
+package com.bolo.downloader.groundcontrol.controller;
 
 import com.bolo.downloader.groundcontrol.ClientBootstrap;
 import com.bolo.downloader.groundcontrol.util.FileMap;

@@ -1,4 +1,4 @@
-package com.bolo.downloader.groundcontrol.nio;
+package com.bolo.downloader.groundcontrol.server;
 
 import com.bolo.downloader.groundcontrol.factory.ConfFactory;
 import com.bolo.downloader.respool.log.LoggerFactory;
@@ -8,13 +8,13 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
-public class MediaServer {
+public class NetServer {
     private EventLoopGroup bossGroup;
     private EventLoopGroup workGroup;
     private final int port;
-    private MyLogger log = LoggerFactory.getLogger(MediaServer.class);
+    private MyLogger log = LoggerFactory.getLogger(NetServer.class);
 
-    public MediaServer(int port) {
+    public NetServer(int port) {
         this.port = port;
     }
 
@@ -30,7 +30,7 @@ public class MediaServer {
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.group(bossGroup, workGroup)
                 .channel(NioServerSocketChannel.class)
-                .childHandler(new MediaServerInitializer());
+                .childHandler(new NetServerInitializer());
         bootstrap.bind(port);
         String startLog = "服务启动成功,地址：http://127.0.0.1:" + port;
         log.info(startLog);
