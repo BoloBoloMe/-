@@ -27,7 +27,7 @@ public class HttpDistributeHandler extends ChannelInboundHandlerAdapter {
             FullHttpResponse response = invoker.invoke(ctx, request);
             HttpUtil.setContentLength(response, response.content().readableBytes());
             ResponseUtil.sendAndCleanupConnection(ctx, request, response, false);
-            isKeepAlive = !HttpHeaderValues.CLOSE.toString().equals(response.headers().get(HttpHeaderNames.CONNECTION));
+            isKeepAlive = HttpUtil.isKeepAlive(request);
         }
         if (isKeepAlive) {
             ctx.fireChannelRead(msg);

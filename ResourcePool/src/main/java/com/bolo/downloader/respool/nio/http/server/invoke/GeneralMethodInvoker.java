@@ -16,8 +16,7 @@ import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.netty.handler.codec.http.multipart.MemoryAttribute;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.*;
 import java.net.URLDecoder;
 import java.util.*;
 import java.util.function.Function;
@@ -89,13 +88,14 @@ public class GeneralMethodInvoker implements MethodInvoker {
         return uri.substring(0, endIndex);
     }
 
+    /**
+     * 贪婪的做法：既尝试从uri上获取请求参数，也尝试从请求体中获取参数。忽略不同请求方法的差别
+     **/
     private Map<String, List<String>> getParameters(ChannelHandlerContext ctx, FullHttpRequest request, String uri, HttpMethod requestMethod) {
         Map<String, List<String>> params = new HashMap<>();
-        if (HttpMethod.GET.equals(requestMethod)) {
-            int beginIndex = uri.indexOf('?');
-            if (beginIndex < 0) {
-                return params;
-            }
+        // 从url上获取参数
+        int beginIndex = uri.indexOf('?');
+        if (beginIndex > 0) {
             String[] entryList = uri.substring(beginIndex + 1).split("&");
             for (String entry : entryList) {
                 String[] entryArr = entry.split("=");
@@ -105,10 +105,11 @@ public class GeneralMethodInvoker implements MethodInvoker {
                 List<String> list = params.computeIfAbsent(entryArr[0], k -> new LinkedList<>());
                 list.add(entryArr[1]);
             }
-            return params;
-        } else if (HttpMethod.POST.equals(requestMethod)) {
-            HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(new DefaultHttpDataFactory(false), request);
-            List<InterfaceHttpData> parmList = decoder.getBodyHttpDatas();
+        }
+        // 从请求体获取参数
+        HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(new DefaultHttpDataFactory(false), request);
+        List<InterfaceHttpData> parmList = decoder.getBodyHttpDatas();
+        if (Objects.nonNull(parmList)) {
             for (InterfaceHttpData parm : parmList) {
                 if (parm.getHttpDataType() == InterfaceHttpData.HttpDataType.Attribute) {
                     MemoryAttribute data = (MemoryAttribute) parm;
@@ -137,6 +138,7 @@ public class GeneralMethodInvoker implements MethodInvoker {
         for (int index = 0; index < paramListLength; index++) {
             Parameter parameterDefine = parameterDefineList[index];
             Class<?> pClass = parameterDefineList[index].getType();
+            Type pType = parameterDefineList[index].getParameterizedType();
             if (pClass.isInstance(ctx)) {
                 parameter[index] = ctx;
                 continue;
@@ -148,13 +150,32 @@ public class GeneralMethodInvoker implements MethodInvoker {
             String pName = parameterDefine.getName();
             if (Objects.nonNull(pName) && !pName.isEmpty()) {
                 if (pClass.isArray()) {
-                    Optional<? extends List<?>> valuesOpt = RequestContextHolder.getValues(pName, getParse(pClass));
                     final int i = index;
-                    valuesOpt.ifPresent(values -> parameter[i] = values.toArray());
-                } else if (pClass.isAssignableFrom(Collection.class)) {
-                    Optional<? extends List<?>> valuesOpt = RequestContextHolder.getValues(pName, getParse(pClass));
+                    getElementClassFromArray((Class<Array>) pClass)
+                            .flatMap(eClass -> RequestContextHolder.getValues(pName, getParse(eClass)))
+                            .ifPresent(values -> {
+                                Optional<?> vClassOpt = values.stream().filter(Objects::nonNull).findFirst();
+                                if (vClassOpt.isPresent()) {
+                                    Class<?> vClass = vClassOpt.get().getClass();
+                                    Object arrayObject = Array.newInstance(vClass, values.size());
+                                    for (int v = 0; v < values.size(); v++) {
+                                        Array.set(arrayObject, v, values.get(v));
+                                    }
+                                    parameter[i] = arrayObject;
+                                }
+                            });
+                } else if (Collection.class.isAssignableFrom(pClass)) {
                     final int i = index;
-                    valuesOpt.ifPresent(values -> parameter[i] = values);
+                    getElementClassFromCollection(pClass, pType)
+                            .flatMap(eClass -> RequestContextHolder.getValues(pName, getParse(eClass)))
+                            .ifPresent(values -> {
+                                try {
+                                    Collection collection = (Collection) pClass.newInstance();
+                                    collection.addAll(values);
+                                    parameter[i] = collection;
+                                } catch (InstantiationException | IllegalAccessException e) {
+                                }
+                            });
                 } else {
                     parameter[index] = RequestContextHolder.getValue(pName, getParse(pClass));
                 }
@@ -189,5 +210,21 @@ public class GeneralMethodInvoker implements MethodInvoker {
             return Double::parseDouble;
         }
         return s -> null;
+    }
+
+    private Optional<Class<?>> getElementClassFromCollection(Class<?> collectionClass, Type collectionType) {
+        Class<?> eClass = null;
+        if (collectionType instanceof ParameterizedType) {
+            Type[] paramTypes = ((ParameterizedType) collectionType).getActualTypeArguments();
+            try {
+                eClass = Objects.nonNull(paramTypes) && paramTypes.length > 0 ? Class.forName(paramTypes[0].getTypeName()) : null;
+            } catch (ClassNotFoundException e) {
+            }
+        }
+        return Optional.ofNullable(eClass);
+    }
+
+    private Optional<Class<?>> getElementClassFromArray(Class<Array> arrayClass) {
+        return Optional.ofNullable(arrayClass.getComponentType());
     }
 }
