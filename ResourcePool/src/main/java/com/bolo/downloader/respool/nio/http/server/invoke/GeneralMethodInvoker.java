@@ -69,6 +69,7 @@ public class GeneralMethodInvoker implements MethodInvoker {
         }
         try {
             Map<String, List<String>> parameterMap = getParameters(ctx, request, uri, requestMethod);
+            RequestContextHolder.presetParam(parameterMap, uri);
             RequestContextHolder.setParameters(parameterMap);
             Object[] parameterList = alignParameters(ctx, request, method);
             return method.invoke(instance, parameterList);

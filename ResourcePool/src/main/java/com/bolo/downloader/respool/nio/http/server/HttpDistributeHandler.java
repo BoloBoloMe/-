@@ -3,6 +3,7 @@ package com.bolo.downloader.respool.nio.http.server;
 import com.bolo.downloader.respool.nio.http.server.invoke.GeneralMethodInvoker;
 import com.bolo.downloader.respool.nio.http.server.invoke.GeneralResultInterpreter;
 import com.bolo.downloader.respool.nio.http.server.scan.MethodMapperScanner;
+import com.bolo.downloader.respool.nio.http.server.scan.ScanContextHolder;
 import com.bolo.downloader.respool.nio.utils.ResponseUtil;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -64,9 +65,11 @@ public class HttpDistributeHandler extends ChannelInboundHandlerAdapter {
         }
 
         public HttpDistributeHandler build() {
+            this.rootPath = formatRootPath();
+            ScanContextHolder.set(ScanContextHolder.KEY_ROOT_PATH, this.rootPath);
             scanner.scan();
             scanner = null;
-            this.rootPath = formatRootPath();
+            ScanContextHolder.remove();
             return new HttpDistributeHandler(this.rootPath);
         }
 

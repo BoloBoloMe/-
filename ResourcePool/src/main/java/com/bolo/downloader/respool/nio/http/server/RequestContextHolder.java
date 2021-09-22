@@ -2,10 +2,7 @@ package com.bolo.downloader.respool.nio.http.server;
 
 import com.alibaba.fastjson.JSON;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -16,7 +13,14 @@ import java.util.stream.Collectors;
  * create time: 2021/9/18 12:51 下午
  **/
 public class RequestContextHolder {
+    // 预置参数KEY
+    private static final String PRESET_PARAM_KEY_REQUEST_URL = "$REQUEST_URL";
+
     private static final ThreadLocal<Map<String, List<String>>> PARAMETERS_HOLDER = new ThreadLocal<>();
+
+    public static void presetParam(Map<String, List<String>> parameter, String uri) {
+        parameter.put(PRESET_PARAM_KEY_REQUEST_URL, Collections.singletonList(uri));
+    }
 
     public static void setParameters(Map<String, List<String>> parameter) {
         PARAMETERS_HOLDER.set(parameter);
@@ -181,4 +185,10 @@ public class RequestContextHolder {
                 .map(list -> list.stream().map(parse).collect(Collectors.toList()));
     }
     /* 获取参数的公共方法 end */
+
+    /* 预设参数 start */
+    public static String getUri() {
+        return getValue(PRESET_PARAM_KEY_REQUEST_URL, s -> s);
+    }
+    /* 预设参数 end */
 }

@@ -17,9 +17,12 @@ import java.net.SocketAddress;
 
 public class HttpDistributeHandlerTest {
     public static void main(String[] args) {
-        HttpDistributeHandler handler = HttpDistributeHandler.newBuilder().setScanner(new ClasspathScanner("com.bolo.downloader.respool.test.db.nio.server.controller")).build();
+        HttpDistributeHandler handler = HttpDistributeHandler.newBuilder()
+                .setScanner(new ClasspathScanner("com.bolo.downloader.respool.test.db.nio.server.controller"))
+                .setRootPath("base")
+                .build();
         System.out.println(handler);
-        FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "echo?message=你好你好你好");
+        FullHttpRequest request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/base/echo?message=你好你好你好");
         handler.channelRead(new MockChannelHandlerContext(), request);
     }
 
