@@ -9,20 +9,24 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.*;
 
+import java.util.Objects;
+
 /**
  * http 请求分发控制器，用于支持 @Controller, @RequestMapping 等注解
  */
 @ChannelHandler.Sharable
 public class HttpDistributeHandler extends ChannelInboundHandlerAdapter {
     private static final GeneralMethodInvoker invoker = new GeneralMethodInvoker(new GeneralResultInterpreter());
+    private final String rootPath;
 
-    private HttpDistributeHandler() {
+    private HttpDistributeHandler(String rootPath) {
+        this.rootPath = rootPath;
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         boolean isKeepAlive = false;
-        if (msg instanceof FullHttpRequest) {
+        if (appropriateRequest(msg)) {
             FullHttpRequest request = (FullHttpRequest) msg;
             FullHttpResponse response = invoker.invoke(ctx, request);
             HttpUtil.setContentLength(response, response.content().readableBytes());
@@ -34,12 +38,17 @@ public class HttpDistributeHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
+    private boolean appropriateRequest(Object msg) {
+        return msg instanceof FullHttpRequest && ((FullHttpRequest) msg).uri().indexOf(rootPath) == 0;
+    }
+
     public static Builder newBuilder() {
         return new Builder();
     }
 
     public static class Builder {
         private MethodMapperScanner scanner;
+        private String rootPath;
 
         private Builder() {
         }
@@ -49,10 +58,31 @@ public class HttpDistributeHandler extends ChannelInboundHandlerAdapter {
             return this;
         }
 
+        public Builder setRootPath(String rootPath) {
+            this.rootPath = rootPath;
+            return this;
+        }
+
         public HttpDistributeHandler build() {
             scanner.scan();
             scanner = null;
-            return new HttpDistributeHandler();
+            this.rootPath = formatRootPath();
+            return new HttpDistributeHandler(this.rootPath);
+        }
+
+        private String formatRootPath() {
+            String path = this.rootPath;
+            if (Objects.isNull(path) || path.isEmpty()) {
+                path = "/";
+            } else {
+                if (path.charAt(0) != '/') {
+                    path = "/" + path;
+                }
+                if (path.charAt(path.length() - 1) != '/') {
+                    path = path + "/";
+                }
+            }
+            return path;
         }
     }
 
