@@ -1,13 +1,18 @@
-package com.bolo.downloader.respool.nio.http.server.scan;
+package com.bolo.downloader.respool.nio.http.controller.scan;
 
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
-import com.bolo.downloader.respool.nio.http.server.annotate.Controller;
-import com.bolo.downloader.respool.nio.http.server.annotate.RequestMapping;
-import com.bolo.downloader.respool.nio.http.server.annotate.RequestMethod;
-import com.bolo.downloader.respool.nio.http.server.annotate.Scope;
+import com.bolo.downloader.respool.nio.http.controller.annotate.Controller;
+import com.bolo.downloader.respool.nio.http.controller.annotate.RequestMapping;
+import com.bolo.downloader.respool.nio.http.controller.annotate.RequestMethod;
+import com.bolo.downloader.respool.nio.http.controller.annotate.Scope;
+import com.bolo.downloader.respool.nio.http.controller.invoke.impl.GeneralMethodInvoker;
+import com.bolo.downloader.respool.nio.http.controller.invoke.impl.GeneralResultInterpreter;
+import com.bolo.downloader.respool.nio.http.controller.invoke.MethodInvoker;
+import com.bolo.downloader.respool.nio.http.controller.scan.impl.*;
 import io.netty.handler.codec.http.HttpMethod;
 
+import javax.naming.OperationNotSupportedException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.*;
@@ -26,7 +31,7 @@ abstract public class AbstractScanner implements MethodMapperScanner {
      *
      * @return 将会创建 Mapper 对象的 Class 对象
      */
-    abstract Set<Class<?>> getClasses();
+    public abstract Set<Class<?>> getClasses();
 
     @Override
     public void scan() {
@@ -35,7 +40,16 @@ abstract public class AbstractScanner implements MethodMapperScanner {
             if (Objects.isNull(classSet) || classSet.isEmpty()) {
                 return;
             }
-            final String rootPath = ScanContextHolder.getValue(ScanContextHolder.KEY_ROOT_PATH).orElse("");
+            final String rootPath = ScanContextHolder.getValue(ScanContextHolder.KEY_ROOT_PATH, String.class).orElse("");
+            final MethodInvoker methodInvoker = ScanContextHolder.getValue(ScanContextHolder.KEY_METHOD_INVOKER, MethodInvoker.class).orElse(new GeneralMethodInvoker(new GeneralResultInterpreter()));
+            final MethodMapperContainer methodMapperContainer = new MethodMapperContainer();
+            try {
+                methodInvoker.setMethodMapperContainer(methodMapperContainer);
+                ScanContextHolder.set(ScanContextHolder.KEY_METHOD_INVOKER, methodInvoker);
+            } catch (OperationNotSupportedException e) {
+                log.error("Setting up the container for the invoker failed.", e);
+                throw new RuntimeException(e);
+            }
             for (Class<?> targetClass : classSet) {
                 try {
                     Optional<Controller> controllerOpt = getAnnotateFromClass(targetClass, Controller.class);
@@ -53,13 +67,14 @@ abstract public class AbstractScanner implements MethodMapperScanner {
                             List<String> paths = Stream.concat(Stream.of(mapping.value()), Stream.of(mapping.path()))
                                     .distinct().filter(Objects::nonNull).map(s -> rootPath + s).collect(Collectors.toList());
                             List<HttpMethod> httpMethods = Stream.of(mapping.method()).map(RequestMethod::getHttpMethod).collect(Collectors.toList());
-                            List<String>  mixPaths = mixPath(basePaths, paths);
+                            List<String> mixPaths = mixPath(basePaths, paths);
                             MethodMapper methodMapper = new MethodMapper(mixPaths, httpMethods, method, buildTargetInstanceFactory(scope, targetClass), targetClass);
-                            mixPaths.forEach(path -> MethodMapperContainer.put(path, methodMapper));
+                            mixPaths.forEach(path -> methodMapperContainer.put(path, methodMapper));
                         });
                     }
                 } catch (Exception e) {
                     log.error("scan class by classpath is failed. error:", e);
+                    throw new RuntimeException(e);
                 }
             }
         }

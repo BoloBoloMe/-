@@ -1,7 +1,7 @@
 package com.bolo.downloader.respool.test.db.nio.server;
 
-import com.bolo.downloader.respool.nio.http.server.HttpDistributeHandler;
-import com.bolo.downloader.respool.nio.http.server.scan.ClasspathScanner;
+import com.bolo.downloader.respool.nio.http.controller.HttpDistributeHandler;
+import com.bolo.downloader.respool.nio.http.controller.scan.impl.ClasspathScanner;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;

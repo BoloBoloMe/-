@@ -1,4 +1,4 @@
-package com.bolo.downloader.groundcontrol.handler;
+package com.bolo.downloader.groundcontrol.filesync;
 
 import com.bolo.downloader.groundcontrol.dict.StoneMapDict;
 import com.bolo.downloader.groundcontrol.factory.ConfFactory;

@@ -1,11 +1,13 @@
-package com.bolo.downloader.respool.nio.http.server.invoke;
+package com.bolo.downloader.respool.nio.http.controller.invoke.impl;
 
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
-import com.bolo.downloader.respool.nio.http.server.HttpDistributeHandler;
-import com.bolo.downloader.respool.nio.http.server.RequestContextHolder;
-import com.bolo.downloader.respool.nio.http.server.scan.MethodMapper;
-import com.bolo.downloader.respool.nio.http.server.scan.MethodMapperContainer;
+import com.bolo.downloader.respool.nio.http.controller.RequestContextHolder;
+import com.bolo.downloader.respool.nio.http.controller.invoke.MethodInvoker;
+import com.bolo.downloader.respool.nio.http.controller.invoke.ResultInterpreter;
+import com.bolo.downloader.respool.nio.http.controller.scan.impl.MethodMapper;
+import com.bolo.downloader.respool.nio.http.controller.scan.impl.MethodMapperContainer;
+import com.bolo.downloader.respool.nio.http.controller.HttpDistributeHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
@@ -16,9 +18,11 @@ import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.netty.handler.codec.http.multipart.MemoryAttribute;
 
+import javax.naming.OperationNotSupportedException;
 import java.lang.reflect.*;
 import java.net.URLDecoder;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 /**
@@ -27,11 +31,24 @@ import java.util.function.Function;
 public class GeneralMethodInvoker implements MethodInvoker {
     private static final MyLogger log = LoggerFactory.getLogger(HttpDistributeHandler.class);
     private final ResultInterpreter interpreter;
+    private final AtomicReference<MethodMapperContainer> methodMapperContainerHolder = new AtomicReference<>();
 
     public GeneralMethodInvoker(ResultInterpreter interpreter) {
         this.interpreter = interpreter;
     }
 
+
+    @Override
+    public void setMethodMapperContainer(MethodMapperContainer container) throws OperationNotSupportedException {
+        if (Objects.nonNull(methodMapperContainerHolder.get())) {
+           throw new OperationNotSupportedException("The methodMapperContainerHolder does not support the reset operations");
+        }
+        synchronized (this) {
+            if (Objects.isNull(methodMapperContainerHolder.get())) {
+                methodMapperContainerHolder.set(container);
+            }
+        }
+    }
 
     @Override
     public FullHttpResponse invoke(ChannelHandlerContext ctx, FullHttpRequest request) {
@@ -49,7 +66,8 @@ public class GeneralMethodInvoker implements MethodInvoker {
             return new ResponseEntity<>(HttpResponseStatus.BAD_REQUEST, "invalid request");
         }
         uri = URLDecoder.decode(request.uri());
-        final MethodMapper methodMapper = MethodMapperContainer.get(getPureUri(uri));
+        final MethodMapperContainer methodMapperContainer = methodMapperContainerHolder.get();
+        final MethodMapper methodMapper = methodMapperContainer.get(getPureUri(uri));
         if (Objects.isNull(methodMapper)) {
             return new ResponseEntity<>(HttpResponseStatus.NOT_FOUND, "invalid path: " + uri);
         }
@@ -64,7 +82,7 @@ public class GeneralMethodInvoker implements MethodInvoker {
             instance = targetOpt.get();
         } else {
             log.error("the mapper is missing an instance, remove the problematic mapper :" + methodMapper);
-            MethodMapperContainer.remove(methodMapper);
+            methodMapperContainer.remove(methodMapper);
             return new ResponseEntity<>(HttpResponseStatus.INTERNAL_SERVER_ERROR);
         }
         try {

@@ -1,9 +1,9 @@
 package com.bolo.downloader.groundcontrol.controller;
 
-import com.bolo.downloader.respool.nio.http.server.annotate.Controller;
-import com.bolo.downloader.respool.nio.http.server.annotate.RequestMapping;
-import com.bolo.downloader.respool.nio.http.server.annotate.RequestMethod;
-import com.bolo.downloader.respool.nio.http.server.invoke.ResponseEntity;
+import com.bolo.downloader.respool.nio.http.controller.annotate.Controller;
+import com.bolo.downloader.respool.nio.http.controller.annotate.RequestMapping;
+import com.bolo.downloader.respool.nio.http.controller.annotate.RequestMethod;
+import com.bolo.downloader.respool.nio.http.controller.invoke.impl.ResponseEntity;
 import com.bolo.downloader.respool.nio.utils.PageUtil;
 import io.netty.handler.codec.http.HttpResponseStatus;
 

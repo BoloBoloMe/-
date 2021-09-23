@@ -1,5 +1,6 @@
-package com.bolo.downloader.respool.nio.http.server.scan;
+package com.bolo.downloader.respool.nio.http.controller.scan.impl;
 
+import com.bolo.downloader.respool.nio.http.controller.scan.TargetInstanceFactory;
 import io.netty.handler.codec.http.HttpMethod;
 
 import java.lang.reflect.Method;

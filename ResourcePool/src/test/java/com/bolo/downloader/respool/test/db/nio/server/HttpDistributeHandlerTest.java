@@ -1,8 +1,8 @@
 package com.bolo.downloader.respool.test.db.nio.server;
 
 import com.alibaba.fastjson.JSON;
-import com.bolo.downloader.respool.nio.http.server.HttpDistributeHandler;
-import com.bolo.downloader.respool.nio.http.server.scan.ClasspathScanner;
+import com.bolo.downloader.respool.nio.http.controller.HttpDistributeHandler;
+import com.bolo.downloader.respool.nio.http.controller.scan.impl.ClasspathScanner;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;

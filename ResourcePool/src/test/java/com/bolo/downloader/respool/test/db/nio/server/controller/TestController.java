@@ -1,10 +1,10 @@
 package com.bolo.downloader.respool.test.db.nio.server.controller;
 
-import com.bolo.downloader.respool.nio.http.server.RequestContextHolder;
-import com.bolo.downloader.respool.nio.http.server.annotate.Controller;
-import com.bolo.downloader.respool.nio.http.server.annotate.RequestMapping;
-import com.bolo.downloader.respool.nio.http.server.annotate.RequestMethod;
-import com.bolo.downloader.respool.nio.http.server.invoke.ResponseEntity;
+import com.bolo.downloader.respool.nio.http.controller.RequestContextHolder;
+import com.bolo.downloader.respool.nio.http.controller.annotate.Controller;
+import com.bolo.downloader.respool.nio.http.controller.annotate.RequestMapping;
+import com.bolo.downloader.respool.nio.http.controller.annotate.RequestMethod;
+import com.bolo.downloader.respool.nio.http.controller.invoke.impl.ResponseEntity;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;

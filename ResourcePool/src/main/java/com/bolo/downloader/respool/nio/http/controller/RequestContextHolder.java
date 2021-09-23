@@ -1,4 +1,4 @@
-package com.bolo.downloader.respool.nio.http.server;
+package com.bolo.downloader.respool.nio.http.controller;
 
 import com.alibaba.fastjson.JSON;
 

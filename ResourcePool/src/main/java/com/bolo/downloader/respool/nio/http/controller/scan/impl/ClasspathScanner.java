@@ -1,7 +1,8 @@
-package com.bolo.downloader.respool.nio.http.server.scan;
+package com.bolo.downloader.respool.nio.http.controller.scan.impl;
 
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
+import com.bolo.downloader.respool.nio.http.controller.scan.AbstractScanner;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,7 +30,6 @@ public class ClasspathScanner extends AbstractScanner {
      */
     @Override
     public Set<Class<?>> getClasses() {
-
         // 第一个class类的集合
         Set<Class<?>> classes = new LinkedHashSet<>();
         // 是否循环迭代

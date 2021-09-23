@@ -1,4 +1,4 @@
-package com.bolo.downloader.respool.nio.http.server.scan;
+package com.bolo.downloader.respool.nio.http.controller.scan;
 
 import java.util.Optional;
 

@@ -1,7 +1,8 @@
-package com.bolo.downloader.respool.nio.http.server.scan;
+package com.bolo.downloader.respool.nio.http.controller.scan.impl;
 
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
+import com.bolo.downloader.respool.nio.http.controller.scan.TargetInstanceFactory;
 
 import java.util.Objects;
 import java.util.Optional;
