@@ -1,25 +1,24 @@
 package com.bolo.downloader.groundcontrol.server;
 
-import com.bolo.downloader.respool.nio.utils.ByteBuffUtils;
-import com.bolo.downloader.respool.nio.utils.PageUtil;
+import com.bolo.downloader.groundcontrol.factory.ConfFactory;
+import com.bolo.downloader.respool.nio.utils.FileTransferUtil;
 import com.bolo.downloader.respool.nio.utils.ResponseUtil;
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
-import io.netty.util.ReferenceCountUtil;
 
 import java.net.URLDecoder;
 import java.util.Collections;
+import java.util.Objects;
 
 public class StaticPageHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private static final StaticPageHandler INSTANCE = new StaticPageHandler();
+    private volatile String basicPath;
 
     private StaticPageHandler() {
     }
 
-    public static StaticPageHandler getInstance(){
+    public static StaticPageHandler getInstance() {
         return INSTANCE;
     }
 
@@ -38,18 +37,7 @@ public class StaticPageHandler extends SimpleChannelInboundHandler<FullHttpReque
         if (!HttpMethod.GET.equals(request.method())) {
             ResponseUtil.sendText(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED, request, "请以GET方式访问");
         }
-        PageUtil.Page page = PageUtil.findPage(uri, Collections.emptyMap());
-        ByteBuf byteBuf = null;
-        try {
-            byteBuf = ByteBuffUtils.copy(page.getContent());
-            // Build the response object.
-            FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, request.decoderResult().isSuccess() ? HttpResponseStatus.OK : HttpResponseStatus.BAD_REQUEST, byteBuf);
-            response.headers().set(HttpHeaderNames.CONTENT_TYPE, page.getContentType());
-            // Write the response and flush.
-            ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
-        } finally {
-            if (byteBuf != null && byteBuf.refCnt() > 0) ReferenceCountUtil.safeRelease(byteBuf);
-        }
+        FileTransferUtil.sendFile(ctx, request, basicPath + uri, Collections.emptyMap());
     }
 
     private static String sanitizeUri(String uri) {
@@ -67,5 +55,15 @@ public class StaticPageHandler extends SimpleChannelInboundHandler<FullHttpReque
             uri = uri.substring(0, endIndex);
         }
         return uri.equals("/") ? "/page/index.html" : uri;
+    }
+
+    private String getBasicPath() {
+        if (Objects.nonNull(basicPath)) {
+            return basicPath;
+        }
+        synchronized (this) {
+            basicPath = ConfFactory.get("staticFilePath");
+        }
+        return basicPath;
     }
 }
