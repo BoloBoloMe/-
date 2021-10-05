@@ -3,6 +3,7 @@ package com.bolo.downloader.groundcontrol.controller;
 import com.bolo.downloader.groundcontrol.util.FileMap;
 import com.bolo.downloader.respool.nio.http.controller.annotate.Controller;
 import com.bolo.downloader.respool.nio.http.controller.annotate.RequestMapping;
+import com.bolo.downloader.respool.nio.http.controller.annotate.RequestMethod;
 import com.bolo.downloader.respool.nio.http.controller.invoke.impl.ResponseEntity;
 import com.bolo.downloader.respool.nio.utils.FileTransferUtil;
 import io.netty.channel.ChannelHandlerContext;
@@ -15,7 +16,6 @@ import java.util.HashMap;
 import java.util.Objects;
 
 @Controller
-@RequestMapping("media")
 public class MediaController {
 
     @RequestMapping("fl")
@@ -53,5 +53,17 @@ public class MediaController {
         headers.put(HttpHeaderNames.CONTENT_DISPOSITION.toString(), "inline");
         FileTransferUtil.sendFile(ctx, request, absolutePaths, headers);
         return null;
+    }
+
+    @RequestMapping(path = "gamble", method = RequestMethod.POST)
+    public ResponseEntity<String> gamble() {
+        String fileName = "";
+        for (int count = 0; count < 10; count++) {
+            fileName = FileMap.gamble();
+            if (FileMap.isVideo(fileName)) {
+                break;
+            }
+        }
+        return new ResponseEntity<>(HttpResponseStatus.OK, fileName);
     }
 }

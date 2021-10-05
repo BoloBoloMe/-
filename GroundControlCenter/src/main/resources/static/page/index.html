@@ -51,10 +51,10 @@
                     lay-submit lay-filter="btnSearch">
                 <i class="layui-icon layui-icon-search" style="font-size: 30px;"></i>
             </button>
-            <button type="gambleGame" class="layui-btn layui-btn-radius layui-btn-danger" title="试试手气"
-                    onclick="gamble()">
-                <i class="layui-icon layui-icon-gift" style="font-size: 30px;"></i>
-            </button>
+<!--            <button type="gambleGame" class="layui-btn layui-btn-radius layui-btn-danger" title="试试手气"-->
+<!--                    lay-submit lay-filter="gamble">-->
+<!--                <i class="layui-icon layui-icon-gift" style="font-size: 30px;"></i>-->
+<!--            </button>-->
         </div>
         <dev class="layui-col-md2" id="labels">
             <a class="label" href="">#视频</a>
@@ -87,12 +87,9 @@
         alert(msg)
     }
 
-    function goPlay(url) {
-        window.open(url, '_blank');
-    }
-
-    function gamble() {
-        window.open('/gamble');
+    function goPlay(fileName) {
+        window.sessionStorage.setItem("fileName", fileName);
+        window.open('/page/playVideo.html', '_blank');
     }
 
     function searchLabel(label) {
@@ -190,6 +187,23 @@
             return true;
         });
 
+        // 监听表单提交-随机播放
+        form.on('submit(gamble)', function gamble() {
+            $.ajax({
+                type: "POST",
+                url: "/gcc/gamble",
+                success: function (res) {
+                    console.log(res)
+                    if (res) {
+                        window.sessionStorage.setItem("fileName", res);
+                        window.open('/page/playVideo.html', '_blank');
+                    } else {
+                        window.alert('请重试')
+                    }
+                }
+            });
+        });
+
         //  监听文件列表的事件
         table.on('toolbar(fileTable)', function (obj) {
             switch (obj.event) {
@@ -202,7 +216,7 @@
         function requestData() {
             $.ajax({
                 type: "GET",
-                url: "/fl?name=" + nameHolder,
+                url: "/gcc/fl?name=" + nameHolder,
                 success: function (res) {
                     // 缓存响应数据
                     responseHolder = res
@@ -213,11 +227,10 @@
                         var fileName = file.name
                         var encodeFileName = encodeURI(fileName);
                         fileListHolder.push({
-                            // 'fileName': '<a href=/pv?tar=' + encodeFileName + ' target="_blank">' + fileName + '</a>',
-                            'fileName': '<video src="/pl?tar=' + encodeFileName + '" width="200px"  onclick=goPlay("http://' + window.location.host + '/pv?tar=' + encodeFileName + '")></video> &nbsp;<a href=/pv?tar=' + encodeFileName + ' target="_blank">' + fileName + '</a>',
+                            'fileName': '<video src="http://' + window.location.host + '/gcc/pl?tar=' + encodeFileName + '" width="200px"  onclick=goPlay("' + encodeFileName + '")></video> &nbsp;<a href=/pv?tar=' + encodeFileName + ' target="_blank">' + fileName + '</a>',
                             'labels': file.labels,
                             'opt': '<a  class="layui-btn layui-btn-xs" href="javascript:void(0);" onclick=copyLink("http://' + window.location.host + '/pl?tar=' + encodeFileName + '")>拷贝源地址</a>&nbsp;&nbsp;' +
-                                '<a class="layui-btn layui-btn-xs" href=/pv?tar=' + encodeFileName + ' target="_blank">播放</a>' +
+                                '<a class="layui-btn layui-btn-xs" href="javascript:void(0);"  onclick=goPlay("' + encodeFileName + '")>播放</a>' +
                                 '<a class="layui-btn layui-btn-xs" href=/dl?tar=' + encodeFileName + ' target="_blank">下载</a>'
 
                         })

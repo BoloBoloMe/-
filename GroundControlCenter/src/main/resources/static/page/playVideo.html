@@ -2,13 +2,10 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <title>%s</title>
+    <title>播放视频</title>
 </head>
 <body>
-<div>
-    <h3 title="%s">%s</h3>
-    <video id="video" src="%s" autoplay controls="controls" preload="metadata" loop="loop">抱歉您的浏览器不支持视频播放功能</video>
-</div>
+<div id="video_box"></div>
 <div>
     <button onclick="jump(3)">快进</button>
     <button onclick="jump(-3)">快退</button>
@@ -19,6 +16,11 @@
 
 </div>
 <script>
+    const fileName = window.sessionStorage.getItem('fileName')
+    const videoBox = document.getElementById("video_box");
+    videoBox.innerHTML = /*'<h3>' + fileName + '</h3>' +*/
+        '<video id="video" src="http://' + window.location.host + '/gcc/pl?tar=' + fileName + '" autoplay controls="controls" preload="metadata" loop="loop">抱歉您的浏览器不支持视频播放功能</video>'
+
     const butSpeed = document.getElementById("but_speed");
     const butLoop = document.getElementById("but_loop");
     const video = document.getElementById("video");
