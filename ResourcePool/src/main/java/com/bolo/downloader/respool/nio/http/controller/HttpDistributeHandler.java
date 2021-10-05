@@ -35,7 +35,8 @@ public class HttpDistributeHandler extends ChannelInboundHandlerAdapter {
     }
 
     private boolean appropriateRequest(Object msg) {
-        return msg instanceof FullHttpRequest && ((FullHttpRequest) msg).uri().indexOf(rootPath) == 0;
+        int rootPathIndex = ((FullHttpRequest) msg).uri().indexOf(rootPath);
+        return msg instanceof FullHttpRequest && (rootPathIndex == 0 || rootPathIndex == 1);
     }
 
 
@@ -88,7 +89,6 @@ public class HttpDistributeHandler extends ChannelInboundHandlerAdapter {
 
         public HttpDistributeHandler build() {
             try {
-                this.rootPath = formatRootPath();
                 ScanContextHolder.set(ScanContextHolder.KEY_ROOT_PATH, this.rootPath);
                 ScanContextHolder.set(ScanContextHolder.KEY_METHOD_INVOKER, this.methodInvoker);
                 scanner.scan();
@@ -102,21 +102,6 @@ public class HttpDistributeHandler extends ChannelInboundHandlerAdapter {
             } finally {
                 ScanContextHolder.remove();
             }
-        }
-
-        private String formatRootPath() {
-            String path = this.rootPath;
-            if (Objects.isNull(path) || path.isEmpty()) {
-                path = "/";
-            } else {
-                if (path.charAt(0) != '/') {
-                    path = "/" + path;
-                }
-                if (path.charAt(path.length() - 1) != '/') {
-                    path = path + "/";
-                }
-            }
-            return path;
         }
     }
 

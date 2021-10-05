@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.Objects;
 
 @Controller
+@RequestMapping("media")
 public class MediaController {
 
     @RequestMapping("fl")

@@ -65,9 +65,9 @@ abstract public class AbstractScanner implements MethodMapperScanner {
                     for (Method method : methods) {
                         getAnnotateFromMethod(method, RequestMapping.class).ifPresent(mapping -> {
                             List<String> paths = Stream.concat(Stream.of(mapping.value()), Stream.of(mapping.path()))
-                                    .distinct().filter(Objects::nonNull).map(s -> rootPath + s).collect(Collectors.toList());
+                                    .distinct().filter(Objects::nonNull).collect(Collectors.toList());
                             List<HttpMethod> httpMethods = Stream.of(mapping.method()).map(RequestMethod::getHttpMethod).collect(Collectors.toList());
-                            List<String> mixPaths = mixPath(basePaths, paths);
+                            List<String> mixPaths = mixPath(rootPath, basePaths, paths);
                             MethodMapper methodMapper = new MethodMapper(mixPaths, httpMethods, method, buildTargetInstanceFactory(scope, targetClass), targetClass);
                             mixPaths.forEach(path -> methodMapperContainer.put(path, methodMapper));
                         });
@@ -98,17 +98,18 @@ abstract public class AbstractScanner implements MethodMapperScanner {
         return Optional.ofNullable(method).map(c -> c.getAnnotation(annotateClass));
     }
 
-    private List<String> mixPath(List<String> basePaths, List<String> paths) {
+    private List<String> mixPath(String rootPath, List<String> basePaths, List<String> paths) {
         basePaths = basePaths.isEmpty() ? Collections.singletonList("") : basePaths.stream().map(this::formatPath).collect(Collectors.toList());
         paths = paths.stream().map(this::formatPath).collect(Collectors.toList());
+        rootPath = formatPath(rootPath);
         List<String> newPaths = new ArrayList<>(paths.size() * basePaths.size() * 2);
         for (String basePath : basePaths) {
             for (String path : paths) {
                 String newPath;
                 if (path.length() > 0 && path.charAt(0) != '/') {
-                    newPath = basePath + "/" + path;
+                    newPath = rootPath + basePath + path;
                 } else {
-                    newPath = basePath + path;
+                    newPath = rootPath + basePath + path;
                 }
                 newPaths.add(newPath);
                 newPaths.add(newPath.endsWith("/") ? newPath.substring(0, newPath.length() - 1) : newPath + "/");
@@ -118,8 +119,8 @@ abstract public class AbstractScanner implements MethodMapperScanner {
     }
 
     private String formatPath(String path) {
-        if ("".equals(path)) {
-            return path;
+        if (Objects.isNull(path) || "".equals(path)) {
+            return "";
         }
         StringBuilder pathBuilder = new StringBuilder(path);
         if (pathBuilder.charAt(0) != '/') {
