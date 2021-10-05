@@ -38,7 +38,13 @@ public class StaticPageHandler extends SimpleChannelInboundHandler<FullHttpReque
         if (!HttpMethod.GET.equals(request.method())) {
             ResponseUtil.sendText(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED, request, "请以GET方式访问");
         }
-        FileTransferUtil.sendFile(ctx, request, getBasicPath() + uri, Collections.emptyMap());
+        int code = FileTransferUtil.sendFile(ctx, request, getBasicPath() + uri, Collections.emptyMap());
+        if (code == HttpResponseStatus.INTERNAL_SERVER_ERROR.code()) {
+            FileTransferUtil.sendFile(ctx, request, getBasicPath() + "/page/ServerError.html", Collections.emptyMap());
+        } else if (code == HttpResponseStatus.NOT_FOUND.code()) {
+            FileTransferUtil.sendFile(ctx, request, getBasicPath() + "/page/PageNotFount.html", Collections.emptyMap());
+        }
+
     }
 
     private static String sanitizeUri(String uri) {

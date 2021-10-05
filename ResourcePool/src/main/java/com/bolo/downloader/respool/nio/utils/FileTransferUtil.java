@@ -23,11 +23,10 @@ public class FileTransferUtil {
     public static final String PATTERN_DOWLOND = "attachment;filename=";
     public static final String PATTERN_PLAY = "inline";
 
-    public static void sendFile(ChannelHandlerContext ctx, FullHttpRequest request, String absolutePaths, Map<String, Object> headers) {
+    public static int sendFile(ChannelHandlerContext ctx, FullHttpRequest request, String absolutePaths, Map<String, Object> headers) {
         File file;
         if (absolutePaths == null || !(file = new File(absolutePaths)).exists() || file.isHidden()) {
-            ResponseUtil.sendError(ctx, HttpResponseStatus.NOT_FOUND, request);
-            return;
+            return HttpResponseStatus.NOT_FOUND.code();
         }
         try {
             RandomAccessFile fileAcc = new RandomAccessFile(file, "r");
@@ -64,10 +63,12 @@ public class FileTransferUtil {
                 // HttpChunkedInput will write the end marker (LastHttpContent) for us.
                 sendFileFuture.addListener(channelProgressiveFutureListener);
             }
+
+            return OK.code();
         } catch (Exception e) {
             log.error("文件传输异常！", e);
-            ResponseUtil.sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, request);
         }
+        return HttpResponseStatus.INTERNAL_SERVER_ERROR.code();
     }
 
     private static final ChannelProgressiveFutureListener channelProgressiveFutureListener = new ChannelProgressiveFutureListener() {
