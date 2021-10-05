@@ -3,6 +3,7 @@ package com.bolo.downloader.groundcontrol.server;
 import com.bolo.downloader.groundcontrol.factory.ConfFactory;
 import com.bolo.downloader.respool.nio.utils.FileTransferUtil;
 import com.bolo.downloader.respool.nio.utils.ResponseUtil;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
@@ -11,9 +12,9 @@ import java.net.URLDecoder;
 import java.util.Collections;
 import java.util.Objects;
 
+@ChannelHandler.Sharable
 public class StaticPageHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private static final StaticPageHandler INSTANCE = new StaticPageHandler();
-    private volatile String basicPath;
 
     private StaticPageHandler() {
     }
@@ -37,11 +38,11 @@ public class StaticPageHandler extends SimpleChannelInboundHandler<FullHttpReque
         if (!HttpMethod.GET.equals(request.method())) {
             ResponseUtil.sendText(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED, request, "请以GET方式访问");
         }
-        FileTransferUtil.sendFile(ctx, request, basicPath + uri, Collections.emptyMap());
+        FileTransferUtil.sendFile(ctx, request, getBasicPath() + uri, Collections.emptyMap());
     }
 
     private static String sanitizeUri(String uri) {
-        if (uri.isEmpty() || uri.indexOf("/page/") != 0) {
+        if (uri.isEmpty()) {
             return null;
         }
         if (uri.contains("/.") ||
@@ -56,6 +57,8 @@ public class StaticPageHandler extends SimpleChannelInboundHandler<FullHttpReque
         }
         return uri.equals("/") ? "/page/index.html" : uri;
     }
+
+    private volatile String basicPath;
 
     private String getBasicPath() {
         if (Objects.nonNull(basicPath)) {

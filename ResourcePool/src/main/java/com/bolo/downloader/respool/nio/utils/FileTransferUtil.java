@@ -23,7 +23,7 @@ public class FileTransferUtil {
     public static final String PATTERN_DOWLOND = "attachment;filename=";
     public static final String PATTERN_PLAY = "inline";
 
-    public static void sendFile(ChannelHandlerContext ctx, FullHttpRequest request, String absolutePaths, Map<CharSequence, Object> headers) {
+    public static void sendFile(ChannelHandlerContext ctx, FullHttpRequest request, String absolutePaths, Map<String, Object> headers) {
         File file;
         if (absolutePaths == null || !(file = new File(absolutePaths)).exists() || file.isHidden()) {
             ResponseUtil.sendError(ctx, HttpResponseStatus.NOT_FOUND, request);
@@ -55,7 +55,7 @@ public class FileTransferUtil {
                 sendFileFuture =
                         ctx.write(new DefaultFileRegion(fileAcc.getChannel(), start, transLen), ctx.newProgressivePromise());
                 // Write the end marker.
-                 ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+                ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
                 sendFileFuture.addListener(channelProgressiveFutureListener);
             } else {
                 sendFileFuture =
@@ -87,7 +87,7 @@ public class FileTransferUtil {
     };
 
 
-    private static void setCustomizationHeaders(Map<CharSequence, Object> headers, HttpResponse response) {
+    private static void setCustomizationHeaders(Map<String, Object> headers, HttpResponse response) {
         if (null == headers || headers.isEmpty()) {
             return;
         }
@@ -101,7 +101,10 @@ public class FileTransferUtil {
     }
 
     private static void setContentHaders(HttpResponse response, File file, long start, long end, long transLen, long fileLen) throws IOException {
-        response.headers().set(HttpHeaderNames.CONTENT_TYPE, Files.probeContentType(file.toPath()));
+        String contentType = Files.probeContentType(file.toPath());
+        if (Objects.nonNull(contentType)) {
+            response.headers().set(HttpHeaderNames.CONTENT_TYPE, contentType);
+        }
         response.headers().set(HttpHeaderNames.ACCEPT_RANGES, "bytes");
         response.headers().set(HttpHeaderNames.CONTENT_RANGE, "bytes " + start + "-" + end + "/" + fileLen);
         HttpUtil.setContentLength(response, transLen);
