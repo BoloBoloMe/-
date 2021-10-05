@@ -81,28 +81,26 @@ abstract public class AbstractScanner implements MethodMapperScanner {
         }
     }
 
+    private TargetInstanceFactory buildTargetInstanceFactory(String scope, Class<?> targetClass) {
+        if (Scope.SCOPE_PROTOTYPE.equals(scope)) {
+            return new PrototypeInstanceFactory(targetClass);
+        } else if (Scope.SCOPE_SINGLETON.endsWith(scope)) {
+            return new SingletonInstanceFactory(targetClass);
+        }
+        return new SingletonInstanceFactory(targetClass);
+    }
+
+    private <A extends Annotation> Optional<A> getAnnotateFromClass(Class<?> targetClazz, Class<A> annotateClass) {
+        return Optional.ofNullable(targetClazz).map(c -> c.getAnnotation(annotateClass));
+    }
+
+    private <A extends Annotation> Optional<A> getAnnotateFromMethod(Method method, Class<A> annotateClass) {
+        return Optional.ofNullable(method).map(c -> c.getAnnotation(annotateClass));
+    }
 
     private List<String> mixPath(List<String> basePaths, List<String> paths) {
-        if (basePaths.isEmpty()) {
-            basePaths.add("");
-        } else {
-            for (int i = 0; i < basePaths.size(); i++) {
-                String basePath = basePaths.get(i);
-                if (basePath.isEmpty()) {
-                    basePaths.set(i, "/");
-                    continue;
-                } else if (basePath.length() == 1 && "/".equals(basePath)) {
-                    continue;
-                }
-                if (basePath.endsWith("/")) {
-                    basePath = basePath.substring(0, basePath.length() - 1);
-                    basePaths.set(i, basePath);
-                }
-                if (basePath.charAt(0) != '/') {
-                    basePaths.set(i, "/" + basePath);
-                }
-            }
-        }
+        basePaths = basePaths.isEmpty() ? Collections.singletonList("") : basePaths.stream().map(this::formatPath).collect(Collectors.toList());
+        paths = paths.stream().map(this::formatPath).collect(Collectors.toList());
         List<String> newPaths = new ArrayList<>(paths.size() * basePaths.size() * 2);
         for (String basePath : basePaths) {
             for (String path : paths) {
@@ -119,20 +117,18 @@ abstract public class AbstractScanner implements MethodMapperScanner {
         return newPaths;
     }
 
-    private TargetInstanceFactory buildTargetInstanceFactory(String scope, Class<?> targetClass) {
-        if (Scope.SCOPE_PROTOTYPE.equals(scope)) {
-            return new PrototypeInstanceFactory(targetClass);
-        } else if (Scope.SCOPE_SINGLETON.endsWith(scope)) {
-            return new SingletonInstanceFactory(targetClass);
+    private String formatPath(String path) {
+        if ("".equals(path)) {
+            return path;
         }
-        return new SingletonInstanceFactory(targetClass);
-    }
-
-    private <A extends Annotation> Optional<A> getAnnotateFromClass(Class<?> targetClazz, Class<A> annotateClass) {
-        return Optional.ofNullable(targetClazz).map(c -> c.getAnnotation(annotateClass));
-    }
-
-    private <A extends Annotation> Optional<A> getAnnotateFromMethod(Method method, Class<A> annotateClass) {
-        return Optional.ofNullable(method).map(c -> c.getAnnotation(annotateClass));
+        StringBuilder pathBuilder = new StringBuilder(path);
+        if (pathBuilder.charAt(0) != '/') {
+            pathBuilder.insert(0, '/');
+        }
+        int lastIndex = pathBuilder.length() - 1;
+        if (pathBuilder.charAt(lastIndex) == '/') {
+            pathBuilder.deleteCharAt(lastIndex);
+        }
+        return pathBuilder.toString();
     }
 }
