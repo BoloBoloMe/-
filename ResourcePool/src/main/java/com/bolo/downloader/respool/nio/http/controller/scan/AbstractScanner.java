@@ -74,6 +74,7 @@ abstract public class AbstractScanner implements MethodMapperScanner {
                     }
                 } catch (Exception e) {
                     log.error("scan class by classpath is failed. error:", e);
+
                     throw new RuntimeException(e);
                 }
             }
@@ -89,6 +90,7 @@ abstract public class AbstractScanner implements MethodMapperScanner {
                 String basePath = basePaths.get(i);
                 if (basePath.isEmpty()) {
                     basePaths.set(i, "/");
+                    continue;
                 } else if (basePath.length() == 1 && "/".equals(basePath)) {
                     continue;
                 }

@@ -34,6 +34,10 @@ public class ResponseEntity<D> {
         this.headers = new LinkedHashMap<>();
     }
 
+    public ResponseEntity<D> addHeader(CharSequence name, Object value) {
+        headers.put(name, value);
+        return this;
+    }
 
     public HttpResponseStatus getStatus() {
         return status;
@@ -42,6 +46,7 @@ public class ResponseEntity<D> {
     public Map<CharSequence, Object> getHeaders() {
         return headers;
     }
+
 
     public Optional<D> getBody() {
         return Optional.ofNullable(body);
