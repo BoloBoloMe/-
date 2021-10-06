@@ -36,8 +36,8 @@ public class MediaController {
         HashMap<String, Object> headers = new HashMap<>(1);
         headers.put(HttpHeaderNames.CONTENT_DISPOSITION.toString(),
                 "attachment;filename=\"" + absolutePaths.substring(absolutePaths.lastIndexOf(File.pathSeparatorChar)) + "\"");
-        FileTransferUtil.sendFile(ctx, request, absolutePaths, headers);
-        return null;
+        int code = FileTransferUtil.sendFile(ctx, request, absolutePaths, headers);
+        return buildResponseEntityByCode(code, null);
     }
 
     @RequestMapping("pl")
@@ -51,8 +51,8 @@ public class MediaController {
         }
         HashMap<String, Object> headers = new HashMap<>(1);
         headers.put(HttpHeaderNames.CONTENT_DISPOSITION.toString(), "inline");
-        FileTransferUtil.sendFile(ctx, request, absolutePaths, headers);
-        return null;
+        int code = FileTransferUtil.sendFile(ctx, request, absolutePaths, headers);
+        return buildResponseEntityByCode(code, null);
     }
 
     @RequestMapping(path = "gamble", method = RequestMethod.POST)
@@ -65,5 +65,18 @@ public class MediaController {
             }
         }
         return new ResponseEntity<>(HttpResponseStatus.OK, fileName);
+    }
+
+    private <T> ResponseEntity<T> buildResponseEntityByCode(int code, T body) {
+        if (code == HttpResponseStatus.NOT_FOUND.code()) {
+            return new ResponseEntity<>(HttpResponseStatus.NOT_FOUND, body);
+        }
+        if (code == HttpResponseStatus.INTERNAL_SERVER_ERROR.code()) {
+            return new ResponseEntity<>(HttpResponseStatus.INTERNAL_SERVER_ERROR, body);
+        }
+        if (code == HttpResponseStatus.OK.code()) {
+            return new ResponseEntity<>(HttpResponseStatus.OK, body);
+        }
+        return null;
     }
 }
