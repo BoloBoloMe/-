@@ -1,0 +1,13 @@
+#                            配置项说明
+# ----------------------------------------------------------------------
+# port -- 端口，默认 9000
+# concurrenceTaskNum -- 最大并行下载任务数 5
+# videoPath -- 文件下载存放路径
+# dbFilePath -- StoneMap 文件路径 默认 data/
+# writeBuffSize -- StoneMap 写缓冲大小，默认 8
+# staticFilePath -- 静态文件路径，用于存放静态页面文件 static/
+# youtubeDLPath -- youtube-dl 可执行文件路径
+# dbFileId --  StoneMap 数据文件id，int类型， 默认 100
+# logPath -- 日文文件存放路径，默认 log/
+# logFileName -- 日志文件名，默认 SpaceStation.log
+# ----------------------------------------------------------------------

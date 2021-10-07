@@ -1,0 +1,18 @@
+#                                配置项说明
+# ----------------------------------------------------------------------
+# port -- 端口， 默认 9999
+# url -- SpaceStation 服务文件下载地址， 默认 http://127.0.0.1:9000/df
+# dbFileId -- StoneMap 数据文件id，int类型， 默认 100
+# dbFilePath -- StoneMap 数据文件存放路径， 默认 /data/
+# logPath -- 日志文件存放路径，默认 /log/
+# logFileName -- 日志文件名，默认GroundControlCenter.log
+# downloadDir -- 下载的文件存放路径，默认是项目的启动路径
+# staticFilePath -- 静态文件路径，用于存放静态页面文件 static/
+# mediaPath -- 媒体文件扫描路径
+# labelMap -- 标签映射，标签名==路径中包含的关键字
+# notValidatedDir -- 未完成md5校验的文件临时存放目录
+# downloadRetryTimes -- 下载重试次数
+# openSyncTask -- 是否开启文件同步功能，默认true
+# mediaBossThreadCount -- 媒体播放器boss线程数，默认 1
+# mediaWorkThreadCount -- 媒体播放器work线程数，默认 1
+# ----------------------------------------------------------------------

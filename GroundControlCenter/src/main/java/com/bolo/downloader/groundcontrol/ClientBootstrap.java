@@ -27,7 +27,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public class ClientBootstrap {
-    private static final String CONF_FILE_PATH = "conf/GroundControlCenter.conf";
+    private static final String CONF_FILE_PATH = "conf/GroundControlCenter.propertes";
     private static final MyLogger log = LoggerFactory.getLogger(ClientBootstrap.class);
     private static NetServer server;
     private static CloseableHttpClient client;
