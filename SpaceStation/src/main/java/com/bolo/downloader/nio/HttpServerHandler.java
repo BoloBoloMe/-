@@ -27,6 +27,7 @@ import io.netty.util.ReferenceCountUtil;
 
 import java.io.*;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.util.*;
 
 public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
@@ -194,12 +195,13 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
     private void pageDownload(ChannelHandlerContext ctx, Map<String, List<String>> params, FullHttpRequest request) {
         Optional<String> fileNameOpt = Optional.ofNullable(params.get("tar")).map(plist -> plist.isEmpty() ? null : plist.get(0));
         if (fileNameOpt.isPresent()) {
-            File file = new File(ConfFactory.get("videoPath") + File.separator + fileNameOpt.get());
+            String fileName = URLDecoder.decode(new String(Base64.getDecoder().decode(fileNameOpt.get())));
+            File file = new File(ConfFactory.get("videoPath") + File.separator + fileName);
             if (file.exists()) {
                 HashMap<String, Object> headers = new HashMap<>(1);
-                headers.put(HttpHeaderNames.CONTENT_DISPOSITION.toString(), "attachment;filename=" + fileNameOpt.get());
+                headers.put(HttpHeaderNames.CONTENT_DISPOSITION.toString(), "attachment;filename=" + URLEncoder.encode(fileName));
                 int code = FileTransferUtil.sendFile(ctx, request, file.getAbsolutePath(), headers);
-                buildResponseEntityByCode(code, null);
+                responseByCode(code, ctx, request);
             } else {
                 ResponseUtil.sendError(ctx, HttpResponseStatus.NOT_FOUND, request);
             }
@@ -208,15 +210,15 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
         }
     }
 
-    private <T> ResponseEntity<T> buildResponseEntityByCode(int code, T body) {
+    private <T> ResponseEntity<T> responseByCode(int code, ChannelHandlerContext ctx, FullHttpRequest request) {
         if (code == HttpResponseStatus.NOT_FOUND.code()) {
-            return new ResponseEntity<>(HttpResponseStatus.NOT_FOUND, body);
+            ResponseUtil.sendError(ctx, HttpResponseStatus.NOT_FOUND, request);
         }
         if (code == HttpResponseStatus.INTERNAL_SERVER_ERROR.code()) {
-            return new ResponseEntity<>(HttpResponseStatus.INTERNAL_SERVER_ERROR, body);
+            ResponseUtil.sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, request);
         }
         if (code == HttpResponseStatus.OK.code()) {
-            return new ResponseEntity<>(HttpResponseStatus.OK, body);
+            ResponseUtil.sendError(ctx, HttpResponseStatus.OK, request);
         }
         return null;
     }

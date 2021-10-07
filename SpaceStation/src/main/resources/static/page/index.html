@@ -150,7 +150,7 @@
                         for (var x in res) {
                             data.push({
                                 'fileName': res[x],
-                                'operation': '<a class="layui-btn layui-btn-xs" href=/dl?tar=' +  encodeURI(res[x])  + ' target="_blank">下载</a>'
+                                'operation': '<a class="layui-btn layui-btn-xs" href=/dl?tar=' +  window.btoa(encodeURI(res[x]))  + ' target="_blank">下载</a>'
                             })
                         }
                     }

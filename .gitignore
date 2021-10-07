@@ -6,7 +6,4 @@ target
 *.iml
 /GroundControlCenter/dependency-reduced-pom.xml
 /SpaceStation/dependency-reduced-pom.xml
-data/
-conf/
-download/
-log/
+local/

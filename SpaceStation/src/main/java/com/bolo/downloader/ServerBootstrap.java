@@ -9,8 +9,10 @@ import com.bolo.downloader.respool.log.MyLogger;
 import com.bolo.downloader.respool.nio.utils.PageUtil;
 import com.bolo.downloader.sync.Synchronizer;
 
+import java.util.Optional;
+
 public class ServerBootstrap {
-    private static final String CONF_FILE_PATH = "conf/SpaceStation.propertes";
+    private static final String CONF_FILE_PATH = Optional.ofNullable(System.getProperty("conf.path")).orElse("conf/SpaceStation.propertes");
     private static MyLogger log = LoggerFactory.getLogger(ServerBootstrap.class);
     private static HttpServer httpServer;
 
