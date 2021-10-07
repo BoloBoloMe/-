@@ -11,12 +11,14 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Objects;
 
+/**
+ * 媒体播放器 Controller
+ */
 @Controller
-public class MediaController {
+public class MediaPlayController {
 
     @RequestMapping("fl")
     public ResponseEntity<String> fileList() {
@@ -35,7 +37,7 @@ public class MediaController {
         }
         HashMap<String, Object> headers = new HashMap<>(1);
         headers.put(HttpHeaderNames.CONTENT_DISPOSITION.toString(),
-                "attachment;filename=\"" + absolutePaths.substring(absolutePaths.lastIndexOf(File.pathSeparatorChar)) + "\"");
+                "attachment;filename=" + tar);
         int code = FileTransferUtil.sendFile(ctx, request, absolutePaths, headers);
         return buildResponseEntityByCode(code, null);
     }

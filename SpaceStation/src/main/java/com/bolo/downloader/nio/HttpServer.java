@@ -27,7 +27,9 @@ public class HttpServer {
                 .channel(NioServerSocketChannel.class)
                 .childHandler(new HttpServerInitializer());
         bootstrap.bind(port);
-        log.info("服务启动成功,地址：http://127.0.0.1:" + port);
+        String startLog = "服务启动成功,地址：http://127.0.0.1:" + port + "/";
+        log.info(startLog);
+        System.out.println(startLog);
     }
 
     public void shutdown() {

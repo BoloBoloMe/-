@@ -1,9 +1,9 @@
 package com.bolo.downloader.sync;
 
 public class Record {
-    private String md5;
-    private String fileName;
-    private int version;
+    private final String md5;
+    private final String fileName;
+    private final int version;
     private SyncState state;
     final private static String NAME_AND_URL_CUT = "|*|";
     // state(1*char)+version(10*char)+fileName|*|url(variable*char)

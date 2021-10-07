@@ -229,9 +229,9 @@
                         fileListHolder.push({
                             'fileName': '<video src="http://' + window.location.host + '/gcc/pl?tar=' + encodeFileName + '" width="200px"  onclick=goPlay("' + encodeFileName + '")></video> &nbsp;<a href=/pv?tar=' + encodeFileName + ' target="_blank">' + fileName + '</a>',
                             'labels': file.labels,
-                            'opt': '<a  class="layui-btn layui-btn-xs" href="javascript:void(0);" onclick=copyLink("http://' + window.location.host + '/pl?tar=' + encodeFileName + '")>拷贝源地址</a>&nbsp;&nbsp;' +
+                            'opt': '<a  class="layui-btn layui-btn-xs" href="javascript:void(0);" onclick=copyLink("http://' + window.location.host + '/gcc/pl?tar=' + encodeFileName + '")>拷贝源地址</a>&nbsp;&nbsp;' +
                                 '<a class="layui-btn layui-btn-xs" href="javascript:void(0);"  onclick=goPlay("' + encodeFileName + '")>播放</a>' +
-                                '<a class="layui-btn layui-btn-xs" href=/dl?tar=' + encodeFileName + ' target="_blank">下载</a>'
+                                '<a class="layui-btn layui-btn-xs" href="http://' + window.location.host + '/gcc/dl?tar=' + encodeFileName + '" target="_blank">下载</a>'
 
                         })
                     }

@@ -1,10 +1,15 @@
 package com.bolo.downloader.nio;
 
 import com.alibaba.fastjson.JSON;
+import com.bolo.downloader.factory.ConfFactory;
 import com.bolo.downloader.factory.DownloaderFactory;
+import com.bolo.downloader.respool.nio.http.controller.invoke.impl.ResponseEntity;
 import com.bolo.downloader.respool.nio.utils.ByteBuffUtils;
+import com.bolo.downloader.respool.nio.utils.FileTransferUtil;
 import com.bolo.downloader.respool.nio.utils.PageUtil;
 import com.bolo.downloader.respool.nio.utils.ResponseUtil;
+import com.bolo.downloader.sync.Record;
+import com.bolo.downloader.sync.Synchronizer;
 import com.bolo.downloader.util.*;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
@@ -133,6 +138,8 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
             case "/df":
                 download(ctx, params, request);
                 break;
+            case "/dl":
+                pageDownload(ctx, params, request);
             default:
                 toPage(uri, params, ctx, request);
                 break;
@@ -182,5 +189,35 @@ public class HttpServerHandler extends SimpleChannelInboundHandler<FullHttpReque
             log.info("文件传送发生异常: " + e.getMessage());
             ResponseUtil.sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR, request);
         }
+    }
+
+    private void pageDownload(ChannelHandlerContext ctx, Map<String, List<String>> params, FullHttpRequest request) {
+        Optional<String> fileNameOpt = Optional.ofNullable(params.get("tar")).map(plist -> plist.isEmpty() ? null : plist.get(0));
+        if (fileNameOpt.isPresent()) {
+            File file = new File(ConfFactory.get("videoPath") + File.separator + fileNameOpt.get());
+            if (file.exists()) {
+                HashMap<String, Object> headers = new HashMap<>(1);
+                headers.put(HttpHeaderNames.CONTENT_DISPOSITION.toString(), "attachment;filename=" + fileNameOpt.get());
+                int code = FileTransferUtil.sendFile(ctx, request, file.getAbsolutePath(), headers);
+                buildResponseEntityByCode(code, null);
+            } else {
+                ResponseUtil.sendError(ctx, HttpResponseStatus.NOT_FOUND, request);
+            }
+        } else {
+            ResponseUtil.sendError(ctx, HttpResponseStatus.PAYMENT_REQUIRED, request);
+        }
+    }
+
+    private <T> ResponseEntity<T> buildResponseEntityByCode(int code, T body) {
+        if (code == HttpResponseStatus.NOT_FOUND.code()) {
+            return new ResponseEntity<>(HttpResponseStatus.NOT_FOUND, body);
+        }
+        if (code == HttpResponseStatus.INTERNAL_SERVER_ERROR.code()) {
+            return new ResponseEntity<>(HttpResponseStatus.INTERNAL_SERVER_ERROR, body);
+        }
+        if (code == HttpResponseStatus.OK.code()) {
+            return new ResponseEntity<>(HttpResponseStatus.OK, body);
+        }
+        return null;
     }
 }

@@ -114,7 +114,8 @@
                 , icon: 'layui-icon-refresh' //图标类名
             }]
             , cols: [[ //表头
-                {field: 'fileName', title: '文件名', width: 1000}
+                {field: 'fileName', title: '文件名', width: 1000},
+                {field: 'operation', title: '操作', width: 500}
             ]],
             data: []
         });
@@ -147,7 +148,10 @@
                     var data = [];
                     if (res) {
                         for (var x in res) {
-                            data.push({'fileName': res[x]})
+                            data.push({
+                                'fileName': res[x],
+                                'operation': '<a class="layui-btn layui-btn-xs" href=/dl?tar=' +  encodeURI(res[x])  + ' target="_blank">下载</a>'
+                            })
                         }
                     }
                     fileList.reload({
