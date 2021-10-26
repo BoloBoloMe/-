@@ -23,23 +23,26 @@ public class VariableThreadPoolTest {
         Map<Long, AtomicInteger> counter = new ConcurrentHashMap<>(10);
         ExecutorService submitter = Executors.newFixedThreadPool(10);
         for (int i = 0; i < 10; i++) {
-            submitter.execute(() -> variableThreadPoolExecutor.execute(() -> {
-                long key = Thread.currentThread().getId();
-                while (true) {
-                    AtomicInteger count = counter.getOrDefault(key, new AtomicInteger(0));
-                    count.incrementAndGet();
-                    counter.put(key, count);
+            submitter.execute(() -> {
+                for (int c = 0; c < 8; c++) {
+                    sleep(500);
+                    variableThreadPoolExecutor.execute(() -> {
+                        long key = Thread.currentThread().getId();
+                        AtomicInteger count = counter.getOrDefault(key, new AtomicInteger(0));
+                        count.incrementAndGet();
+                        counter.put(key, count);
+                    });
                 }
-            }));
+            });
         }
 
-        for (int timer = 1; timer < 11; timer++) {
+        for (int timer = 1; timer < 20; timer++) {
             if (timer % 5 == 0) {
-                variableThreadPoolExecutor.setExecutor(newExecutorService(++nThread));
+                variableThreadPoolExecutor.setExecutor(newExecutorService(nThread *= 10));
                 System.out.println("change thread pool.");
             }
             sleep(1000);
-            counter.forEach((id, count) -> System.out.println("thread " + id + " count:" + count.get()));
+            System.out.println(counter.size());
         }
     }
 
@@ -52,9 +55,12 @@ public class VariableThreadPoolTest {
         }
     }
 
+    private static final AtomicInteger THREAD_NUM = new AtomicInteger(0);
+
     private static ExecutorService newExecutorService(int nThread) {
-        return Executors.newCachedThreadPool(r -> {
+        return Executors.newFixedThreadPool(nThread, r -> {
             Thread thread = new Thread(r);
+            thread.setName("VariableThreads_" + THREAD_NUM.incrementAndGet());
             thread.setDaemon(true);
             return thread;
         });

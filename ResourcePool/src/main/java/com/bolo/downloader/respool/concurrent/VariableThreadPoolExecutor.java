@@ -98,7 +98,9 @@ public class VariableThreadPoolExecutor implements ExecutorService {
         assert null != executorService;
         final ExecutorService oldExecutor = this.executorService;
         try {
+            System.out.println("setExecutor:" + executorService);
             writeLock.lock();
+            System.out.println("setExecutor successful.");
             if (executorService == oldExecutor) {
                 return;
             }
