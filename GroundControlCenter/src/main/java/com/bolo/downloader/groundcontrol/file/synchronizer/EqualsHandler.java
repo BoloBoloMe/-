@@ -26,9 +26,6 @@ public class EqualsHandler extends AbstractResponseHandler {
             map.put(StoneMapDict.KEY_FILE_STATE, StoneMapDict.VAL_FILE_STATE_DOWNLOAD);
             map.flushWriteBuff();
         }
-        ClientBootstrap.submitTask(() -> {
-            ClientBootstrap.sleep(180000);
-        });
         return post(lastVer, 1, 0);
     }
 }
