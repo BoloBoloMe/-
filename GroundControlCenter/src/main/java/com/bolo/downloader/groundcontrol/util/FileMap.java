@@ -135,7 +135,7 @@ public class FileMap {
                 StringBuilder labelJson = new StringBuilder().append("[\"video\",\"music\",");
                 // label1==path1,label2==path2
                 String labelConf = ConfFactory.get("labelMap");
-                if (labelConf != null) {
+                if (labelConf != null && !labelConf.isEmpty()) {
                     String[] labels = labelConf.split(",");
                     int cutIndex;
                     for (String labelEntry : labels) {

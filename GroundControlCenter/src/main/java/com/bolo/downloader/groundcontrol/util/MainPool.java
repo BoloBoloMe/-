@@ -22,10 +22,10 @@ public class MainPool {
         MAIN_THREAD_POOL =
                 Executors.newScheduledThreadPool(1, runnable -> {
                     Thread thread = new Thread(runnable, "main-thread-0");
-                    thread.setDaemon(true);
+                    thread.setDaemon(false);
                     return thread;
                 });
-        MAIN_THREAD_POOL.scheduleWithFixedDelay(() -> SYSTEM_TIME_MILLISECOND = System.currentTimeMillis(), 500, 500, TimeUnit.MILLISECONDS);
+        MAIN_THREAD_POOL.scheduleWithFixedDelay(() -> SYSTEM_TIME_MILLISECOND = System.currentTimeMillis(), 0, 500, TimeUnit.MILLISECONDS);
     }
 
     public static ScheduledExecutorService executor() {

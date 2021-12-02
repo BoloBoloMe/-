@@ -10,6 +10,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -37,7 +38,7 @@ public class NetServer {
         server.bossGroup = new NioEventLoopGroup(bossThreadCount, MainPool.executor());
         server.workGroup = new NioEventLoopGroup(workThreadCount, runnable -> {
             Thread thread = new Thread(runnable, "netty-work-thread-" + workCount.incrementAndGet());
-            thread.setDaemon(false);
+            thread.setDaemon(true);
             return thread;
         });
         ServerBootstrap bootstrap = new ServerBootstrap();
@@ -58,6 +59,10 @@ public class NetServer {
         if (workGroup.isShutdown()) {
             workGroup.shutdownGracefully();
         }
+    }
+
+    public static void shutdown(int port) {
+        Optional.ofNullable(SERVICE_MAP.get(port)).ifPresent(NetServer::shutdown);
     }
 
     public int getPort() {

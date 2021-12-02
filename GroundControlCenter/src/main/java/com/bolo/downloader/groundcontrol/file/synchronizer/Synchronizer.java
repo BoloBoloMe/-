@@ -31,7 +31,7 @@ public class Synchronizer {
         if (!Boolean.TRUE.toString().equals(ConfFactory.get("openSyncTask"))) {
             return;
         }
-        log.info("Space Station 服务器地址: %s", ConfFactory.get("url"));
+        log.info("文件同步任务已开启，远程服务器地址: %s", ConfFactory.get("url"));
         executeRequestAsync(0, TimeUnit.MILLISECONDS);
     }
 

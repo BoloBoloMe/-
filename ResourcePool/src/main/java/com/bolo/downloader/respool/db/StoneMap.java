@@ -13,9 +13,9 @@ import java.util.concurrent.atomic.AtomicLong;
  * 可持久化的Map
  */
 public class StoneMap implements Map<String, String> {
-    private String dbFileName;
-    private String dbFilePath;
-    private File dbFile;
+    final private String dbFileName;
+    final private String dbFilePath;
+    final private File dbFile;
     /**
      * 缓冲池
      */
@@ -135,8 +135,8 @@ public class StoneMap implements Map<String, String> {
         if (!dbFile.exists()) {
             try {
                 File pathFile = new File(dbFilePath);
-                if(!pathFile.exists() && !pathFile.mkdirs()) throw new Error("数据文件目录创建失败！");
-                if(!dbFile.exists() && !dbFile.createNewFile()) throw new Error("数据文件创建失败！");
+                if (!pathFile.exists() && !pathFile.mkdirs()) throw new Error("数据文件目录创建失败！");
+                if (!dbFile.exists() && !dbFile.createNewFile()) throw new Error("数据文件创建失败！");
             } catch (IOException e) {
                 throw new LogReadException(e);
             }

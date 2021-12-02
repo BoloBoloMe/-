@@ -30,7 +30,7 @@ public class DownloadHandler extends AbstractResponseHandler {
         log.info("[transfer] 开始文件传送.name=%s", response.getFileNane());
         StoneMap map = StoneMapFactory.getObject();
         int lastVer = Integer.parseInt(map.get(StoneMapDict.KEY_LAST_VER));
-        File tar = new File(ConfFactory.get("downloadDir"), response.getFileNane());
+        File tar = new File(ConfFactory.get("downloadPath"), response.getFileNane());
         if (!tar.exists()) {
             try {
                 tar.createNewFile();
@@ -130,7 +130,7 @@ public class DownloadHandler extends AbstractResponseHandler {
 
     private int addNotValidatedRecord(File tar) {
         if (downloadRetryTimes == -1) downloadRetryTimes = Integer.parseInt(ConfFactory.get("downloadRetryTimes"));
-        if ("".equals(notValidatedDir)) notValidatedDir = ConfFactory.get("notValidatedDir");
+        if ("".equals(notValidatedDir)) notValidatedDir = ConfFactory.get("notValidatedPath");
         Integer count = notValidatedFile.get(tar);
         if (count == null) {
             count = 1;

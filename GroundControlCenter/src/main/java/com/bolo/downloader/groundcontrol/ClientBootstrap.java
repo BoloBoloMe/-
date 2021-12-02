@@ -12,7 +12,6 @@ import com.bolo.downloader.respool.log.MyLogger;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 public class ClientBootstrap {
     private static final String CONF_FILE_PATH = Optional.ofNullable(System.getProperty("conf.path")).orElse("conf/GroundControlCenter.propertes");
@@ -22,6 +21,28 @@ public class ClientBootstrap {
         init();
         NetServer.start(Integer.parseInt(ConfFactory.get("port")));
         Synchronizer.run();
+    }
+
+    public static void shutdownGracefully() {
+        new Thread(() -> {
+            try {
+                StoneMapFactory.getObject().rewriteDbFile();
+                NetServer.shutdown(Integer.parseInt(ConfFactory.get("port")));
+                MainPool.executor().shutdown();
+                System.err.println("系统将在5秒中后停止运行.");
+                int countdown = 5;
+                while (countdown > 0) {
+                    System.err.println(countdown);
+                    Thread.sleep(1000);
+                    countdown--;
+                }
+                System.err.println(countdown);
+                System.exit(0);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+
     }
 
 
@@ -34,15 +55,6 @@ public class ClientBootstrap {
         LoggerFactory.setLogFileName(ConfFactory.get("logFileName"));
         LoggerFactory.roll();
         FileMap.flush();
-    }
-
-    public static void shutdownGracefully() {
-        try {
-            StoneMapFactory.getObject().rewriteDbFile();
-            MainPool.executor().schedule(() -> MainPool.executor().shutdownNow(), 1, TimeUnit.MINUTES);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
 }

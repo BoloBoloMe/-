@@ -29,7 +29,7 @@ public class ShutdownUtil {
                     }
                     ServerBootstrap.shutdownGracefully();
                 });
-                cleaner.setDaemon(false);
+                cleaner.setDaemon(true);
                 cleaner.setName("ClearThread");
                 cleaner.start();
                 ResponseUtil.sendText(ctx, HttpResponseStatus.OK, request, "OK");
