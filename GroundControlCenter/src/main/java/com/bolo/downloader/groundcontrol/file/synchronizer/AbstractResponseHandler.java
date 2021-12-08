@@ -1,6 +1,6 @@
 package com.bolo.downloader.groundcontrol.file.synchronizer;
 
-import com.bolo.downloader.groundcontrol.dict.StoneMapDict;
+import com.bolo.downloader.groundcontrol.constant.StoneMapDict;
 import com.bolo.downloader.groundcontrol.factory.ConfFactory;
 import com.bolo.downloader.groundcontrol.factory.StoneMapFactory;
 import com.bolo.downloader.respool.db.StoneMap;

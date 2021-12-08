@@ -14,7 +14,6 @@ import java.lang.management.RuntimeMXBean;
 import java.util.Optional;
 
 public class ClientBootstrap {
-    private static final String CONF_FILE_PATH = Optional.ofNullable(System.getProperty("conf.path")).orElse("conf/GroundControlCenter.propertes");
     private static final MyLogger log = LoggerFactory.getLogger(ClientBootstrap.class);
 
     public static void main(String[] args) {
@@ -50,7 +49,7 @@ public class ClientBootstrap {
         RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
         String name = runtime.getName();
         log.info("当前进程： " + name);
-        ConfFactory.load(CONF_FILE_PATH);
+        ConfFactory.load(Optional.ofNullable(System.getProperty("conf.path")).orElse("conf/GroundControlCenter.propertes"));
         LoggerFactory.setLogPath(ConfFactory.get("logPath"));
         LoggerFactory.setLogFileName(ConfFactory.get("logFileName"));
         LoggerFactory.roll();

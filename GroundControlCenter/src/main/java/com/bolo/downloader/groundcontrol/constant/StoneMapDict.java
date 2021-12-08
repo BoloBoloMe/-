@@ -1,4 +1,4 @@
-package com.bolo.downloader.groundcontrol.dict;
+package com.bolo.downloader.groundcontrol.constant;
 
 public class StoneMapDict {
     static public final String KEY_LAST_VER = "LV";
