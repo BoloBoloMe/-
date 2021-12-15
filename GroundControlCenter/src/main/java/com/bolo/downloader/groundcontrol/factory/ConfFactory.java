@@ -28,7 +28,7 @@ public class ConfFactory {
         conf.put("logFileName", "GroundControlCenter.log");
         conf.put("downloadPath", "~/GroundControl/video/");
         conf.put("staticFilePath", "GroundControl/static/");
-        conf.put("mediaPath", "~/");
+        conf.put("mediaPath", "/");
         conf.put("labelMap", "");
         conf.put("notValidatedPath", "~/GroundControl/video/notValidated/");
         conf.put("downloadRetryTimes", "5");

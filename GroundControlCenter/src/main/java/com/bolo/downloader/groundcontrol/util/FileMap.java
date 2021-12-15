@@ -183,6 +183,9 @@ public class FileMap {
 
     private static void scan(File[] paths) {
         for (File target : paths) {
+            if (!target.canRead()) {
+                continue;
+            }
             String name = target.getName();
             if (target.isDirectory()) {
                 File[] child = target.listFiles();
