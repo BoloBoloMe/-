@@ -12,7 +12,7 @@ public class LoggerFactory {
     private static String logFileName;
 
     public static MyLogger getLogger(Class clazz) {
-        return new MockLogger(clazz);
+        return new MyLogger(clazz);
     }
 
     private static Logger newLogger() {

@@ -19,8 +19,9 @@ public class MainPool {
     private static volatile long SYSTEM_TIME_MILLISECOND = System.currentTimeMillis();
 
     static {
+        int coreThreads = Math.max(2, Runtime.getRuntime().availableProcessors());
         MAIN_THREAD_POOL =
-                Executors.newScheduledThreadPool(1, runnable -> {
+                Executors.newScheduledThreadPool(coreThreads, runnable -> {
                     Thread thread = new Thread(runnable, "main-thread-0");
                     thread.setDaemon(false);
                     return thread;

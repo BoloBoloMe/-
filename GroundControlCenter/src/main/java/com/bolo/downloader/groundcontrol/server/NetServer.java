@@ -1,7 +1,6 @@
 package com.bolo.downloader.groundcontrol.server;
 
 import com.bolo.downloader.groundcontrol.factory.ConfFactory;
-import com.bolo.downloader.groundcontrol.util.MainPool;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
 import io.netty.bootstrap.ServerBootstrap;
@@ -35,7 +34,12 @@ public class NetServer {
         int bossThreadCount = Integer.parseInt(ConfFactory.get("mediaBossThreadCount"));
         int workThreadCount = Integer.parseInt(ConfFactory.get("mediaWorkThreadCount"));
         final AtomicInteger workCount = new AtomicInteger();
-        server.bossGroup = new NioEventLoopGroup(bossThreadCount, MainPool.executor());
+        final AtomicInteger bossCount = new AtomicInteger();
+        server.bossGroup = new NioEventLoopGroup(bossThreadCount, runnable -> {
+            Thread thread = new Thread(runnable, "netty-boss-thread-" + bossCount.incrementAndGet());
+            thread.setDaemon(true);
+            return thread;
+        });
         server.workGroup = new NioEventLoopGroup(workThreadCount, runnable -> {
             Thread thread = new Thread(runnable, "netty-work-thread-" + workCount.incrementAndGet());
             thread.setDaemon(true);

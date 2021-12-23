@@ -1,6 +1,5 @@
 package com.bolo.downloader.groundcontrol.util;
 
-import com.bolo.downloader.groundcontrol.ClientBootstrap;
 import com.bolo.downloader.groundcontrol.factory.ConfFactory;
 import com.bolo.downloader.respool.log.LoggerFactory;
 import com.bolo.downloader.respool.log.MyLogger;
@@ -15,6 +14,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 
 /**
@@ -35,7 +37,7 @@ public class FileMap {
      * 全量的文件列表JSON字符串
      * fileList:[{name:"aaa.web",label:["video","film"]}]
      */
-    private static volatile String fullFilesJson = "[]";
+    private static volatile AtomicReference<String> FULL_FILES_JSON = new AtomicReference<>("[]");
     /**
      * 文件名映射至文件绝对路径的Map
      * <name,path>
@@ -59,6 +61,8 @@ public class FileMap {
      * 最近添加的文件队列最大长度
      */
     private static final int NEW_QUEUE_SIZE_MAX = 10;
+
+    private static final ReentrantLock FLUSH_LOCK = new ReentrantLock();
 
     /**
      * 盲盒游戏
@@ -96,7 +100,7 @@ public class FileMap {
     public static String fullListJson() {
         flush();
         return "{\"labels\":" + labelListJson + ',' +
-                "\"fileList\":" + fullFilesJson + ',' +
+                "\"fileList\":" + FULL_FILES_JSON + ',' +
                 "\"newFile\":" + newFileList + ',' +
                 "\"lruList\":" + lruJson() + "}";
 
@@ -151,32 +155,43 @@ public class FileMap {
         }
         lastFlushTime = MainPool.currentTimeMillis();
         MainPool.executor().execute(() -> {
-            log.info("扫描文件目录");
-            // 更新文件列表
-            nameToPath.clear();
-            scan(paths);
-            // 更新文件列表JSON
-            StringBuilder json = new StringBuilder().append('[');
-            for (Map.Entry<String, String> nameAndPath : nameToPath.entrySet()) {
-                json.append("{\"name\":\"").append(nameAndPath.getKey()).append('"');
-                // 添加文件标签
-                json.append(",\"labels\":[");
-                String lowerCaseName = nameAndPath.getKey().toLowerCase();
-                if (isVideo(lowerCaseName)) {
-                    json.append("\"video\",");
-                } else if (isAudio(lowerCaseName)) {
-                    json.append("\"music\",");
-                }
-                List<String> labels = getLabel(nameAndPath.getValue());
-                if (labels != null) for (String label : labels) json.append('"').append(label).append("\",");
-                json.deleteCharAt(json.length() - 1);
-                json.append(']');
-                json.append("},");
+            if (!FLUSH_LOCK.tryLock()) {
+                return;
             }
-            json.deleteCharAt(json.length() - 1).append(']');
-            // 更新最新文件列表
-            updateNewFileList();
-            fullFilesJson = json.toString();
+            try {
+                log.info("扫描文件目录");
+                // 更新文件列表
+                nameToPath.clear();
+                scan(paths);
+                // 更新文件列表JSON
+                StringBuilder json = new StringBuilder().append('[');
+                for (Map.Entry<String, String> nameAndPath : nameToPath.entrySet()) {
+                    json.append("{\"name\":\"").append(nameAndPath.getKey()).append('"');
+                    // 添加文件标签
+                    json.append(",\"labels\":[");
+                    String lowerCaseName = nameAndPath.getKey().toLowerCase();
+                    if (isVideo(lowerCaseName)) {
+                        json.append("\"video\",");
+                    } else if (isAudio(lowerCaseName)) {
+                        json.append("\"music\",");
+                    }
+                    List<String> labels = getLabel(nameAndPath.getValue());
+                    if (labels != null) for (String label : labels) json.append('"').append(label).append("\",");
+                    json.deleteCharAt(json.length() - 1);
+                    json.append(']');
+                    json.append("},");
+                }
+                json.deleteCharAt(json.length() - 1).append(']');
+                // 更新最新文件列表
+                updateNewFileList();
+                FULL_FILES_JSON.lazySet(json.toString());
+            } catch (Exception e) {
+                log.error("flush file list error.", e);
+            } finally {
+                if (FLUSH_LOCK.isHeldByCurrentThread()) {
+                    FLUSH_LOCK.unlock();
+                }
+            }
         });
     }
 
