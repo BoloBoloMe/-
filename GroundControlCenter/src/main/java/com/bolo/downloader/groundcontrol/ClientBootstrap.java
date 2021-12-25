@@ -49,7 +49,7 @@ public class ClientBootstrap {
         RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
         String name = runtime.getName();
         log.info("当前进程： " + name);
-        ConfFactory.load(Optional.ofNullable(System.getProperty("conf.path")).orElse("conf/GroundControlCenter.propertes"));
+        ConfFactory.load(Optional.ofNullable(System.getProperty("conf.path")).orElse("conf/GroundControlCenter.properties"));
         LoggerFactory.setLogPath(ConfFactory.get("logPath"));
         LoggerFactory.setLogFileName(ConfFactory.get("logFileName"));
         LoggerFactory.roll();
